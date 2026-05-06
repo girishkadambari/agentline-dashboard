@@ -14,6 +14,17 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AppWebhooksRouteImport } from './routes/_app.webhooks'
+import { Route as AppUsageRouteImport } from './routes/_app.usage'
+import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppServiceHealthRouteImport } from './routes/_app.service-health'
+import { Route as AppPlaygroundRouteImport } from './routes/_app.playground'
+import { Route as AppNumbersRouteImport } from './routes/_app.numbers'
+import { Route as AppInboxRouteImport } from './routes/_app.inbox'
+import { Route as AppContactsRouteImport } from './routes/_app.contacts'
+import { Route as AppCallsRouteImport } from './routes/_app.calls'
+import { Route as AppBillingRouteImport } from './routes/_app.billing'
+import { Route as AppApiKeysRouteImport } from './routes/_app.api-keys'
 import { Route as AppAgentsRouteImport } from './routes/_app.agents'
 
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -40,6 +51,61 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppWebhooksRoute = AppWebhooksRouteImport.update({
+  id: '/webhooks',
+  path: '/webhooks',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppUsageRoute = AppUsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppServiceHealthRoute = AppServiceHealthRouteImport.update({
+  id: '/service-health',
+  path: '/service-health',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPlaygroundRoute = AppPlaygroundRouteImport.update({
+  id: '/playground',
+  path: '/playground',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNumbersRoute = AppNumbersRouteImport.update({
+  id: '/numbers',
+  path: '/numbers',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInboxRoute = AppInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppContactsRoute = AppContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCallsRoute = AppCallsRouteImport.update({
+  id: '/calls',
+  path: '/calls',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBillingRoute = AppBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppApiKeysRoute = AppApiKeysRouteImport.update({
+  id: '/api-keys',
+  path: '/api-keys',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAgentsRoute = AppAgentsRouteImport.update({
   id: '/agents',
   path: '/agents',
@@ -51,12 +117,34 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/agents': typeof AppAgentsRoute
+  '/api-keys': typeof AppApiKeysRoute
+  '/billing': typeof AppBillingRoute
+  '/calls': typeof AppCallsRoute
+  '/contacts': typeof AppContactsRoute
+  '/inbox': typeof AppInboxRoute
+  '/numbers': typeof AppNumbersRoute
+  '/playground': typeof AppPlaygroundRoute
+  '/service-health': typeof AppServiceHealthRoute
+  '/settings': typeof AppSettingsRoute
+  '/usage': typeof AppUsageRoute
+  '/webhooks': typeof AppWebhooksRoute
   '/auth/callback': typeof AuthCallbackRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/agents': typeof AppAgentsRoute
+  '/api-keys': typeof AppApiKeysRoute
+  '/billing': typeof AppBillingRoute
+  '/calls': typeof AppCallsRoute
+  '/contacts': typeof AppContactsRoute
+  '/inbox': typeof AppInboxRoute
+  '/numbers': typeof AppNumbersRoute
+  '/playground': typeof AppPlaygroundRoute
+  '/service-health': typeof AppServiceHealthRoute
+  '/settings': typeof AppSettingsRoute
+  '/usage': typeof AppUsageRoute
+  '/webhooks': typeof AppWebhooksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AppIndexRoute
 }
@@ -66,20 +154,74 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/_app/agents': typeof AppAgentsRoute
+  '/_app/api-keys': typeof AppApiKeysRoute
+  '/_app/billing': typeof AppBillingRoute
+  '/_app/calls': typeof AppCallsRoute
+  '/_app/contacts': typeof AppContactsRoute
+  '/_app/inbox': typeof AppInboxRoute
+  '/_app/numbers': typeof AppNumbersRoute
+  '/_app/playground': typeof AppPlaygroundRoute
+  '/_app/service-health': typeof AppServiceHealthRoute
+  '/_app/settings': typeof AppSettingsRoute
+  '/_app/usage': typeof AppUsageRoute
+  '/_app/webhooks': typeof AppWebhooksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/onboarding' | '/agents' | '/auth/callback'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/onboarding'
+    | '/agents'
+    | '/api-keys'
+    | '/billing'
+    | '/calls'
+    | '/contacts'
+    | '/inbox'
+    | '/numbers'
+    | '/playground'
+    | '/service-health'
+    | '/settings'
+    | '/usage'
+    | '/webhooks'
+    | '/auth/callback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/onboarding' | '/agents' | '/auth/callback' | '/'
+  to:
+    | '/login'
+    | '/onboarding'
+    | '/agents'
+    | '/api-keys'
+    | '/billing'
+    | '/calls'
+    | '/contacts'
+    | '/inbox'
+    | '/numbers'
+    | '/playground'
+    | '/service-health'
+    | '/settings'
+    | '/usage'
+    | '/webhooks'
+    | '/auth/callback'
+    | '/'
   id:
     | '__root__'
     | '/_app'
     | '/login'
     | '/onboarding'
     | '/_app/agents'
+    | '/_app/api-keys'
+    | '/_app/billing'
+    | '/_app/calls'
+    | '/_app/contacts'
+    | '/_app/inbox'
+    | '/_app/numbers'
+    | '/_app/playground'
+    | '/_app/service-health'
+    | '/_app/settings'
+    | '/_app/usage'
+    | '/_app/webhooks'
     | '/auth/callback'
     | '/_app/'
   fileRoutesById: FileRoutesById
@@ -128,6 +270,83 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/webhooks': {
+      id: '/_app/webhooks'
+      path: '/webhooks'
+      fullPath: '/webhooks'
+      preLoaderRoute: typeof AppWebhooksRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/usage': {
+      id: '/_app/usage'
+      path: '/usage'
+      fullPath: '/usage'
+      preLoaderRoute: typeof AppUsageRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/service-health': {
+      id: '/_app/service-health'
+      path: '/service-health'
+      fullPath: '/service-health'
+      preLoaderRoute: typeof AppServiceHealthRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/playground': {
+      id: '/_app/playground'
+      path: '/playground'
+      fullPath: '/playground'
+      preLoaderRoute: typeof AppPlaygroundRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/numbers': {
+      id: '/_app/numbers'
+      path: '/numbers'
+      fullPath: '/numbers'
+      preLoaderRoute: typeof AppNumbersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/inbox': {
+      id: '/_app/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof AppInboxRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/contacts': {
+      id: '/_app/contacts'
+      path: '/contacts'
+      fullPath: '/contacts'
+      preLoaderRoute: typeof AppContactsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/calls': {
+      id: '/_app/calls'
+      path: '/calls'
+      fullPath: '/calls'
+      preLoaderRoute: typeof AppCallsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/billing': {
+      id: '/_app/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof AppBillingRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/api-keys': {
+      id: '/_app/api-keys'
+      path: '/api-keys'
+      fullPath: '/api-keys'
+      preLoaderRoute: typeof AppApiKeysRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/agents': {
       id: '/_app/agents'
       path: '/agents'
@@ -140,11 +359,33 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAgentsRoute: typeof AppAgentsRoute
+  AppApiKeysRoute: typeof AppApiKeysRoute
+  AppBillingRoute: typeof AppBillingRoute
+  AppCallsRoute: typeof AppCallsRoute
+  AppContactsRoute: typeof AppContactsRoute
+  AppInboxRoute: typeof AppInboxRoute
+  AppNumbersRoute: typeof AppNumbersRoute
+  AppPlaygroundRoute: typeof AppPlaygroundRoute
+  AppServiceHealthRoute: typeof AppServiceHealthRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppUsageRoute: typeof AppUsageRoute
+  AppWebhooksRoute: typeof AppWebhooksRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAgentsRoute: AppAgentsRoute,
+  AppApiKeysRoute: AppApiKeysRoute,
+  AppBillingRoute: AppBillingRoute,
+  AppCallsRoute: AppCallsRoute,
+  AppContactsRoute: AppContactsRoute,
+  AppInboxRoute: AppInboxRoute,
+  AppNumbersRoute: AppNumbersRoute,
+  AppPlaygroundRoute: AppPlaygroundRoute,
+  AppServiceHealthRoute: AppServiceHealthRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppUsageRoute: AppUsageRoute,
+  AppWebhooksRoute: AppWebhooksRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
