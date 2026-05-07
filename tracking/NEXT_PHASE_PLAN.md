@@ -192,12 +192,36 @@ Build:
 - Add inbound SMS simulation form using `POST /simulations/inbound-sms` if the
   backend route exists in the active branch.
 - Add loading, empty, error, and validation states.
+- Load backend agents for send/simulate forms.
+- Preserve the three-panel inbox layout: conversations list, message thread,
+  conversation/contact details.
+- Show backend conflicts clearly, especially missing SMS-capable agent number
+  and insufficient balance.
 
 Exit Criteria:
 
 - User can send a mock outbound SMS from the frontend.
+- User can simulate inbound SMS from the frontend.
 - Conversations and messages appear from backend data after refresh.
+- Selected conversation survives list refresh when still present.
 - No production route touched in this phase imports mock conversations/messages.
+
+Backend endpoints confirmed:
+
+- `GET /conversations`
+- `GET /conversations/:id`
+- `PATCH /conversations/:id`
+- `GET /conversations/:id/messages`
+- `POST /messages`
+- `POST /simulations/inbound-sms`
+
+Implementation Notes:
+
+- `POST /messages` requires `agentId`, `to`, and `body`.
+- `POST /simulations/inbound-sms` requires `agentId`, `from`, and `body`.
+- Backend will create or reuse contact/conversation records for SMS flows.
+- Like calls, SMS requires the selected agent to have a suitable active number.
+  The UI should surface that before or after submit.
 
 ## Phase F3E: Core Dashboard Data Integration
 
@@ -225,8 +249,8 @@ Current Mock Import Audit:
 
 - Direct route mock imports remain in Overview, Playground, Inbox, Usage,
   Billing, API Keys, and Service Health.
-- API wrapper mock imports remain in Agents, Numbers, Messages, Calls,
-  Webhooks, Usage, Billing, Contacts, and API key support.
+- API wrapper mock imports remain in Messages, Webhooks, Usage, Billing,
+  Contacts, and legacy compatibility exports in Agents.
 - Contacts still needs a backend API or a temporary backend-gap placeholder.
 
 ## Phase F4: Drawer And Action Quality Pass

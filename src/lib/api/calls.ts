@@ -70,7 +70,7 @@ function formatDate(value?: string | null) {
 
 function estimateVoiceCost(durationSeconds: number) {
   const billableMinutes = Math.max(1, Math.ceil(durationSeconds / 60));
-  return billableMinutes * 0.04;
+  return billableMinutes * 0.03;
 }
 
 export function mapBackendCall(call: BackendCall): CallListItem {

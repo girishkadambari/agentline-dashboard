@@ -208,3 +208,42 @@ Route rendering fix:
 - This resolves the issue where clicking a table `View` link changed the route
   but appeared to open nothing because the parent list route kept rendering.
 - `npm run build` passed after the fix.
+
+## 2026-05-07 - Review After Agents, Numbers, Calls
+
+Status: reviewed
+
+Review result:
+
+- Agents, Numbers, and Calls list/detail flows are now backend-backed.
+- Agents, Numbers, and Calls touched routes no longer rely on production mock
+  route data.
+- Nested detail routes now render correctly through parent route outlets.
+- Backend validation details are formatted into user-facing field messages.
+- Local backend top-up flow exists for exhausting mock billing balance during
+  development.
+
+Fix applied during review:
+
+- Calls frontend cost estimate now matches backend Phase 1 mock voice pricing:
+  3 cents per billable minute. A 64 second mock call displays `$0.06` instead
+  of `$0.08`.
+
+Remaining risks:
+
+- `src/lib/api/agents.ts` still contains legacy mock wrapper exports used by
+  untouched pages. Remove them once all route consumers are backend-backed.
+- Some parent routes fetch list data even when rendering a child detail route.
+  This is acceptable for now but can be optimized with route-level loaders or
+  cleaner layout routes.
+- Call transfer still uses `window.prompt`; replace with a drawer/form in a
+  future call quality pass.
+- Frontend cost/monthly price displays should eventually come from backend
+  usage/pricing endpoints instead of frontend constants.
+
+Current mock areas:
+
+- Overview, Inbox, Usage, Billing, API Keys, Playground, Service Health, and
+  Contacts still use mock data directly or through legacy API wrappers.
+- Webhooks, Usage, Billing, Contacts, and Messages API modules still contain
+  mock wrappers.
