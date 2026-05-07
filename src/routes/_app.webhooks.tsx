@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
-import { webhooks } from "@/lib/mock/data";
+import { listWebhooks } from "@/lib/api/webhooks";
 import { Plus } from "lucide-react";
 
 export const Route = createFileRoute("/_app/webhooks")({
@@ -11,6 +11,7 @@ export const Route = createFileRoute("/_app/webhooks")({
 });
 
 function Webhooks() {
+  const webhooks = listWebhooks().data;
   return (
     <div>
       <PageHeader
@@ -32,7 +33,7 @@ function Webhooks() {
           <tbody>
             {webhooks.map((w) => (
               <tr key={w.id} className="border-t hover:bg-muted/30">
-                <td className="px-4 py-2.5"><Mono>{w.url}</Mono></td>
+                <td className="px-4 py-2.5"><Link to="/webhooks/$webhookId" params={{ webhookId: w.id }} className="hover:underline"><Mono>{w.url}</Mono></Link></td>
                 <td className="px-4 py-2.5">
                   <div className="flex flex-wrap gap-1">
                     {w.events.map((e) => <Mono key={e} className="rounded border px-1.5 py-0.5 text-[11px]">{e}</Mono>)}
