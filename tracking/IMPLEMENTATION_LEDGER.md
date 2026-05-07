@@ -435,3 +435,103 @@ Decision:
 - Table row click is now the fastest path to inspect a resource.
 - Full pages remain the best destination for resources with complete details.
 - Drawers remain best for focused actions like create, update, test, and retry.
+
+## 2026-05-07 - Review After Navigation And Interaction Pass
+
+Status: reviewed
+
+Review result:
+
+- Row-click navigation now gives the fastest path to inspect Agents, Numbers,
+  Calls, and Webhooks.
+- Copy controls are icon-only in dense tables and show toast feedback.
+- Webhook event selection is clearer than the previous textarea approach.
+- Build passed after the interaction pass.
+
+No blocking findings.
+
+## 2026-05-07 - Phase F3F-1 Usage And Billing Backend Integration
+
+Status: implemented
+
+Implemented:
+
+- Converted `src/lib/api/usage.ts` from mock wrappers to backend API calls.
+- Connected `/usage` to `GET /usage`, `GET /usage/daily`, and
+  `GET /usage/monthly`.
+- Added Usage filters for range, agent, and channel.
+- Added backend-derived summary stats for total cost, quantity, voice cost, and
+  SMS cost.
+- Added backend daily/monthly cost charts.
+- Added backend usage event table with empty/loading/error states.
+- Converted `src/lib/api/billing.ts` from mock wrappers to backend API calls.
+- Connected `/billing` to `GET /billing/balance` and
+  `GET /billing/transactions`.
+- Derived monthly spend from backend usage events for the current month.
+- Added Stripe checkout and billing portal actions using backend session
+  endpoints.
+- Added backend transaction table and balance detail panel.
+
+Verification:
+
+- `npm run build` passed after implementation.
+- Mock import audit passed for:
+  - `src/routes/_app.usage.tsx`
+  - `src/lib/api/usage.ts`
+  - `src/routes/_app.billing.tsx`
+  - `src/lib/api/billing.ts`
+
+Known follow-ups:
+
+- Billing spend-limit editing needs a backend update endpoint before the
+  frontend can support it.
+- Checkout and portal actions need Stripe environment variables configured in
+  the backend.
+- Billing summary should eventually come from a dedicated backend endpoint
+  instead of deriving MTD spend from usage events in the frontend.
+
+Next implementation priority:
+
+1. Connect API Keys to backend APIs.
+2. Replace Overview mock data with backend-derived summaries or explicit
+   backend-gap placeholders.
+3. Add Contacts backend support or convert Contacts to a tracked backend-gap
+   placeholder.
+4. Connect Playground to backend-backed agents, calls, messages, and webhooks.
+
+## 2026-05-07 - Phase F3F-2 Stripe Billing Status Wiring
+
+Status: implemented
+
+Implemented:
+
+- Added `GET /billing/stripe/status` frontend API wrapper.
+- Added Stripe mode/configuration status to the Billing page.
+- Billing page now shows whether the backend Stripe secret key is configured,
+  whether it matches `STRIPE_MODE`, and whether webhook signing is configured.
+- Billing stats now include Stripe mode/readiness before users launch Checkout.
+
+Verification:
+
+- `npm run build` passed.
+
+## 2026-05-07 - Usage Route Placeholder Fix
+
+Status: implemented
+
+Issue:
+
+- `/usage` was rendering the TanStack generated placeholder text
+  `Hello "/_app/usage"!` instead of the backend-backed Usage page.
+
+Fix:
+
+- Restored `src/routes/_app.usage.tsx` to the real Usage implementation with
+  backend usage events, daily/monthly rollups, filters, stats, charts, loading
+  states, empty states, and error handling.
+- Checked for remaining generated `Hello "/_app..."` placeholders in route
+  files; none remain.
+
+Verification:
+
+- `npm run build` passed.

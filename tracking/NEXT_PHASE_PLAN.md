@@ -380,6 +380,46 @@ Exit Criteria:
 - Main navigation screens use backend APIs or explicit backend-gap placeholders.
 - No route silently imports `src/lib/mock/data` for production data.
 
+## Phase F3F-1: Usage And Billing Backend Integration
+
+Status: implemented
+
+Goal:
+
+Connect the Usage and Billing screens to real backend records.
+
+Implemented:
+
+- Replaced `src/lib/api/usage.ts` mock wrapper with backend API calls.
+- Connected Usage screen to:
+  - `GET /usage`
+  - `GET /usage/daily`
+  - `GET /usage/monthly`
+- Added Usage filters for date range, agent, and channel.
+- Added backend daily/monthly cost charts.
+- Added backend usage event table.
+- Replaced `src/lib/api/billing.ts` mock wrapper with backend API calls.
+- Connected Billing screen to:
+  - `GET /billing/balance`
+  - `GET /billing/transactions`
+  - `POST /billing/checkout-sessions`
+  - `POST /billing/portal-sessions`
+- Derived MTD spend from usage events.
+- Added Stripe checkout/portal buttons that open returned session URLs.
+
+Verification:
+
+- `npm run build` passed after implementation.
+- Mock import audit passed for Usage and Billing routes/API modules.
+
+Known follow-ups:
+
+- Spend-limit editing is not exposed because the backend currently has no
+  frontend-facing update endpoint for it.
+- Stripe checkout and portal actions depend on backend Stripe configuration.
+- MTD spend is derived from usage events until backend exposes a billing summary
+  endpoint.
+
 Current Mock Import Audit:
 
 - Direct route mock imports remain in Overview, Playground, Usage, Billing,
