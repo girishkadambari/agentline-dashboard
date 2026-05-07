@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
-import { numbers, agents } from "@/lib/mock/data";
+import { listNumbers } from "@/lib/api/numbers";
+import { listAgents } from "@/lib/api/agents";
 import { Plus } from "lucide-react";
 
 export const Route = createFileRoute("/_app/numbers")({
@@ -11,6 +12,8 @@ export const Route = createFileRoute("/_app/numbers")({
 });
 
 function Numbers() {
+  const numbers = listNumbers().data;
+  const agents = listAgents().data;
   return (
     <div>
       <PageHeader
@@ -36,7 +39,7 @@ function Numbers() {
               const agent = agents.find((a) => a.id === n.agentId);
               return (
                 <tr key={n.id} className="border-t hover:bg-muted/30">
-                  <td className="px-4 py-2.5"><Mono>{n.number}</Mono></td>
+                  <td className="px-4 py-2.5"><Link to="/numbers/$numberId" params={{ numberId: n.id }} className="hover:underline"><Mono>{n.number}</Mono></Link></td>
                   <td className="px-4 py-2.5">{n.country} · {n.areaCode}</td>
                   <td className="px-4 py-2.5">
                     <div className="flex gap-1">

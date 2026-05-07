@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { Mono } from "@/components/agentline/Mono";
-import { contacts } from "@/lib/mock/data";
+import { listContacts } from "@/lib/api/contacts";
 
 export const Route = createFileRoute("/_app/contacts")({
   component: Contacts,
@@ -9,6 +9,7 @@ export const Route = createFileRoute("/_app/contacts")({
 });
 
 function Contacts() {
+  const contacts = listContacts().data;
   return (
     <div>
       <PageHeader title="Contacts" description="People your agents have interacted with." />
@@ -27,7 +28,7 @@ function Contacts() {
           <tbody>
             {contacts.map((c) => (
               <tr key={c.id} className="border-t hover:bg-muted/30">
-                <td className="px-4 py-2.5 font-medium">{c.name}</td>
+                <td className="px-4 py-2.5"><Link to="/contacts/$contactId" params={{ contactId: c.id }} className="font-medium hover:underline">{c.name}</Link></td>
                 <td className="px-4 py-2.5"><Mono className="text-muted-foreground">{c.phone}</Mono></td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{c.conversations}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{c.calls}</td>

@@ -26,6 +26,9 @@ import { Route as AppCallsRouteImport } from './routes/_app.calls'
 import { Route as AppBillingRouteImport } from './routes/_app.billing'
 import { Route as AppApiKeysRouteImport } from './routes/_app.api-keys'
 import { Route as AppAgentsRouteImport } from './routes/_app.agents'
+import { Route as AppNumbersNumberIdRouteImport } from './routes/_app.numbers.$numberId'
+import { Route as AppCallsCallIdRouteImport } from './routes/_app.calls.$callId'
+import { Route as AppAgentsAgentIdRouteImport } from './routes/_app.agents.$agentId'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -111,35 +114,53 @@ const AppAgentsRoute = AppAgentsRouteImport.update({
   path: '/agents',
   getParentRoute: () => AppRoute,
 } as any)
+const AppNumbersNumberIdRoute = AppNumbersNumberIdRouteImport.update({
+  id: '/$numberId',
+  path: '/$numberId',
+  getParentRoute: () => AppNumbersRoute,
+} as any)
+const AppCallsCallIdRoute = AppCallsCallIdRouteImport.update({
+  id: '/$callId',
+  path: '/$callId',
+  getParentRoute: () => AppCallsRoute,
+} as any)
+const AppAgentsAgentIdRoute = AppAgentsAgentIdRouteImport.update({
+  id: '/$agentId',
+  path: '/$agentId',
+  getParentRoute: () => AppAgentsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
-  '/agents': typeof AppAgentsRoute
+  '/agents': typeof AppAgentsRouteWithChildren
   '/api-keys': typeof AppApiKeysRoute
   '/billing': typeof AppBillingRoute
-  '/calls': typeof AppCallsRoute
+  '/calls': typeof AppCallsRouteWithChildren
   '/contacts': typeof AppContactsRoute
   '/inbox': typeof AppInboxRoute
-  '/numbers': typeof AppNumbersRoute
+  '/numbers': typeof AppNumbersRouteWithChildren
   '/playground': typeof AppPlaygroundRoute
   '/service-health': typeof AppServiceHealthRoute
   '/settings': typeof AppSettingsRoute
   '/usage': typeof AppUsageRoute
   '/webhooks': typeof AppWebhooksRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/agents/$agentId': typeof AppAgentsAgentIdRoute
+  '/calls/$callId': typeof AppCallsCallIdRoute
+  '/numbers/$numberId': typeof AppNumbersNumberIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
-  '/agents': typeof AppAgentsRoute
+  '/agents': typeof AppAgentsRouteWithChildren
   '/api-keys': typeof AppApiKeysRoute
   '/billing': typeof AppBillingRoute
-  '/calls': typeof AppCallsRoute
+  '/calls': typeof AppCallsRouteWithChildren
   '/contacts': typeof AppContactsRoute
   '/inbox': typeof AppInboxRoute
-  '/numbers': typeof AppNumbersRoute
+  '/numbers': typeof AppNumbersRouteWithChildren
   '/playground': typeof AppPlaygroundRoute
   '/service-health': typeof AppServiceHealthRoute
   '/settings': typeof AppSettingsRoute
@@ -147,19 +168,22 @@ export interface FileRoutesByTo {
   '/webhooks': typeof AppWebhooksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AppIndexRoute
+  '/agents/$agentId': typeof AppAgentsAgentIdRoute
+  '/calls/$callId': typeof AppCallsCallIdRoute
+  '/numbers/$numberId': typeof AppNumbersNumberIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
-  '/_app/agents': typeof AppAgentsRoute
+  '/_app/agents': typeof AppAgentsRouteWithChildren
   '/_app/api-keys': typeof AppApiKeysRoute
   '/_app/billing': typeof AppBillingRoute
-  '/_app/calls': typeof AppCallsRoute
+  '/_app/calls': typeof AppCallsRouteWithChildren
   '/_app/contacts': typeof AppContactsRoute
   '/_app/inbox': typeof AppInboxRoute
-  '/_app/numbers': typeof AppNumbersRoute
+  '/_app/numbers': typeof AppNumbersRouteWithChildren
   '/_app/playground': typeof AppPlaygroundRoute
   '/_app/service-health': typeof AppServiceHealthRoute
   '/_app/settings': typeof AppSettingsRoute
@@ -167,6 +191,9 @@ export interface FileRoutesById {
   '/_app/webhooks': typeof AppWebhooksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/agents/$agentId': typeof AppAgentsAgentIdRoute
+  '/_app/calls/$callId': typeof AppCallsCallIdRoute
+  '/_app/numbers/$numberId': typeof AppNumbersNumberIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -187,6 +214,9 @@ export interface FileRouteTypes {
     | '/usage'
     | '/webhooks'
     | '/auth/callback'
+    | '/agents/$agentId'
+    | '/calls/$callId'
+    | '/numbers/$numberId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -205,6 +235,9 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/auth/callback'
     | '/'
+    | '/agents/$agentId'
+    | '/calls/$callId'
+    | '/numbers/$numberId'
   id:
     | '__root__'
     | '/_app'
@@ -224,6 +257,9 @@ export interface FileRouteTypes {
     | '/_app/webhooks'
     | '/auth/callback'
     | '/_app/'
+    | '/_app/agents/$agentId'
+    | '/_app/calls/$callId'
+    | '/_app/numbers/$numberId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -354,17 +390,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAgentsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/numbers/$numberId': {
+      id: '/_app/numbers/$numberId'
+      path: '/$numberId'
+      fullPath: '/numbers/$numberId'
+      preLoaderRoute: typeof AppNumbersNumberIdRouteImport
+      parentRoute: typeof AppNumbersRoute
+    }
+    '/_app/calls/$callId': {
+      id: '/_app/calls/$callId'
+      path: '/$callId'
+      fullPath: '/calls/$callId'
+      preLoaderRoute: typeof AppCallsCallIdRouteImport
+      parentRoute: typeof AppCallsRoute
+    }
+    '/_app/agents/$agentId': {
+      id: '/_app/agents/$agentId'
+      path: '/$agentId'
+      fullPath: '/agents/$agentId'
+      preLoaderRoute: typeof AppAgentsAgentIdRouteImport
+      parentRoute: typeof AppAgentsRoute
+    }
   }
 }
 
+interface AppAgentsRouteChildren {
+  AppAgentsAgentIdRoute: typeof AppAgentsAgentIdRoute
+}
+
+const AppAgentsRouteChildren: AppAgentsRouteChildren = {
+  AppAgentsAgentIdRoute: AppAgentsAgentIdRoute,
+}
+
+const AppAgentsRouteWithChildren = AppAgentsRoute._addFileChildren(
+  AppAgentsRouteChildren,
+)
+
+interface AppCallsRouteChildren {
+  AppCallsCallIdRoute: typeof AppCallsCallIdRoute
+}
+
+const AppCallsRouteChildren: AppCallsRouteChildren = {
+  AppCallsCallIdRoute: AppCallsCallIdRoute,
+}
+
+const AppCallsRouteWithChildren = AppCallsRoute._addFileChildren(
+  AppCallsRouteChildren,
+)
+
+interface AppNumbersRouteChildren {
+  AppNumbersNumberIdRoute: typeof AppNumbersNumberIdRoute
+}
+
+const AppNumbersRouteChildren: AppNumbersRouteChildren = {
+  AppNumbersNumberIdRoute: AppNumbersNumberIdRoute,
+}
+
+const AppNumbersRouteWithChildren = AppNumbersRoute._addFileChildren(
+  AppNumbersRouteChildren,
+)
+
 interface AppRouteChildren {
-  AppAgentsRoute: typeof AppAgentsRoute
+  AppAgentsRoute: typeof AppAgentsRouteWithChildren
   AppApiKeysRoute: typeof AppApiKeysRoute
   AppBillingRoute: typeof AppBillingRoute
-  AppCallsRoute: typeof AppCallsRoute
+  AppCallsRoute: typeof AppCallsRouteWithChildren
   AppContactsRoute: typeof AppContactsRoute
   AppInboxRoute: typeof AppInboxRoute
-  AppNumbersRoute: typeof AppNumbersRoute
+  AppNumbersRoute: typeof AppNumbersRouteWithChildren
   AppPlaygroundRoute: typeof AppPlaygroundRoute
   AppServiceHealthRoute: typeof AppServiceHealthRoute
   AppSettingsRoute: typeof AppSettingsRoute
@@ -374,13 +467,13 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppAgentsRoute: AppAgentsRoute,
+  AppAgentsRoute: AppAgentsRouteWithChildren,
   AppApiKeysRoute: AppApiKeysRoute,
   AppBillingRoute: AppBillingRoute,
-  AppCallsRoute: AppCallsRoute,
+  AppCallsRoute: AppCallsRouteWithChildren,
   AppContactsRoute: AppContactsRoute,
   AppInboxRoute: AppInboxRoute,
-  AppNumbersRoute: AppNumbersRoute,
+  AppNumbersRoute: AppNumbersRouteWithChildren,
   AppPlaygroundRoute: AppPlaygroundRoute,
   AppServiceHealthRoute: AppServiceHealthRoute,
   AppSettingsRoute: AppSettingsRoute,
@@ -400,12 +493,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
