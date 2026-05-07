@@ -523,18 +523,46 @@ Verification:
 
 - `npm run build` passed.
 
-## Next Priority: Contacts Backend Gap Closure
+## Phase F3F-6: Contacts Backend Gap Closure
+
+Status: implemented
 
 Goal:
 
 Make Contacts real or explicitly tracked as unavailable until backend list/detail endpoints exist.
 
+Implemented:
+
+- Added backend Contacts list/detail/update endpoints in the backend repository.
+- Connected dashboard Contacts to:
+  - `GET /contacts`
+  - `GET /contacts/:id`
+  - `PATCH /contacts/:id`
+- Added contact activity counts from backend relation counts.
+- Added inline display-name editing.
+- Added phone-number copy action.
+- Added loading, empty, validation, and API error states.
+- Removed Contacts route/API dependency on mock data.
+
+Verification:
+
+- Backend `npm test -- contacts.service.spec.ts` passed.
+- Backend `npm run lint` passed.
+- Backend `npm run build` passed.
+- Frontend `npm run build` passed.
+
+## Next Priority: Mock Helper Quarantine
+
+Goal:
+
+Remove production-facing legacy mock helper imports after all navigation routes are backend-backed.
+
 Build:
 
-- Inspect backend Contacts module.
-- If list/detail routes exist, connect Contacts to backend.
-- If routes do not exist, add backend Contacts list/detail/update endpoints and then wire the dashboard.
-- Remove Contacts mock route import after backend support exists.
+- Inspect remaining `src/lib/api/mock.ts` and `src/lib/api/types.ts` usage.
+- Keep mock fixtures only for clearly named dev/demo modules if still useful.
+- Ensure no production route imports `src/lib/mock/data`.
+- Update tracking with the remaining backend gaps: dashboard summary endpoint, auth/session, user profile, team/member screens, provider status endpoint.
 
 ## Phase F4: Drawer And Action Quality Pass
 

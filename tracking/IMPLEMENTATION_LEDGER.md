@@ -671,3 +671,38 @@ Next implementation priority:
 1. Close the Contacts backend gap and remove remaining Contacts mock API usage.
 2. Remove or quarantine legacy mock helper modules once no production route
    depends on them.
+
+## 2026-05-07 - Phase F3F-6 Contacts Backend Gap Closure
+
+Status: implemented
+
+Implemented:
+
+- Added backend Contacts API support in the backend repository:
+  - `GET /contacts`
+  - `GET /contacts/:id`
+  - `PATCH /contacts/:id`
+- Backend Contacts responses now include relation counts for conversations,
+  messages, and calls.
+- Added backend contact list/update service coverage.
+- Replaced dashboard Contacts mock API wrapper with backend calls.
+- Replaced Contacts route mock data with backend data.
+- Added inline display-name editing.
+- Added phone-number copy action.
+- Added loading, empty, validation, and API error states.
+- Updated the next-phase plan to move remaining mock work into mock helper
+  quarantine.
+
+Verification:
+
+- Backend `npm test -- contacts.service.spec.ts` passed.
+- Backend `npm run lint` passed.
+- Backend `npm run build` passed.
+- Frontend `npm run build` passed.
+- Mock import audit now shows no production route importing `src/lib/mock/data`.
+
+Next implementation priority:
+
+1. Quarantine or remove legacy mock helper modules.
+2. Track remaining backend gaps: dashboard summary endpoint, auth/session,
+   user profile, team/member screens, and provider status endpoint.
