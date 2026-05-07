@@ -140,7 +140,6 @@ function SidebarContent({
   workspace: Workspace | null;
   workspaceError: string | null;
   onNav?: () => void;
-  onSignOut: () => void;
 }) {
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">

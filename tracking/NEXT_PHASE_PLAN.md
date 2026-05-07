@@ -551,18 +551,111 @@ Verification:
 - Backend `npm run build` passed.
 - Frontend `npm run build` passed.
 
-## Next Priority: Mock Helper Quarantine
+## Phase F3F-7: Mock Helper Quarantine
+
+Status: implemented
 
 Goal:
 
 Remove production-facing legacy mock helper imports after all navigation routes are backend-backed.
 
+Implemented:
+
+- Removed `src/lib/api/mock.ts`.
+- Removed `src/lib/mock/data.ts`.
+- Removed mock type re-exports from `src/lib/api/types.ts`.
+- Removed unused mock wrapper helpers from `src/lib/api/client.ts`.
+- Verified no `src` imports remain for `src/lib/mock`, `mock/data`, `wrap`,
+  `wrapList`, or `delay`.
+
+Verification:
+
+- `npm run build` passed.
+
+## Next Priority: Backend Gap Register And Auth/Team Planning
+
+Status: implemented
+
+Goal:
+
+Make the remaining missing product surfaces explicit before adding more UI.
+
 Build:
 
-- Inspect remaining `src/lib/api/mock.ts` and `src/lib/api/types.ts` usage.
-- Keep mock fixtures only for clearly named dev/demo modules if still useful.
-- Ensure no production route imports `src/lib/mock/data`.
-- Update tracking with the remaining backend gaps: dashboard summary endpoint, auth/session, user profile, team/member screens, provider status endpoint.
+- Create or update a frontend/backend gap register.
+- Track dashboard summary endpoint versus current frontend aggregation.
+- Track real auth/session/Google SSO endpoints.
+- Track user profile endpoint.
+- Track team/member invitation screens.
+- Track provider runtime status endpoint for Twilio/Stripe/telecom health.
+
+Implemented:
+
+- Added `tracking/BACKEND_GAP_REGISTER.md`.
+- Closed the frontend team/member screen gap by wiring Settings Workspace,
+  Members, and Invites to existing backend APIs.
+- Replaced fake Settings integration states with explicit pending backend-gap
+  panels.
+
+## Next Priority: Auth And Provider Runtime Status
+
+Goal:
+
+Close the two biggest remaining production-readiness gaps after Settings:
+real user auth and provider health visibility.
+
+Build:
+
+- Backend current-user/profile endpoint.
+- Backend session/Google SSO plan and API contract.
+- Backend user workspace list, workspace creation, and active context contract.
+- Provider runtime status endpoint for active telecom provider readiness.
+- Frontend Auth Settings panel using real current-user/auth status once
+  available.
+- Service Health telecom row backed by the provider status endpoint.
+
+Exit Criteria:
+
+- Dashboard can show who the current user is without relying on API-key-only
+  assumptions.
+- Workspace switching is implemented only after session auth, or the UI remains
+  a current-workspace indicator.
+- Google SSO remains disabled unless real backend endpoints exist.
+- Service Health reports telecom provider readiness from backend data.
+
+## Parallel UI Track: Platform Polish
+
+Status: planned
+
+Source of truth:
+
+- `tracking/UI_UX_POLISH_AUDIT.md`
+
+Goal:
+
+Make AgentLine feel like a premium agent infrastructure console instead of a
+generic generated SaaS dashboard.
+
+Priority order:
+
+1. Remove misleading/fake workspace and project switcher behavior.
+2. Group sidebar navigation into Operate, Build, Platform, and Admin.
+3. Improve top bar with environment/current context, global create menu,
+   command/search entry, alerts, and account menu.
+4. Standardize tables: row click opens detail, copy buttons are icon-only,
+   secondary actions move into menus, filters/search become consistent.
+5. Reserve drawers for create/update/test actions and use detail pages for full
+   inspection.
+6. Add Overview setup checklist and prerequisite guidance for SMS/calls.
+7. Improve empty states and remove implementation-language from user-facing UI.
+
+Exit Criteria:
+
+- The hierarchy is clear within 30 seconds.
+- Core setup flow is obvious: create agent, add number, attach number, test
+  SMS/call, inspect result, configure webhook.
+- Navigation and tables look like one system.
+- UI does not fake backend capabilities that do not exist yet.
 
 ## Phase F4: Drawer And Action Quality Pass
 

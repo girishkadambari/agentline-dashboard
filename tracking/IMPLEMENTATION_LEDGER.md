@@ -706,3 +706,89 @@ Next implementation priority:
 1. Quarantine or remove legacy mock helper modules.
 2. Track remaining backend gaps: dashboard summary endpoint, auth/session,
    user profile, team/member screens, and provider status endpoint.
+
+## 2026-05-07 - Phase F3F-7 Mock Helper Quarantine
+
+Status: implemented
+
+Implemented:
+
+- Removed unused production-facing mock bridge `src/lib/api/mock.ts`.
+- Removed orphaned mock fixture file `src/lib/mock/data.ts`.
+- Removed mock fixture type re-exports from `src/lib/api/types.ts`.
+- Removed unused `wrap`, `wrapList`, and `delay` helpers from
+  `src/lib/api/client.ts`.
+- Verified no source imports remain for `src/lib/mock`, `mock/data`, `wrap`,
+  `wrapList`, or `delay`.
+
+Verification:
+
+- `npm run build` passed.
+
+Next implementation priority:
+
+1. Create a backend/frontend gap register for dashboard summary, real auth,
+   user profile, team/member screens, and provider runtime status.
+2. Start the highest-priority backend gap from that register.
+
+## 2026-05-07 - Phase F4A Settings Workspace, Members, And Gap Register
+
+Status: implemented
+
+Implemented:
+
+- Added `tracking/BACKEND_GAP_REGISTER.md` for frontend-visible backend gaps.
+- Extended `src/lib/api/workspace.ts` with workspace members and invite API
+  functions.
+- Replaced the static Settings screen with backend-backed panels for Workspace,
+  Members, and Invites.
+- Added workspace name save through `PATCH /workspaces/current`.
+- Added member role update and remove actions through the existing backend
+  workspace member APIs.
+- Added invite creation, resend, revoke, and one-time raw token copy flow
+  through the existing backend invite APIs.
+- Replaced fake connected Google SSO/provider settings with explicit pending
+  backend-gap panels.
+
+Verification:
+
+- `npm run build` passed.
+- `npx eslint src/routes/_app.settings.tsx src/lib/api/workspace.ts` passed.
+- Full `npm run lint` still fails on existing repo-wide Prettier issues outside
+  this phase; this slice's changed source files pass targeted lint.
+
+Next implementation priority:
+
+1. Implement the highest-priority backend gap: real auth/session, Google SSO,
+   and current-user profile planning or endpoints.
+2. Add provider runtime status endpoint so Service Health can stop using a
+   known telecom-provider gap row.
+
+## 2026-05-07 - Workspace Hierarchy Review
+
+Status: implemented
+
+Review finding:
+
+- The sidebar looked like a workspace switcher, but the backend currently only
+  supports the current workspace resolved from the active API key.
+- There is no create-workspace, list-workspaces, or switch-workspace API yet.
+- This is not a Settings CRUD bug; it is a real-auth/session gap.
+
+Implemented:
+
+- Changed the sidebar workspace control into a current-workspace link to
+  Settings instead of a fake switcher.
+- Added workspace creation/switching requirements to the frontend backend gap
+  register.
+
+Verification:
+
+- `npx eslint src/components/layout/AppShell.tsx src/routes/_app.settings.tsx src/lib/api/workspace.ts` passed.
+- `npm run build` passed.
+
+Product rule:
+
+- With API-key auth, the API key selects one workspace and one project. To work
+  in another workspace/project during Phase 1, sign in with that workspace's
+  API key.
