@@ -26,6 +26,7 @@ import { Route as AppCallsRouteImport } from './routes/_app.calls'
 import { Route as AppBillingRouteImport } from './routes/_app.billing'
 import { Route as AppApiKeysRouteImport } from './routes/_app.api-keys'
 import { Route as AppAgentsRouteImport } from './routes/_app.agents'
+import { Route as AppAgentsAgentIdRouteImport } from './routes/_app.agents.$agentId'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -111,12 +112,17 @@ const AppAgentsRoute = AppAgentsRouteImport.update({
   path: '/agents',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAgentsAgentIdRoute = AppAgentsAgentIdRouteImport.update({
+  id: '/$agentId',
+  path: '/$agentId',
+  getParentRoute: () => AppAgentsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
-  '/agents': typeof AppAgentsRoute
+  '/agents': typeof AppAgentsRouteWithChildren
   '/api-keys': typeof AppApiKeysRoute
   '/billing': typeof AppBillingRoute
   '/calls': typeof AppCallsRoute
@@ -129,11 +135,12 @@ export interface FileRoutesByFullPath {
   '/usage': typeof AppUsageRoute
   '/webhooks': typeof AppWebhooksRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/agents/$agentId': typeof AppAgentsAgentIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
-  '/agents': typeof AppAgentsRoute
+  '/agents': typeof AppAgentsRouteWithChildren
   '/api-keys': typeof AppApiKeysRoute
   '/billing': typeof AppBillingRoute
   '/calls': typeof AppCallsRoute
@@ -147,13 +154,14 @@ export interface FileRoutesByTo {
   '/webhooks': typeof AppWebhooksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AppIndexRoute
+  '/agents/$agentId': typeof AppAgentsAgentIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
-  '/_app/agents': typeof AppAgentsRoute
+  '/_app/agents': typeof AppAgentsRouteWithChildren
   '/_app/api-keys': typeof AppApiKeysRoute
   '/_app/billing': typeof AppBillingRoute
   '/_app/calls': typeof AppCallsRoute
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/_app/webhooks': typeof AppWebhooksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/agents/$agentId': typeof AppAgentsAgentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/usage'
     | '/webhooks'
     | '/auth/callback'
+    | '/agents/$agentId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/auth/callback'
     | '/'
+    | '/agents/$agentId'
   id:
     | '__root__'
     | '/_app'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/_app/webhooks'
     | '/auth/callback'
     | '/_app/'
+    | '/_app/agents/$agentId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -354,11 +366,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAgentsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/agents/$agentId': {
+      id: '/_app/agents/$agentId'
+      path: '/$agentId'
+      fullPath: '/agents/$agentId'
+      preLoaderRoute: typeof AppAgentsAgentIdRouteImport
+      parentRoute: typeof AppAgentsRoute
+    }
   }
 }
 
+interface AppAgentsRouteChildren {
+  AppAgentsAgentIdRoute: typeof AppAgentsAgentIdRoute
+}
+
+const AppAgentsRouteChildren: AppAgentsRouteChildren = {
+  AppAgentsAgentIdRoute: AppAgentsAgentIdRoute,
+}
+
+const AppAgentsRouteWithChildren = AppAgentsRoute._addFileChildren(
+  AppAgentsRouteChildren,
+)
+
 interface AppRouteChildren {
-  AppAgentsRoute: typeof AppAgentsRoute
+  AppAgentsRoute: typeof AppAgentsRouteWithChildren
   AppApiKeysRoute: typeof AppApiKeysRoute
   AppBillingRoute: typeof AppBillingRoute
   AppCallsRoute: typeof AppCallsRoute
@@ -374,7 +405,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppAgentsRoute: AppAgentsRoute,
+  AppAgentsRoute: AppAgentsRouteWithChildren,
   AppApiKeysRoute: AppApiKeysRoute,
   AppBillingRoute: AppBillingRoute,
   AppCallsRoute: AppCallsRoute,

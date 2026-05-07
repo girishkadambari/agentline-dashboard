@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_app/agents/$agentId")({
 function AgentDetail() {
   const { agentId } = Route.useParams();
   const { data: agent } = getAgent(agentId);
-  if (!agent) throw notFound();
+  if (!agent) return <NotFound id={agentId} kind="Agent" backTo="/agents" />;
 
   const numbers = listNumbers().data.filter((n) => n.agentId === agent.id);
   const calls = listCalls({ agentId: agent.id }).data;
@@ -146,6 +146,16 @@ function AgentDetail() {
           ) },
         ]}
       />
+    </div>
+  );
+}
+
+function NotFound({ id, kind, backTo }: { id: string; kind: string; backTo: "/agents" | "/numbers" | "/calls" | "/contacts" | "/webhooks" }) {
+  return (
+    <div className="rounded-lg border border-dashed bg-surface px-6 py-16 text-center">
+      <h2 className="text-sm font-semibold">{kind} not found</h2>
+      <p className="mt-1 text-xs text-muted-foreground">No {kind.toLowerCase()} with id <span className="font-mono">{id}</span>.</p>
+      <Link to={backTo} className="mt-3 inline-block text-xs underline">Back</Link>
     </div>
   );
 }
