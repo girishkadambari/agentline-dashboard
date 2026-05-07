@@ -238,7 +238,7 @@ Known follow-ups:
 
 ## Phase F3E: Webhooks Backend Integration
 
-Status: planned next
+Status: implemented
 
 Goal:
 
@@ -315,6 +315,48 @@ Implementation Notes:
   `retrying`, and `exhausted`.
 - Frontend should not fabricate webhook secrets; only display a secret returned
   by the backend create response.
+
+Verification:
+
+- `npm run build` passed after implementation on 2026-05-07.
+- Mock import audit passed for `src/lib/api/webhooks.ts` and
+  `/webhooks`.
+
+Known follow-ups:
+
+- Webhook View uses a drawer because the app does not have a webhook detail
+  route yet. If webhook workflows become deeper, add `/webhooks/:webhookId`.
+- Delivery retry currently defaults to a successful retry from the table. A
+  later quality pass can add a retry drawer for failed/exhausted simulation.
+
+## Phase F3E-NAV: Resource View Navigation Alignment
+
+Status: implemented and refined
+
+Decision:
+
+- If a resource has a detail page, `View` navigates to that full page.
+- Drawers are for create, update, test, and quick actions.
+- Agents, Numbers, and Calls now follow this rule.
+- Webhooks stay drawer-based until a webhook detail route exists.
+- Resource table rows are clickable:
+  - Agents rows navigate to full detail.
+  - Numbers rows navigate to full detail.
+  - Calls rows navigate to full detail.
+  - Webhook rows open endpoint details in a drawer for now.
+- Copy-to-clipboard is available for identifiers, phone numbers, webhook URLs,
+  webhook secrets, and signed test headers.
+- Copy controls are icon-only in tables and show a toast after successful copy.
+- Webhook event capability selection uses a multi-select style picker instead
+  of a raw textarea.
+- Resource tables use tighter fixed columns, softer hover states, and truncated
+  long values for a cleaner operational dashboard feel.
+
+Reason:
+
+- Full detail pages are better for complete information such as configuration,
+  call history, transcripts, number assignment, and future activity tabs.
+- Drawers are faster for focused mutations and avoid overloading the list page.
 
 ## Phase F3F: Core Dashboard Data Integration
 

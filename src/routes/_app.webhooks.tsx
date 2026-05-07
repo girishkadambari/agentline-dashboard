@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
+import { CopyButton } from "@/components/agentline/CopyButton";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import {
   createBackendWebhook,
@@ -224,16 +225,16 @@ function WebhookTable({
   onDisable: (endpoint: WebhookEndpointListItem) => void;
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border bg-surface">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+    <div className="overflow-hidden rounded-lg border bg-surface shadow-sm">
+      <table className="w-full table-fixed text-sm">
+        <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
-            <th className="px-4 py-2.5 text-left font-medium">URL</th>
-            <th className="px-4 py-2.5 text-left font-medium">Events</th>
-            <th className="px-4 py-2.5 text-left font-medium">Status</th>
-            <th className="px-4 py-2.5 text-left font-medium">Last delivery</th>
-            <th className="px-4 py-2.5 text-right font-medium">Failures</th>
-            <th className="px-4 py-2.5 text-right font-medium">Actions</th>
+            <th className="w-[360px] px-4 py-3 text-left font-medium">URL</th>
+            <th className="px-4 py-3 text-left font-medium">Events</th>
+            <th className="w-[130px] px-4 py-3 text-left font-medium">Status</th>
+            <th className="w-[150px] px-4 py-3 text-left font-medium">Last delivery</th>
+            <th className="w-[100px] px-4 py-3 text-right font-medium">Failures</th>
+            <th className="w-[340px] px-4 py-3 text-right font-medium">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -243,27 +244,37 @@ function WebhookTable({
             const failureCount = endpointDeliveries.filter((delivery) => ["failed", "retrying", "exhausted"].includes(delivery.status)).length;
 
             return (
-              <tr key={endpoint.id} className="border-t hover:bg-muted/30">
-                <td className="max-w-[360px] px-4 py-2.5">
-                  <button onClick={() => onView(endpoint)} className="max-w-full hover:underline">
-                    <Mono className="block truncate">{endpoint.url}</Mono>
-                  </button>
-                  <Mono className="text-[11px] text-muted-foreground">{endpoint.id}</Mono>
+              <tr
+                key={endpoint.id}
+                onClick={() => onView(endpoint)}
+                className="group cursor-pointer border-b last:border-b-0 transition-colors hover:bg-muted/35"
+              >
+                <td className="px-4 py-3">
+                  <div className="flex max-w-full items-center gap-2">
+                    <button onClick={() => onView(endpoint)} className="min-w-0 hover:underline">
+                      <Mono className="block truncate">{endpoint.url}</Mono>
+                    </button>
+                    <CopyButton value={endpoint.url} label="Copy URL" className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                  </div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Mono className="text-[11px] text-muted-foreground">{endpoint.id}</Mono>
+                    <CopyButton value={endpoint.id} label="Copy ID" className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                  </div>
                 </td>
-                <td className="px-4 py-2.5">
-                  <div className="flex max-w-[360px] flex-wrap gap-1">
+                <td className="px-4 py-3">
+                  <div className="flex max-h-16 flex-wrap gap-1 overflow-hidden">
                     {endpoint.events.map((event) => <Mono key={event} className="rounded border px-1.5 py-0.5 text-[11px]">{event}</Mono>)}
                   </div>
                 </td>
-                <td className="px-4 py-2.5"><StatusBadge status={endpoint.status} /></td>
-                <td className="px-4 py-2.5 text-muted-foreground">{lastDelivery?.createdLabel ?? "Never"}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{failureCount}</td>
-                <td className="px-4 py-2.5">
+                <td className="px-4 py-3"><StatusBadge status={endpoint.status} /></td>
+                <td className="px-4 py-3 text-muted-foreground">{lastDelivery?.createdLabel ?? "Never"}</td>
+                <td className="px-4 py-3 text-right tabular-nums">{failureCount}</td>
+                <td className="px-4 py-3">
                   <div className="flex justify-end gap-1.5">
-                    <button onClick={() => onView(endpoint)} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Eye className="h-3 w-3" /> View</button>
-                    <button onClick={() => onUpdate(endpoint)} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Pencil className="h-3 w-3" /> Update</button>
-                    <button onClick={() => onTest(endpoint)} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Send className="h-3 w-3" /> Test</button>
-                    <button onClick={() => onDisable(endpoint)} disabled={endpoint.status === "disabled"} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 className="h-3 w-3" /> Disable</button>
+                    <button onClick={(event) => { event.stopPropagation(); onView(endpoint); }} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Eye className="h-3 w-3" /> View</button>
+                    <button onClick={(event) => { event.stopPropagation(); onUpdate(endpoint); }} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Pencil className="h-3 w-3" /> Update</button>
+                    <button onClick={(event) => { event.stopPropagation(); onTest(endpoint); }} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Send className="h-3 w-3" /> Test</button>
+                    <button onClick={(event) => { event.stopPropagation(); onDisable(endpoint); }} disabled={endpoint.status === "disabled"} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 className="h-3 w-3" /> Disable</button>
                   </div>
                 </td>
               </tr>
@@ -283,31 +294,31 @@ function DeliveriesTable({
   onRetry: (delivery: WebhookDeliveryListItem) => void;
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border bg-surface">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+    <div className="overflow-hidden rounded-lg border bg-surface shadow-sm">
+      <table className="w-full table-fixed text-sm">
+        <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
-            <th className="px-4 py-2.5 text-left font-medium">Event</th>
-            <th className="px-4 py-2.5 text-left font-medium">Endpoint</th>
-            <th className="px-4 py-2.5 text-left font-medium">Status</th>
-            <th className="px-4 py-2.5 text-right font-medium">Attempts</th>
-            <th className="px-4 py-2.5 text-right font-medium">Code</th>
-            <th className="px-4 py-2.5 text-left font-medium">Created</th>
-            <th className="px-4 py-2.5 text-right font-medium">Actions</th>
+            <th className="px-4 py-3 text-left font-medium">Event</th>
+            <th className="w-[260px] px-4 py-3 text-left font-medium">Endpoint</th>
+            <th className="w-[130px] px-4 py-3 text-left font-medium">Status</th>
+            <th className="w-[100px] px-4 py-3 text-right font-medium">Attempts</th>
+            <th className="w-[80px] px-4 py-3 text-right font-medium">Code</th>
+            <th className="w-[150px] px-4 py-3 text-left font-medium">Created</th>
+            <th className="w-[110px] px-4 py-3 text-right font-medium">Actions</th>
           </tr>
         </thead>
         <tbody>
           {deliveries.map((delivery) => {
             const canRetry = ["failed", "retrying", "pending"].includes(delivery.status);
             return (
-              <tr key={delivery.id} className="border-t hover:bg-muted/30">
-                <td className="px-4 py-2.5"><Mono>{delivery.eventType}</Mono></td>
-                <td className="px-4 py-2.5"><Mono className="text-muted-foreground">{delivery.endpointId}</Mono></td>
-                <td className="px-4 py-2.5"><StatusBadge status={delivery.status} /></td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{delivery.attemptCount}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{delivery.lastStatusCode ?? "-"}</td>
-                <td className="px-4 py-2.5 text-muted-foreground">{delivery.createdLabel}</td>
-                <td className="px-4 py-2.5">
+              <tr key={delivery.id} className="border-b last:border-b-0 hover:bg-muted/35">
+                <td className="px-4 py-3"><Mono className="block truncate">{delivery.eventType}</Mono></td>
+                <td className="px-4 py-3"><Mono className="block truncate text-muted-foreground">{delivery.endpointId}</Mono></td>
+                <td className="px-4 py-3"><StatusBadge status={delivery.status} /></td>
+                <td className="px-4 py-3 text-right tabular-nums">{delivery.attemptCount}</td>
+                <td className="px-4 py-3 text-right tabular-nums">{delivery.lastStatusCode ?? "-"}</td>
+                <td className="px-4 py-3 text-muted-foreground">{delivery.createdLabel}</td>
+                <td className="px-4 py-3">
                   <div className="flex justify-end">
                     <button onClick={() => onRetry(delivery)} disabled={!canRetry} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50">
                       <RefreshCcw className="h-3 w-3" /> Retry
@@ -349,7 +360,8 @@ function WebhookDrawer({
   const isUpdate = mode === "update";
   const isTest = mode === "test";
   const [url, setUrl] = useState("");
-  const [events, setEvents] = useState(DEFAULT_EVENTS.slice(0, 2).join("\n"));
+  const [selectedEvents, setSelectedEvents] = useState<string[]>(DEFAULT_EVENTS.slice(0, 2));
+  const [customEvent, setCustomEvent] = useState("");
   const [status, setStatus] = useState<WebhookEndpointStatus>("active");
   const [simulateFailure, setSimulateFailure] = useState(false);
   const [secret, setSecret] = useState<string | null>(null);
@@ -364,20 +376,30 @@ function WebhookDrawer({
     setSimulateFailure(false);
     if (isCreate) {
       setUrl("https://example.com/agentline/webhook");
-      setEvents(DEFAULT_EVENTS.slice(0, 2).join("\n"));
+      setSelectedEvents(DEFAULT_EVENTS.slice(0, 2));
+      setCustomEvent("");
       setStatus("active");
     } else if (endpoint) {
       setUrl(endpoint.url);
-      setEvents(endpoint.events.join("\n"));
+      setSelectedEvents(endpoint.events);
+      setCustomEvent("");
       setStatus(endpoint.status);
     }
   }, [endpoint, isCreate, mode]);
 
-  function parsedEvents() {
-    return events
-      .split(/[\n,]/)
-      .map((event) => event.trim())
-      .filter(Boolean);
+  function toggleEvent(event: string) {
+    setSelectedEvents((current) =>
+      current.includes(event) ? current.filter((item) => item !== event) : [...current, event],
+    );
+  }
+
+  function addCustomEvent() {
+    const event = customEvent.trim();
+    if (!event) {
+      return;
+    }
+    setSelectedEvents((current) => (current.includes(event) ? current : [...current, event]));
+    setCustomEvent("");
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -407,7 +429,6 @@ function WebhookDrawer({
       return;
     }
 
-    const selectedEvents = parsedEvents();
     if (selectedEvents.length === 0) {
       setError("Add at least one event type.");
       return;
@@ -454,7 +475,10 @@ function WebhookDrawer({
           {error && <div className="whitespace-pre-line rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
           {secret && (
             <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-sm">
-              <div className="font-medium">Webhook secret</div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="font-medium">Webhook secret</div>
+                <CopyButton value={secret} label="Copy secret" />
+              </div>
               <Mono className="mt-1 block break-all text-xs">{secret}</Mono>
               <div className="mt-1 text-xs text-muted-foreground">This secret is only returned immediately after creation.</div>
             </div>
@@ -464,7 +488,7 @@ function WebhookDrawer({
             <WebhookDetails endpoint={endpoint} deliveries={deliveries} />
           ) : isTest && endpoint ? (
             <>
-              <ReadOnlyField label="Endpoint" value={endpoint.url} mono />
+              <ReadOnlyField label="Endpoint" value={endpoint.url} mono copyable />
               <label className="flex items-center gap-2 text-sm font-medium">
                 <input type="checkbox" checked={simulateFailure} onChange={(event) => setSimulateFailure(event.target.checked)} />
                 Simulate failed delivery
@@ -474,8 +498,11 @@ function WebhookDrawer({
                   <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Signed headers</div>
                   {Object.entries(testHeaders).map(([key, value]) => (
                     <div key={key} className="mt-2">
-                      <Mono className="text-[11px] text-muted-foreground">{key}</Mono>
-                      <Mono className="block break-all text-xs">{value}</Mono>
+                      <div className="flex items-center justify-between gap-3">
+                        <Mono className="text-[11px] text-muted-foreground">{key}</Mono>
+                        <CopyButton value={value} label="Copy" />
+                      </div>
+                      <Mono className="mt-1 block break-all text-xs">{value}</Mono>
                     </div>
                   ))}
                 </div>
@@ -493,26 +520,14 @@ function WebhookDrawer({
                 Endpoint URL
                 <input value={url} onChange={(event) => setUrl(event.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm font-mono" />
               </label>
-              <label className="block text-sm font-medium">
-                Events
-                <textarea value={events} onChange={(event) => setEvents(event.target.value)} rows={6} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm font-mono" />
-              </label>
-              <div className="flex flex-wrap gap-1">
-                {DEFAULT_EVENTS.map((event) => (
-                  <button
-                    key={event}
-                    type="button"
-                    onClick={() => {
-                      const selected = new Set(parsedEvents());
-                      selected.add(event);
-                      setEvents(Array.from(selected).join("\n"));
-                    }}
-                    className="rounded border px-1.5 py-0.5 text-[11px] font-medium hover:bg-muted"
-                  >
-                    {event}
-                  </button>
-                ))}
-              </div>
+              <EventSelector
+                selectedEvents={selectedEvents}
+                customEvent={customEvent}
+                onCustomEventChange={setCustomEvent}
+                onToggleEvent={toggleEvent}
+                onAddCustomEvent={addCustomEvent}
+                onRemoveEvent={(event) => setSelectedEvents((current) => current.filter((item) => item !== event))}
+              />
               {isUpdate && (
                 <label className="block text-sm font-medium">
                   Status
@@ -553,8 +568,8 @@ function WebhookDetails({
 }) {
   return (
     <div className="space-y-4">
-      <ReadOnlyField label="Endpoint ID" value={endpoint.id} mono />
-      <ReadOnlyField label="URL" value={endpoint.url} mono />
+      <ReadOnlyField label="Endpoint ID" value={endpoint.id} mono copyable />
+      <ReadOnlyField label="URL" value={endpoint.url} mono copyable />
       <ReadOnlyField label="Status" value={endpoint.status} />
       <ReadOnlyField label="Created" value={endpoint.createdLabel} />
       <ReadOnlyField label="Updated" value={endpoint.updatedLabel} />
@@ -589,10 +604,74 @@ function WebhookDetails({
   );
 }
 
-function ReadOnlyField({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+function EventSelector({
+  selectedEvents,
+  customEvent,
+  onCustomEventChange,
+  onToggleEvent,
+  onAddCustomEvent,
+  onRemoveEvent,
+}: {
+  selectedEvents: string[];
+  customEvent: string;
+  onCustomEventChange: (value: string) => void;
+  onToggleEvent: (event: string) => void;
+  onAddCustomEvent: () => void;
+  onRemoveEvent: (event: string) => void;
+}) {
   return (
     <div>
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-sm font-medium">Event capabilities</div>
+      <div className="mt-1 text-xs text-muted-foreground">Choose the AgentLine events this endpoint should receive.</div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        {DEFAULT_EVENTS.map((event) => {
+          const checked = selectedEvents.includes(event);
+          return (
+            <label
+              key={event}
+              className={`flex cursor-pointer items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm transition-colors ${checked ? "border-foreground bg-muted/60" : "hover:bg-muted/40"}`}
+            >
+              <span className="min-w-0 truncate font-mono text-xs">{event}</span>
+              <input type="checkbox" checked={checked} onChange={() => onToggleEvent(event)} />
+            </label>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex gap-2">
+        <input
+          value={customEvent}
+          onChange={(event) => onCustomEventChange(event.target.value)}
+          placeholder="custom.event.name"
+          className="min-w-0 flex-1 rounded-md border bg-surface px-3 py-2 text-sm font-mono"
+        />
+        <button type="button" onClick={onAddCustomEvent} className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">Add</button>
+      </div>
+      {selectedEvents.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {selectedEvents.map((event) => (
+            <button
+              key={event}
+              type="button"
+              onClick={() => onRemoveEvent(event)}
+              className="rounded-md border bg-surface px-2 py-1 font-mono text-[11px] hover:bg-muted"
+              title="Remove event"
+            >
+              {event} ×
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReadOnlyField({ label, value, mono = false, copyable = false }: { label: string; value: string; mono?: boolean; copyable?: boolean }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+        {copyable && <CopyButton value={value} label="Copy" />}
+      </div>
       {mono ? <Mono className="mt-1 block break-all text-xs">{value}</Mono> : <div className="mt-1 text-sm font-medium">{value}</div>}
     </div>
   );

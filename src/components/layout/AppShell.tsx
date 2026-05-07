@@ -9,6 +9,7 @@ import { Logo } from "@/components/agentline/Logo";
 import { getCurrentWorkspace, type Workspace } from "@/lib/api/workspace";
 import { clearStoredApiKey, hasStoredApiKey } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
 
 const nav = [
   { to: "/", label: "Overview", icon: LayoutDashboard },
@@ -145,6 +146,7 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-screen bg-background">
+      <Toaster position="bottom-right" />
       <aside className="hidden w-60 shrink-0 border-r bg-sidebar md:flex md:flex-col">
         <SidebarContent pathname={pathname} workspace={workspace} workspaceError={workspaceError} />
       </aside>

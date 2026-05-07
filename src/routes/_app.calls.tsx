@@ -1,10 +1,11 @@
-import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Eye, PhoneOutgoing } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
+import { CopyButton } from "@/components/agentline/CopyButton";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import {
@@ -113,38 +114,49 @@ function CallsTable({
   calls: CallListItem[];
   agentsById: Map<string, AgentListItem>;
 }) {
+  const navigate = useNavigate();
+
   return (
-    <div className="overflow-x-auto rounded-lg border bg-surface">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+    <div className="overflow-hidden rounded-lg border bg-surface shadow-sm">
+      <table className="w-full table-fixed text-sm">
+        <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
-            <th className="px-4 py-2.5 text-left font-medium">ID</th>
-            <th className="px-4 py-2.5 text-left font-medium">Direction</th>
-            <th className="px-4 py-2.5 text-left font-medium">From</th>
-            <th className="px-4 py-2.5 text-left font-medium">To</th>
-            <th className="px-4 py-2.5 text-left font-medium">Agent</th>
-            <th className="px-4 py-2.5 text-left font-medium">Status</th>
-            <th className="px-4 py-2.5 text-right font-medium">Duration</th>
-            <th className="px-4 py-2.5 text-left font-medium">Outcome</th>
-            <th className="px-4 py-2.5 text-left font-medium">Started</th>
-            <th className="px-4 py-2.5 text-right font-medium">Cost</th>
-            <th className="px-4 py-2.5 text-right font-medium">Actions</th>
+            <th className="w-[260px] px-4 py-3 text-left font-medium">ID</th>
+            <th className="w-[110px] px-4 py-3 text-left font-medium">Direction</th>
+            <th className="w-[150px] px-4 py-3 text-left font-medium">From</th>
+            <th className="w-[150px] px-4 py-3 text-left font-medium">To</th>
+            <th className="w-[170px] px-4 py-3 text-left font-medium">Agent</th>
+            <th className="w-[130px] px-4 py-3 text-left font-medium">Status</th>
+            <th className="w-[100px] px-4 py-3 text-right font-medium">Duration</th>
+            <th className="w-[130px] px-4 py-3 text-left font-medium">Outcome</th>
+            <th className="w-[130px] px-4 py-3 text-left font-medium">Started</th>
+            <th className="w-[90px] px-4 py-3 text-right font-medium">Cost</th>
+            <th className="w-[110px] px-4 py-3 text-right font-medium">Actions</th>
           </tr>
         </thead>
         <tbody>
           {calls.map((call) => (
-            <tr key={call.id} className="border-t hover:bg-muted/30">
-              <td className="px-4 py-2.5"><Link to="/calls/$callId" params={{ callId: call.id }} className="hover:underline"><Mono>{call.id}</Mono></Link></td>
-              <td className="px-4 py-2.5 capitalize">{call.direction}</td>
-              <td className="px-4 py-2.5"><Mono className="text-muted-foreground">{call.from}</Mono></td>
-              <td className="px-4 py-2.5"><Mono className="text-muted-foreground">{call.to}</Mono></td>
-              <td className="px-4 py-2.5">{agentsById.get(call.agentId)?.name ?? call.agentId}</td>
-              <td className="px-4 py-2.5"><StatusBadge status={call.status} /></td>
-              <td className="px-4 py-2.5 text-right tabular-nums">{call.duration}s</td>
-              <td className="px-4 py-2.5 text-muted-foreground">{call.outcome}</td>
-              <td className="px-4 py-2.5 text-muted-foreground">{call.startedAt}</td>
-              <td className="px-4 py-2.5 text-right tabular-nums">${call.cost.toFixed(2)}</td>
-              <td className="px-4 py-2.5">
+            <tr
+              key={call.id}
+              onClick={() => navigate({ to: "/calls/$callId", params: { callId: call.id } })}
+              className="group cursor-pointer border-b last:border-b-0 transition-colors hover:bg-muted/35"
+            >
+              <td className="px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Link to="/calls/$callId" params={{ callId: call.id }} className="min-w-0 truncate hover:underline"><Mono className="block truncate">{call.id}</Mono></Link>
+                  <CopyButton value={call.id} label="Copy call ID" className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                </div>
+              </td>
+              <td className="px-4 py-3 capitalize">{call.direction}</td>
+              <td className="px-4 py-3"><Mono className="block truncate text-muted-foreground">{call.from}</Mono></td>
+              <td className="px-4 py-3"><Mono className="block truncate text-muted-foreground">{call.to}</Mono></td>
+              <td className="px-4 py-3"><span className="block truncate">{agentsById.get(call.agentId)?.name ?? call.agentId}</span></td>
+              <td className="px-4 py-3"><StatusBadge status={call.status} /></td>
+              <td className="px-4 py-3 text-right tabular-nums">{call.duration}s</td>
+              <td className="px-4 py-3 text-muted-foreground">{call.outcome}</td>
+              <td className="px-4 py-3 text-muted-foreground">{call.startedAt}</td>
+              <td className="px-4 py-3 text-right tabular-nums">${call.cost.toFixed(2)}</td>
+              <td className="px-4 py-3">
                 <div className="flex justify-end">
                   <Link to="/calls/$callId" params={{ callId: call.id }} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Eye className="h-3 w-3" /> View</Link>
                 </div>

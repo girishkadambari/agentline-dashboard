@@ -1,9 +1,10 @@
-import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
+import { CopyButton } from "@/components/agentline/CopyButton";
 import {
   AgentLineApiError,
   formatApiError,
@@ -171,21 +172,23 @@ function AgentTable({
   rows: AgentListItem[];
   onUpdate: (agent: AgentListItem) => void;
 }) {
+  const navigate = useNavigate();
+
   return (
-    <div className="rounded-lg border bg-surface">
+    <div className="overflow-hidden rounded-lg border bg-surface shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+        <table className="w-full table-fixed text-sm">
+          <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="px-4 py-2.5 text-left font-medium">Name</th>
-              <th className="px-4 py-2.5 text-left font-medium">ID</th>
-              <th className="px-4 py-2.5 text-left font-medium">Mode</th>
-              <th className="px-4 py-2.5 text-right font-medium">Numbers</th>
-              <th className="px-4 py-2.5 text-right font-medium">Calls</th>
-              <th className="px-4 py-2.5 text-right font-medium">Messages</th>
-              <th className="px-4 py-2.5 text-left font-medium">Last activity</th>
-              <th className="px-4 py-2.5 text-left font-medium">Status</th>
-              <th className="px-4 py-2.5 text-right font-medium">Actions</th>
+              <th className="w-[260px] px-4 py-3 text-left font-medium">Name</th>
+              <th className="w-[260px] px-4 py-3 text-left font-medium">ID</th>
+              <th className="w-[110px] px-4 py-3 text-left font-medium">Mode</th>
+              <th className="w-[90px] px-4 py-3 text-right font-medium">Numbers</th>
+              <th className="w-[80px] px-4 py-3 text-right font-medium">Calls</th>
+              <th className="w-[100px] px-4 py-3 text-right font-medium">Messages</th>
+              <th className="w-[140px] px-4 py-3 text-left font-medium">Last activity</th>
+              <th className="w-[110px] px-4 py-3 text-left font-medium">Status</th>
+              <th className="w-[170px] px-4 py-3 text-right font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -193,19 +196,28 @@ function AgentTable({
               <tr><td colSpan={9} className="px-4 py-10 text-center text-sm text-muted-foreground">No agents match.</td></tr>
             )}
             {rows.map((agent) => (
-              <tr key={agent.id} className="border-t hover:bg-muted/30">
-                <td className="px-4 py-2.5">
-                  <Link to="/agents/$agentId" params={{ agentId: agent.id }} className="font-medium hover:underline">{agent.name}</Link>
-                  <div className="text-xs text-muted-foreground">{agent.description || "No description"}</div>
+              <tr
+                key={agent.id}
+                onClick={() => navigate({ to: "/agents/$agentId", params: { agentId: agent.id } })}
+                className="group cursor-pointer border-b last:border-b-0 transition-colors hover:bg-muted/35"
+              >
+                <td className="px-4 py-3">
+                  <Link to="/agents/$agentId" params={{ agentId: agent.id }} className="block truncate font-medium hover:underline">{agent.name}</Link>
+                  <div className="truncate text-xs text-muted-foreground">{agent.description || "No description"}</div>
                 </td>
-                <td className="px-4 py-2.5"><Mono className="text-muted-foreground">{agent.id}</Mono></td>
-                <td className="px-4 py-2.5"><span className="rounded border px-1.5 py-0.5 text-xs font-medium capitalize">{agent.mode}</span></td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{agent.numbers}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{agent.calls}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{agent.messages}</td>
-                <td className="px-4 py-2.5 text-muted-foreground">{agent.lastActivity}</td>
-                <td className="px-4 py-2.5"><StatusBadge status={agent.status} /></td>
-                <td className="px-4 py-2.5">
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <Mono className="block truncate text-muted-foreground">{agent.id}</Mono>
+                    <CopyButton value={agent.id} label="Copy agent ID" className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                  </div>
+                </td>
+                <td className="px-4 py-3"><span className="rounded border px-1.5 py-0.5 text-xs font-medium capitalize">{agent.mode}</span></td>
+                <td className="px-4 py-3 text-right tabular-nums">{agent.numbers}</td>
+                <td className="px-4 py-3 text-right tabular-nums">{agent.calls}</td>
+                <td className="px-4 py-3 text-right tabular-nums">{agent.messages}</td>
+                <td className="px-4 py-3 text-muted-foreground">{agent.lastActivity}</td>
+                <td className="px-4 py-3"><StatusBadge status={agent.status} /></td>
+                <td className="px-4 py-3">
                   <div className="flex justify-end gap-1.5">
                     <Link
                       to="/agents/$agentId"
@@ -215,7 +227,10 @@ function AgentTable({
                       <Eye className="h-3 w-3" /> View
                     </Link>
                     <button
-                      onClick={() => onUpdate(agent)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onUpdate(agent);
+                      }}
                       className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
                     >
                       <Pencil className="h-3 w-3" /> Update

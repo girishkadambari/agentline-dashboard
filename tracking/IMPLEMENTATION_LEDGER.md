@@ -328,3 +328,110 @@ Next implementation phase:
   - `POST /webhooks/:id/test`
   - `GET /webhooks/deliveries`
   - `POST /webhooks/deliveries/:id/retry`
+
+## 2026-05-07 - Phase F3E Webhooks Backend Integration
+
+Status: implemented
+
+Implemented:
+
+- Converted `src/lib/api/webhooks.ts` from mock wrappers to backend API calls.
+- Connected `/webhooks` to `GET /webhooks`.
+- Added endpoint creation with `POST /webhooks`.
+- Added endpoint update with `PATCH /webhooks/:id`.
+- Added endpoint disable with `DELETE /webhooks/:id`.
+- Added endpoint test delivery with `POST /webhooks/:id/test`.
+- Connected recent delivery logs to `GET /webhooks/deliveries`.
+- Added retry action with `POST /webhooks/deliveries/:id/retry`.
+- Added one-time secret display after create when backend returns `secret`.
+- Added backend validation/error display for create/update/test/retry flows.
+- Added empty/loading/error states for endpoints and deliveries.
+
+Navigation cleanup:
+
+- Fixed the Inbox stale thread response race with a request token.
+- Standardized resource view behavior:
+  - Agents `View` now navigates to `/agents/:agentId`.
+  - Numbers `View` now navigates to `/numbers/:numberId`.
+  - Calls already navigated to `/calls/:callId`.
+  - Update/create flows remain drawers.
+- Removed dead Agents and Numbers view-drawer branches after changing View to
+  full-page navigation.
+
+Verification:
+
+- `npm run build` passed after implementation.
+- Mock import audit passed for Webhooks, Inbox, Messages, Agents, and Numbers
+  touched files.
+
+Known follow-ups:
+
+- Webhooks currently use a drawer for view because no webhook detail route
+  exists. Add `/webhooks/:webhookId` later if webhook details/deliveries grow.
+- Retry delivery table action assumes a successful retry. A later drawer can
+  expose mock retry outcomes.
+- Remaining mock areas are Overview, Playground, Usage, Billing, API Keys,
+  Service Health, Contacts, and legacy wrapper modules for Usage/Billing/
+  Contacts.
+
+Next implementation priority:
+
+1. Connect Usage and Billing screens to backend APIs.
+2. Connect API Keys to backend APIs.
+3. Replace Overview mock data with backend-derived summaries or explicit
+   backend-gap placeholders.
+4. Add Contacts backend support or mark Contacts as a tracked backend gap.
+
+## 2026-05-07 - Navigation And Premium Interaction Pass
+
+Status: implemented and refined
+
+Implemented:
+
+- Added row-click navigation for primary resource tables:
+  - Agents rows open full agent detail.
+  - Numbers rows open full number detail.
+  - Calls rows open full call detail.
+- Kept row actions secondary:
+  - View still exists as an explicit action.
+  - Update/test/release/disable buttons stop row navigation and keep their
+    action behavior.
+- Added reusable `CopyButton` component for clipboard actions.
+- Added copy actions where they are useful:
+  - agent IDs
+  - phone numbers
+  - call IDs
+  - webhook URLs
+  - webhook endpoint IDs
+  - webhook secrets
+  - webhook test signature headers
+- Replaced webhook freeform event textarea with a clearer event capability
+  picker:
+  - selectable common AgentLine events
+  - selected event chips
+  - custom event add flow
+  - easy remove behavior
+- Made webhook endpoint rows clickable to open the endpoint detail drawer until
+  a dedicated webhook detail route exists.
+- Refined copy controls:
+  - copy is icon-only in dense tables.
+  - copy shows a "Copied to clipboard" toast.
+  - text labels are hidden unless explicitly needed.
+- Improved table visual quality:
+  - fixed table columns for primary resource tables.
+  - softer row hover states.
+  - cleaner header/background separation.
+  - tighter row spacing and truncated long identifiers.
+  - hover-only copy icons to reduce visual noise.
+
+Verification:
+
+- `npm run build` passed after the interaction pass.
+- `npm run build` passed again after icon-only copy, toast, and table styling
+  refinements.
+
+Decision:
+
+- Table row click is now the fastest path to inspect a resource.
+- Full pages remain the best destination for resources with complete details.
+- Drawers remain best for focused actions like create, update, test, and retry.

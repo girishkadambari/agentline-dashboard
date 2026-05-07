@@ -1,10 +1,11 @@
-import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Pencil, Phone, Plus, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
+import { CopyButton } from "@/components/agentline/CopyButton";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import {
@@ -137,7 +138,6 @@ function Numbers() {
         mode={drawerMode}
         number={selectedNumber}
         agents={agents}
-        agentsById={agentsById}
         onOpenChange={(open) => {
           if (!open) {
             closeDrawer();
@@ -167,44 +167,53 @@ function NumbersTable({
   onUpdate: (number: NumberListItem) => void;
   onRelease: (number: NumberListItem) => void;
 }) {
+  const navigate = useNavigate();
+
   return (
-    <div className="overflow-x-auto rounded-lg border bg-surface">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+    <div className="overflow-hidden rounded-lg border bg-surface shadow-sm">
+      <table className="w-full table-fixed text-sm">
+        <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
-            <th className="px-4 py-2.5 text-left font-medium">Phone</th>
-            <th className="px-4 py-2.5 text-left font-medium">Country</th>
-            <th className="px-4 py-2.5 text-left font-medium">Capabilities</th>
-            <th className="px-4 py-2.5 text-left font-medium">Provider</th>
-            <th className="px-4 py-2.5 text-left font-medium">Agent</th>
-            <th className="px-4 py-2.5 text-left font-medium">Status</th>
-            <th className="px-4 py-2.5 text-right font-medium">Monthly</th>
-            <th className="px-4 py-2.5 text-right font-medium">Actions</th>
+            <th className="w-[230px] px-4 py-3 text-left font-medium">Phone</th>
+            <th className="w-[110px] px-4 py-3 text-left font-medium">Country</th>
+            <th className="w-[170px] px-4 py-3 text-left font-medium">Capabilities</th>
+            <th className="w-[120px] px-4 py-3 text-left font-medium">Provider</th>
+            <th className="px-4 py-3 text-left font-medium">Agent</th>
+            <th className="w-[110px] px-4 py-3 text-left font-medium">Status</th>
+            <th className="w-[100px] px-4 py-3 text-right font-medium">Monthly</th>
+            <th className="w-[250px] px-4 py-3 text-right font-medium">Actions</th>
           </tr>
         </thead>
         <tbody>
           {numbers.map((number) => {
             const agent = number.agentId ? agentsById.get(number.agentId) : null;
             return (
-              <tr key={number.id} className="border-t hover:bg-muted/30">
-                <td className="px-4 py-2.5">
-                  <Link to="/numbers/$numberId" params={{ numberId: number.id }} className="hover:underline"><Mono>{number.number}</Mono></Link>
+              <tr
+                key={number.id}
+                onClick={() => navigate({ to: "/numbers/$numberId", params: { numberId: number.id } })}
+                className="group cursor-pointer border-b last:border-b-0 transition-colors hover:bg-muted/35"
+              >
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <Link to="/numbers/$numberId" params={{ numberId: number.id }} className="hover:underline"><Mono>{number.number}</Mono></Link>
+                    <CopyButton value={number.number} label="Copy phone number" className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                  </div>
                 </td>
-                <td className="px-4 py-2.5">{number.country}{number.areaCode ? ` · ${number.areaCode}` : ""}</td>
-                <td className="px-4 py-2.5">
+                <td className="px-4 py-3">{number.country}{number.areaCode ? ` · ${number.areaCode}` : ""}</td>
+                <td className="px-4 py-3">
                   <div className="flex gap-1">
                     {number.capabilities.map((capability) => <span key={capability} className="rounded border px-1.5 py-0.5 text-[11px] uppercase">{capability}</span>)}
                   </div>
                 </td>
-                <td className="px-4 py-2.5 capitalize text-muted-foreground">{number.provider}</td>
-                <td className="px-4 py-2.5">{agent?.name ?? <span className="text-muted-foreground">Unassigned</span>}</td>
-                <td className="px-4 py-2.5"><StatusBadge status={number.status} /></td>
-                <td className="px-4 py-2.5 text-right tabular-nums">${number.monthlyCost.toFixed(2)}</td>
-                <td className="px-4 py-2.5">
+                <td className="px-4 py-3 capitalize text-muted-foreground">{number.provider}</td>
+                <td className="px-4 py-3"><span className="block truncate">{agent?.name ?? <span className="text-muted-foreground">Unassigned</span>}</span></td>
+                <td className="px-4 py-3"><StatusBadge status={number.status} /></td>
+                <td className="px-4 py-3 text-right tabular-nums">${number.monthlyCost.toFixed(2)}</td>
+                <td className="px-4 py-3">
                   <div className="flex justify-end gap-1.5">
                     <Link to="/numbers/$numberId" params={{ numberId: number.id }} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Eye className="h-3 w-3" /> View</Link>
-                    <button onClick={() => onUpdate(number)} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Pencil className="h-3 w-3" /> Update</button>
-                    <button onClick={() => onRelease(number)} disabled={number.status === "released"} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 className="h-3 w-3" /> Release</button>
+                    <button onClick={(event) => { event.stopPropagation(); onUpdate(number); }} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Pencil className="h-3 w-3" /> Update</button>
+                    <button onClick={(event) => { event.stopPropagation(); onRelease(number); }} disabled={number.status === "released"} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 className="h-3 w-3" /> Release</button>
                   </div>
                 </td>
               </tr>
@@ -220,7 +229,6 @@ function NumberDrawer({
   mode,
   number,
   agents,
-  agentsById,
   onOpenChange,
   onCreated,
   onUpdated,
@@ -228,7 +236,6 @@ function NumberDrawer({
   mode: "create" | "update" | null;
   number: NumberListItem | null;
   agents: AgentListItem[];
-  agentsById: Map<string, AgentListItem>;
   onOpenChange: (open: boolean) => void;
   onCreated: (number: NumberListItem) => void;
   onUpdated: (number: NumberListItem) => void;
