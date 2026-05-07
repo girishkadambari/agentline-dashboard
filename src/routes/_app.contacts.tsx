@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { Mono } from "@/components/agentline/Mono";
-import { contacts } from "@/lib/mock/data";
+import { listContacts } from "@/lib/api/contacts";
 
 export const Route = createFileRoute("/_app/contacts")({
   component: Contacts,
@@ -9,6 +9,7 @@ export const Route = createFileRoute("/_app/contacts")({
 });
 
 function Contacts() {
+  const contacts = listContacts().data;
   return (
     <div>
       <PageHeader title="Contacts" description="People your agents have interacted with." />
