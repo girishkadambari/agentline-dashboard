@@ -37,7 +37,7 @@ function Agents() {
   const [status, setStatus] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [drawerMode, setDrawerMode] = useState<"create" | "view" | "update" | null>(null);
+  const [drawerMode, setDrawerMode] = useState<"create" | "update" | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<AgentListItem | null>(null);
 
   function openCreateDrawer() {
@@ -45,7 +45,7 @@ function Agents() {
     setDrawerMode("create");
   }
 
-  function openAgentDrawer(mode: "view" | "update", agent: AgentListItem) {
+  function openAgentDrawer(mode: "update", agent: AgentListItem) {
     setSelectedAgent(agent);
     setDrawerMode(mode);
   }
@@ -140,7 +140,7 @@ function Agents() {
           action={<button onClick={openCreateDrawer} className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background">Create agent</button>}
         />
       ) : (
-        <AgentTable rows={rows} onView={(agent) => openAgentDrawer("view", agent)} onUpdate={(agent) => openAgentDrawer("update", agent)} />
+        <AgentTable rows={rows} onUpdate={(agent) => openAgentDrawer("update", agent)} />
       )}
 
       <AgentDrawer
@@ -159,7 +159,6 @@ function Agents() {
           setAgents((current) => current.map((item) => (item.id === agent.id ? agent : item)));
           closeDrawer();
         }}
-        onSwitchToUpdate={() => setDrawerMode("update")}
       />
     </div>
   );
@@ -167,11 +166,9 @@ function Agents() {
 
 function AgentTable({
   rows,
-  onView,
   onUpdate,
 }: {
   rows: AgentListItem[];
-  onView: (agent: AgentListItem) => void;
   onUpdate: (agent: AgentListItem) => void;
 }) {
   return (
@@ -210,12 +207,13 @@ function AgentTable({
                 <td className="px-4 py-2.5"><StatusBadge status={agent.status} /></td>
                 <td className="px-4 py-2.5">
                   <div className="flex justify-end gap-1.5">
-                    <button
-                      onClick={() => onView(agent)}
+                    <Link
+                      to="/agents/$agentId"
+                      params={{ agentId: agent.id }}
                       className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
                     >
                       <Eye className="h-3 w-3" /> View
-                    </button>
+                    </Link>
                     <button
                       onClick={() => onUpdate(agent)}
                       className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
@@ -251,17 +249,14 @@ function AgentDrawer({
   onOpenChange,
   onCreated,
   onUpdated,
-  onSwitchToUpdate,
 }: {
-  mode: "create" | "view" | "update" | null;
+  mode: "create" | "update" | null;
   agent: AgentListItem | null;
   onOpenChange: (open: boolean) => void;
   onCreated: (agent: AgentListItem) => void;
   onUpdated: (agent: AgentListItem) => void;
-  onSwitchToUpdate: () => void;
 }) {
   const isCreate = mode === "create";
-  const isView = mode === "view";
   const isUpdate = mode === "update";
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -333,12 +328,10 @@ function AgentDrawer({
   }
 
   const open = mode !== null;
-  const title = isCreate ? "Create agent" : isView ? "View agent" : "Update agent";
+  const title = isCreate ? "Create agent" : "Update agent";
   const descriptionText = isCreate
     ? "Create a backend agent that can later be assigned numbers, SMS, calls, and webhooks."
-    : isView
-      ? "Inspect the current backend configuration for this agent."
-      : "Update the backend configuration for this agent.";
+    : "Update the backend configuration for this agent.";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -347,9 +340,6 @@ function AgentDrawer({
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{descriptionText}</SheetDescription>
         </SheetHeader>
-        {isView && agent ? (
-          <AgentView agent={agent} onClose={() => onOpenChange(false)} onUpdate={onSwitchToUpdate} />
-        ) : (
         <form className="space-y-4" onSubmit={submit}>
           {error && (
             <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
@@ -382,55 +372,8 @@ function AgentDrawer({
             </button>
           </SheetFooter>
         </form>
-        )}
       </SheetContent>
     </Sheet>
-  );
-}
-
-function AgentView({
-  agent,
-  onClose,
-  onUpdate,
-}: {
-  agent: AgentListItem;
-  onClose: () => void;
-  onUpdate: () => void;
-}) {
-  return (
-    <div className="mt-6 space-y-5">
-      <div className="rounded-lg border bg-surface p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold">{agent.name}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{agent.description || "No description"}</p>
-          </div>
-          <StatusBadge status={agent.status} />
-        </div>
-      </div>
-      <dl className="grid gap-4 text-sm">
-        <ReadOnlyField label="Agent ID" value={agent.id} mono />
-        <ReadOnlyField label="Mode" value={agent.mode} />
-        <ReadOnlyField label="Voice" value={agent.voice || "Not set"} mono />
-        <ReadOnlyField label="Webhook URL" value={agent.webhookUrl || "Not set"} mono />
-        <ReadOnlyField label="Begin message" value={agent.beginMessage || "Not set"} />
-        <ReadOnlyField label="System prompt" value={agent.systemPrompt || "Not set"} />
-        <ReadOnlyField label="Last activity" value={agent.lastActivity} />
-      </dl>
-      <SheetFooter>
-        <button type="button" onClick={onClose} className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">Close</button>
-        <button type="button" onClick={onUpdate} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90">Update</button>
-      </SheetFooter>
-    </div>
-  );
-}
-
-function ReadOnlyField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div>
-      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className={`mt-1 break-words ${mono ? "font-mono text-xs" : ""}`}>{value}</dd>
-    </div>
   );
 }
 

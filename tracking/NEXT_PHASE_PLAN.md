@@ -177,7 +177,7 @@ Known follow-ups:
 
 ## Phase F3D: Inbox And Messages Backend Integration
 
-Status: planned next
+Status: implemented
 
 Goal:
 
@@ -223,7 +223,100 @@ Implementation Notes:
 - Like calls, SMS requires the selected agent to have a suitable active number.
   The UI should surface that before or after submit.
 
-## Phase F3E: Core Dashboard Data Integration
+Verification:
+
+- `npm run build` passed after implementation on 2026-05-07.
+- Mock import audit passed for `src/lib/api/messages.ts` and `/inbox`.
+
+Known follow-ups:
+
+- Backend conversation/message responses currently expose contact IDs but not
+  contact phone/name details, so the Inbox uses contact IDs in list/detail
+  panels until Contacts or expanded conversation responses are available.
+- Inline reply remains a drawer action because `POST /messages` requires an
+  explicit recipient phone number and conversations do not yet include it.
+
+## Phase F3E: Webhooks Backend Integration
+
+Status: planned next
+
+Goal:
+
+Make webhook configuration, testing, and delivery logs usable from backend data.
+
+Build:
+
+- Convert `src/lib/api/webhooks.ts` from mock wrappers to backend functions.
+- Connect `/webhooks` to `GET /webhooks`.
+- Map backend webhook endpoint records:
+  - `id`
+  - `url`
+  - `events`
+  - `status`
+  - `createdAt`
+  - `updatedAt`
+- Map backend webhook delivery records:
+  - `id`
+  - `endpointId`
+  - `eventId`
+  - `eventType`
+  - `status`
+  - `attemptCount`
+  - `lastStatusCode`
+  - `lastError`
+  - `nextAttemptAt`
+  - `createdAt`
+  - `updatedAt`
+- Add create webhook drawer using `POST /webhooks`.
+- Add update drawer using `PATCH /webhooks/:id`.
+- Add delete action using `DELETE /webhooks/:id`.
+- Add test delivery action using `POST /webhooks/:id/test`.
+- Display delivery logs from `GET /webhooks/deliveries`.
+- Add delivery retry action using `POST /webhooks/deliveries/:id/retry`.
+- Keep test/retry mock controls explicit:
+  - test endpoint can simulate success/failure.
+  - retry delivery can simulate succeeded/failed/exhausted.
+- Surface validation, signing, retry, and failed delivery states clearly.
+- Add empty state for no endpoints.
+- Add empty state for no deliveries.
+- Keep endpoint secret display one-time-only on create response if backend
+  returns `secret`.
+
+Exit Criteria:
+
+- User can create, view, update, delete, and test webhook endpoints from the
+  dashboard.
+- Delivery logs render from backend data.
+- User can retry a failed/retrying/exhausted delivery from the dashboard.
+- Validation errors show field-level backend messages, especially invalid URL
+  and empty events.
+- No production Webhooks route or API module silently reads mock data.
+
+Backend endpoints confirmed:
+
+- `GET /webhooks`
+- `POST /webhooks`
+- `PATCH /webhooks/:id`
+- `DELETE /webhooks/:id`
+- `POST /webhooks/:id/test`
+- `GET /webhooks/deliveries`
+- `POST /webhooks/deliveries/:id/retry`
+
+Implementation Notes:
+
+- `POST /webhooks` requires `url` and at least one event string.
+- `PATCH /webhooks/:id` accepts optional `url`, `events`, and `status`.
+- `DELETE /webhooks/:id` disables the endpoint rather than hard-deleting it.
+- `POST /webhooks/:id/test` accepts an optional body:
+  `{ "simulateFailure": boolean }`.
+- `POST /webhooks/deliveries/:id/retry` accepts an optional body:
+  `{ "outcome": "succeeded" | "failed", "exhaust": boolean }`.
+- Webhook delivery status query values are `pending`, `succeeded`, `failed`,
+  `retrying`, and `exhausted`.
+- Frontend should not fabricate webhook secrets; only display a secret returned
+  by the backend create response.
+
+## Phase F3F: Core Dashboard Data Integration
 
 Goal:
 
@@ -247,10 +340,9 @@ Exit Criteria:
 
 Current Mock Import Audit:
 
-- Direct route mock imports remain in Overview, Playground, Inbox, Usage,
-  Billing, API Keys, and Service Health.
-- API wrapper mock imports remain in Messages, Webhooks, Usage, Billing,
-  Contacts, and legacy compatibility exports in Agents.
+- Direct route mock imports remain in Overview, Playground, Usage, Billing,
+  API Keys, and Service Health.
+- API wrapper mock imports remain in Webhooks, Usage, Billing, and Contacts.
 - Contacts still needs a backend API or a temporary backend-gap placeholder.
 
 ## Phase F4: Drawer And Action Quality Pass

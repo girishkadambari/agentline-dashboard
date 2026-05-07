@@ -34,7 +34,7 @@ function Numbers() {
   const [agents, setAgents] = useState<AgentListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [drawerMode, setDrawerMode] = useState<"create" | "view" | "update" | null>(null);
+  const [drawerMode, setDrawerMode] = useState<"create" | "update" | null>(null);
   const [selectedNumber, setSelectedNumber] = useState<NumberListItem | null>(null);
 
   async function loadData() {
@@ -63,7 +63,7 @@ function Numbers() {
     [agents],
   );
 
-  function openDrawer(mode: "create" | "view" | "update", number?: NumberListItem) {
+  function openDrawer(mode: "create" | "update", number?: NumberListItem) {
     setSelectedNumber(number ?? null);
     setDrawerMode(mode);
   }
@@ -128,7 +128,6 @@ function Numbers() {
         <NumbersTable
           numbers={numbers}
           agentsById={agentsById}
-          onView={(number) => openDrawer("view", number)}
           onUpdate={(number) => openDrawer("update", number)}
           onRelease={releaseNumber}
         />
@@ -152,7 +151,6 @@ function Numbers() {
           setNumbers((current) => current.map((item) => (item.id === number.id ? number : item)));
           closeDrawer();
         }}
-        onSwitchToUpdate={() => setDrawerMode("update")}
       />
     </div>
   );
@@ -161,13 +159,11 @@ function Numbers() {
 function NumbersTable({
   numbers,
   agentsById,
-  onView,
   onUpdate,
   onRelease,
 }: {
   numbers: NumberListItem[];
   agentsById: Map<string, AgentListItem>;
-  onView: (number: NumberListItem) => void;
   onUpdate: (number: NumberListItem) => void;
   onRelease: (number: NumberListItem) => void;
 }) {
@@ -206,7 +202,7 @@ function NumbersTable({
                 <td className="px-4 py-2.5 text-right tabular-nums">${number.monthlyCost.toFixed(2)}</td>
                 <td className="px-4 py-2.5">
                   <div className="flex justify-end gap-1.5">
-                    <button onClick={() => onView(number)} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Eye className="h-3 w-3" /> View</button>
+                    <Link to="/numbers/$numberId" params={{ numberId: number.id }} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Eye className="h-3 w-3" /> View</Link>
                     <button onClick={() => onUpdate(number)} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Pencil className="h-3 w-3" /> Update</button>
                     <button onClick={() => onRelease(number)} disabled={number.status === "released"} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 className="h-3 w-3" /> Release</button>
                   </div>
@@ -228,19 +224,16 @@ function NumberDrawer({
   onOpenChange,
   onCreated,
   onUpdated,
-  onSwitchToUpdate,
 }: {
-  mode: "create" | "view" | "update" | null;
+  mode: "create" | "update" | null;
   number: NumberListItem | null;
   agents: AgentListItem[];
   agentsById: Map<string, AgentListItem>;
   onOpenChange: (open: boolean) => void;
   onCreated: (number: NumberListItem) => void;
   onUpdated: (number: NumberListItem) => void;
-  onSwitchToUpdate: () => void;
 }) {
   const isCreate = mode === "create";
-  const isView = mode === "view";
   const isUpdate = mode === "update";
   const [country, setCountry] = useState("US");
   const [areaCode, setAreaCode] = useState("415");
@@ -299,12 +292,10 @@ function NumberDrawer({
   }
 
   const open = mode !== null;
-  const title = isCreate ? "Provision number" : isView ? "View number" : "Update number";
+  const title = isCreate ? "Provision number" : "Update number";
   const description = isCreate
     ? "Create a mock phone number and optionally attach it to an agent."
-    : isView
-      ? "Inspect number assignment, provider, and capabilities."
-      : "Attach this number to an agent or leave it unassigned.";
+    : "Attach this number to an agent or leave it unassigned.";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -313,10 +304,7 @@ function NumberDrawer({
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
-        {isView && number ? (
-          <NumberView number={number} agent={number.agentId ? agentsById.get(number.agentId) : undefined} onClose={() => onOpenChange(false)} onUpdate={onSwitchToUpdate} />
-        ) : (
-          <form className="mt-6 space-y-4" onSubmit={submit}>
+        <form className="mt-6 space-y-4" onSubmit={submit}>
             {error && <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
             {isCreate && (
               <div className="grid gap-3 sm:grid-cols-2">
@@ -351,47 +339,9 @@ function NumberDrawer({
                 {isSaving ? "Saving..." : isCreate ? "Provision number" : "Save changes"}
               </button>
             </SheetFooter>
-          </form>
-        )}
+        </form>
       </SheetContent>
     </Sheet>
-  );
-}
-
-function NumberView({
-  number,
-  agent,
-  onClose,
-  onUpdate,
-}: {
-  number: NumberListItem;
-  agent?: AgentListItem;
-  onClose: () => void;
-  onUpdate: () => void;
-}) {
-  return (
-    <div className="mt-6 space-y-5">
-      <div className="rounded-lg border bg-surface p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="font-mono text-sm font-semibold">{number.number}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{number.country}{number.areaCode ? ` · ${number.areaCode}` : ""}</p>
-          </div>
-          <StatusBadge status={number.status} />
-        </div>
-      </div>
-      <dl className="grid gap-4 text-sm">
-        <ReadOnlyField label="Number ID" value={number.id} mono />
-        <ReadOnlyField label="Provider" value={number.provider} />
-        <ReadOnlyField label="Agent" value={agent?.name ?? "Unassigned"} />
-        <ReadOnlyField label="Capabilities" value={number.capabilities.join(", ")} />
-        <ReadOnlyField label="Monthly cost" value={`$${number.monthlyCost.toFixed(2)}`} />
-      </dl>
-      <SheetFooter>
-        <button type="button" onClick={onClose} className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">Close</button>
-        <button type="button" onClick={onUpdate} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90">Update</button>
-      </SheetFooter>
-    </div>
   );
 }
 
@@ -401,14 +351,5 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
       {label}
       <input value={value} onChange={(event) => onChange(event.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm" />
     </label>
-  );
-}
-
-function ReadOnlyField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div>
-      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className={`mt-1 break-words ${mono ? "font-mono text-xs" : ""}`}>{value}</dd>
-    </div>
   );
 }

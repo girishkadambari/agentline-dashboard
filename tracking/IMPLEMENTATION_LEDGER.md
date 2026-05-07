@@ -241,9 +241,90 @@ Remaining risks:
 - Frontend cost/monthly price displays should eventually come from backend
   usage/pricing endpoints instead of frontend constants.
 
-Current mock areas:
+Current mock areas before Phase F3D:
 
 - Overview, Inbox, Usage, Billing, API Keys, Playground, Service Health, and
-  Contacts still use mock data directly or through legacy API wrappers.
-- Webhooks, Usage, Billing, Contacts, and Messages API modules still contain
+  Contacts still used mock data directly or through legacy API wrappers.
+- Webhooks, Usage, Billing, Contacts, and Messages API modules still contained
   mock wrappers.
+
+## 2026-05-07 - Phase F3D Inbox And Messages Backend Integration
+
+Status: implemented
+
+Implemented:
+
+- Converted `src/lib/api/messages.ts` from mock wrappers to backend API calls.
+- Connected `/inbox` to `GET /conversations`.
+- Connected selected conversation threads to
+  `GET /conversations/:id/messages`.
+- Added a right-side Send SMS drawer using `POST /messages`.
+- Added a right-side Simulate inbound SMS drawer using
+  `POST /simulations/inbound-sms`.
+- Loaded backend agents for SMS send/simulation forms and conversation labels.
+- Preserved the three-panel Inbox layout with backend conversations, thread
+  messages, and details.
+- Removed legacy mock-compatible exports from `src/lib/api/agents.ts` because
+  no production route consumers remained.
+
+Verification:
+
+- `npm run build` passed after Phase F3D.
+- Mock import audit passed for Inbox and Messages:
+  `src/routes/_app.inbox.tsx` and `src/lib/api/messages.ts` no longer import
+  mock data.
+- Legacy mock export audit passed for Agents: no route consumers remain for
+  `listAgents`, `getAgent`, `createAgent`, `updateAgent`, `disableAgent`,
+  `sendTestSms`, or `startTestCall`.
+
+Known follow-ups:
+
+- Inbox displays contact IDs because the backend conversation serializer does
+  not yet include contact phone/name fields.
+- Inline reply is intentionally routed through a drawer until the backend
+  exposes a safe recipient on conversations.
+- SMS send/simulation still requires the selected agent to have an active
+  SMS-capable number; the drawer surfaces backend conflicts.
+
+Next implementation priority:
+
+1. Connect Webhooks list/create/update/delete/test/deliveries to backend APIs.
+2. Convert Usage and Billing screens to backend APIs.
+3. Replace direct Overview mock data with backend-derived summaries or explicit
+   backend-gap placeholders.
+4. Replace `window.prompt` call transfer with a drawer during the call quality
+   pass.
+
+## 2026-05-07 - Review After Phase F3D
+
+Status: reviewed
+
+Review result:
+
+- Inbox and Messages are backend-backed and no longer import mock data.
+- Send SMS and Simulate inbound SMS use backend drawers and refresh the selected
+  conversation after success.
+- Build passes after the phase.
+- Agent legacy mock exports were removed safely.
+
+Review finding to address:
+
+- Inbox thread loading can race if a user changes selected conversations quickly.
+  A slower response for an older conversation can overwrite the current thread.
+  Guard `loadThread` responses against stale conversation IDs before deeper
+  Inbox polish or live data testing.
+
+Next implementation phase:
+
+- Phase F3E Webhooks Backend Integration.
+- Primary files:
+  - `src/lib/api/webhooks.ts`
+  - `src/routes/_app.webhooks.tsx`
+- Backend endpoints:
+  - `GET /webhooks`
+  - `POST /webhooks`
+  - `PATCH /webhooks/:id`
+  - `DELETE /webhooks/:id`
+  - `POST /webhooks/:id/test`
+  - `GET /webhooks/deliveries`
+  - `POST /webhooks/deliveries/:id/retry`
