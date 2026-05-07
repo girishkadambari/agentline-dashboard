@@ -28,7 +28,7 @@ function Contacts() {
           <tbody>
             {contacts.map((c) => (
               <tr key={c.id} className="border-t hover:bg-muted/30">
-                <td className="px-4 py-2.5 font-medium">{c.name}</td>
+                <td className="px-4 py-2.5"><Link to="/contacts/$contactId" params={{ contactId: c.id }} className="font-medium hover:underline">{c.name}</Link></td>
                 <td className="px-4 py-2.5"><Mono className="text-muted-foreground">{c.phone}</Mono></td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{c.conversations}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{c.calls}</td>
