@@ -422,10 +422,72 @@ Known follow-ups:
 
 Current Mock Import Audit:
 
-- Direct route mock imports remain in Overview, Playground, Usage, Billing,
-  API Keys, and Service Health.
-- API wrapper mock imports remain in Webhooks, Usage, Billing, and Contacts.
+- Direct route mock imports remain in Overview, Playground, and Service Health.
+- API wrapper mock imports remain in legacy mock/type helpers and Contacts.
 - Contacts still needs a backend API or a temporary backend-gap placeholder.
+
+## Phase F3F-2: API Keys Backend Integration
+
+Status: implemented
+
+Goal:
+
+Connect API Keys to the backend and remove local mock data from the API Keys route.
+
+Implemented:
+
+- Added `src/lib/api/api-keys.ts`.
+- Connected API Keys screen to:
+  - `GET /api-keys`
+  - `POST /api-keys`
+  - `PATCH /api-keys/:id`
+  - `DELETE /api-keys/:id`
+- Added one-time full key reveal after creation.
+- Added copy controls for the full created key and public key prefixes.
+- Added rename and revoke actions.
+- Added loading, empty, and backend validation/error states.
+
+Verification:
+
+- `npm run build` passed.
+
+## Phase F3F-3: Overview Backend Integration
+
+Status: implemented
+
+Goal:
+
+Replace Overview mock dashboard numbers with backend-derived data.
+
+Implemented:
+
+- Agents count from `GET /agents`.
+- Numbers count from `GET /numbers`.
+- Recent call count and recent calls table from `GET /calls`.
+- Conversation count/recent inbox activity from `GET /conversations`.
+- Usage trend from `GET /usage/daily`.
+- Billing balance from `GET /billing/balance`.
+- Failed webhook count from `GET /webhooks/deliveries?status=failed`.
+- Loading and empty states for backend-derived sections.
+
+Verification:
+
+- `npm run build` passed.
+
+## Next Priority: Playground Backend Integration
+
+Goal:
+
+Replace Playground mock agent data with backend-backed agent, call, message, and webhook test actions.
+
+Build:
+
+- Load agents from `GET /agents`.
+- Start outbound calls through `POST /calls`.
+- Send SMS through `POST /messages`.
+- Simulate inbound SMS through `POST /simulations/inbound-sms`.
+- Test webhooks through `POST /webhooks/:id/test` after selecting endpoint.
+- Show response/error panels for each action.
 
 ## Phase F4: Drawer And Action Quality Pass
 

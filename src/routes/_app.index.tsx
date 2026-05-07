@@ -1,20 +1,79 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { FlaskConical, Phone, Plus, Webhook } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { Stat } from "@/components/agentline/Stat";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
-import { overview, calls, conversations, usageTrend, agents } from "@/lib/mock/data";
-import { Plus, Phone, FlaskConical, Webhook } from "lucide-react";
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { EmptyState } from "@/components/agentline/EmptyState";
+import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
+import { getBackendBillingBalance, type BillingBalanceView } from "@/lib/api/billing";
+import { listBackendCalls, type CallListItem } from "@/lib/api/calls";
+import { listBackendConversations, type ConversationListItem } from "@/lib/api/messages";
+import { listBackendNumbers, type NumberListItem } from "@/lib/api/numbers";
+import { listBackendDailyUsage, type UsageRollupListItem } from "@/lib/api/usage";
+import { listBackendWebhookDeliveries } from "@/lib/api/webhooks";
 
 export const Route = createFileRoute("/_app/")({
   component: Overview,
   head: () => ({ meta: [{ title: "Overview — AgentLine" }] }),
 });
 
-function nameFor(id: string) { return agents.find(a => a.id === id)?.name ?? id; }
-
 function Overview() {
+  const [agents, setAgents] = useState<AgentListItem[]>([]);
+  const [numbers, setNumbers] = useState<NumberListItem[]>([]);
+  const [calls, setCalls] = useState<CallListItem[]>([]);
+  const [conversations, setConversations] = useState<ConversationListItem[]>([]);
+  const [dailyUsage, setDailyUsage] = useState<UsageRollupListItem[]>([]);
+  const [balance, setBalance] = useState<BillingBalanceView | null>(null);
+  const [failedWebhooks, setFailedWebhooks] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadOverview() {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const [agentsResponse, numbersResponse, callsResponse, conversationsResponse, usageResponse, balanceResponse, failedWebhookResponse] = await Promise.all([
+        listBackendAgents(),
+        listBackendNumbers(),
+        listBackendCalls(),
+        listBackendConversations(),
+        listBackendDailyUsage({ from: sevenDaysAgo.toISOString(), to: new Date().toISOString(), limit: 7 }),
+        getBackendBillingBalance(),
+        listBackendWebhookDeliveries({ status: "failed" }),
+      ]);
+
+      setAgents(agentsResponse.data);
+      setNumbers(numbersResponse.data);
+      setCalls(callsResponse.data);
+      setConversations(conversationsResponse.data);
+      setDailyUsage(usageResponse.data);
+      setBalance(balanceResponse.data);
+      setFailedWebhooks(failedWebhookResponse.data.length);
+    } catch (caught) {
+      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load overview.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadOverview();
+  }, []);
+
+  const agentsById = useMemo(() => new Map(agents.map((agent) => [agent.id, agent])), [agents]);
+  const activeAgents = agents.filter((agent) => agent.status === "active").length;
+  const activeNumbers = numbers.filter((number) => number.status === "active").length;
+  const mtdSpend = dailyUsage.reduce((sum, usage) => sum + usage.totalCost, 0);
+  const recentCalls = calls.slice(0, 5);
+  const recentConversations = conversations.slice(0, 4);
+
   return (
     <div>
       <PageHeader
@@ -29,99 +88,134 @@ function Overview() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="Active agents" value={overview.activeAgents} />
-        <Stat label="Active numbers" value={overview.activeNumbers} />
-        <Stat label="Calls today" value={overview.callsToday.toLocaleString()} />
-        <Stat label="Messages today" value={overview.messagesToday.toLocaleString()} />
-        <Stat label="Failed webhooks" value={overview.failedWebhooks} hint="last 24h" />
-        <Stat label="MTD spend" value={`$${overview.mtdSpend.toFixed(2)}`} hint="simulated" />
-        <Stat label="Balance" value={`$${overview.balance.toFixed(2)}`} hint="simulated" />
-        <div className="rounded-lg border bg-surface px-4 py-3.5 flex items-center justify-between">
-          <div>
-            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Webhook</div>
-            <div className="mt-1.5 text-sm font-medium">Configure</div>
-          </div>
-          <Link to="/webhooks" className="rounded-md border p-1.5 hover:bg-muted"><Webhook className="h-4 w-4" /></Link>
+      {error && <div className="mb-3 whitespace-pre-line rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
+
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, index) => <div key={index} className="h-24 animate-pulse rounded-lg bg-muted" />)}
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Stat label="Active agents" value={activeAgents} hint={`${agents.length} total`} />
+          <Stat label="Active numbers" value={activeNumbers} hint={`${numbers.length} total`} />
+          <Stat label="Recent calls" value={calls.length.toLocaleString()} hint="Latest records" />
+          <Stat label="Conversations" value={conversations.length.toLocaleString()} hint="Inbox threads" />
+          <Stat label="Failed webhooks" value={failedWebhooks} hint="Needs retry" />
+          <Stat label="7d spend" value={formatUsd(mtdSpend)} hint="From usage" />
+          <Stat label="Balance" value={formatUsd(balance?.balance ?? 0)} hint={balance?.currency ?? "USD"} />
+          <div className="flex items-center justify-between rounded-lg border bg-surface px-4 py-3.5">
+            <div>
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Webhook</div>
+              <div className="mt-1.5 text-sm font-medium">Configure</div>
+            </div>
+            <Link to="/webhooks" className="rounded-md border p-1.5 hover:bg-muted" aria-label="Open webhooks"><Webhook className="h-4 w-4" /></Link>
+          </div>
+        </div>
+      )}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <div className="rounded-lg border bg-surface p-4 lg:col-span-2">
+        <div className="rounded-lg border bg-surface p-4 shadow-sm lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold">Usage trend</h2>
             <span className="text-xs text-muted-foreground">Last 7 days</span>
           </div>
           <div className="h-56">
-            <ResponsiveContainer>
-              <AreaChart data={usageTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="var(--color-muted-foreground)" />
-                <YAxis tick={{ fontSize: 11 }} stroke="var(--color-muted-foreground)" />
-                <Tooltip contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
-                <Area type="monotone" dataKey="calls" stroke="var(--color-chart-1)" fill="url(#g1)" strokeWidth={2} />
-                <Area type="monotone" dataKey="messages" stroke="var(--color-chart-2)" fill="transparent" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {isLoading ? (
+              <div className="h-full animate-pulse rounded-md bg-muted" />
+            ) : dailyUsage.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No usage yet.</div>
+            ) : (
+              <ResponsiveContainer>
+                <AreaChart data={dailyUsage} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="overview-cost" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="var(--color-muted-foreground)" />
+                  <YAxis tick={{ fontSize: 11 }} stroke="var(--color-muted-foreground)" />
+                  <Tooltip formatter={(value) => formatUsd(Number(value))} contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
+                  <Area type="monotone" dataKey="totalCost" stroke="var(--color-chart-1)" fill="url(#overview-cost)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
-        <div className="rounded-lg border bg-surface p-4">
-          <h2 className="mb-3 text-sm font-semibold">Recent messages</h2>
-          <div className="space-y-3">
-            {conversations.slice(0, 4).map((c) => (
-              <div key={c.id} className="flex items-start justify-between gap-3 border-b pb-3 last:border-0 last:pb-0">
-                <div className="min-w-0">
-                  <div className="text-sm font-medium">{c.contactName}</div>
-                  <div className="mt-0.5 truncate text-xs text-muted-foreground">{c.lastMessage}</div>
+        <div className="rounded-lg border bg-surface p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold">Recent conversations</h2>
+          {isLoading ? (
+            <div className="space-y-3">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-12 animate-pulse rounded-md bg-muted" />)}</div>
+          ) : recentConversations.length === 0 ? (
+            <div className="flex h-40 items-center justify-center text-center text-sm text-muted-foreground">No conversations yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {recentConversations.map((conversation) => (
+                <div key={conversation.id} className="flex items-start justify-between gap-3 border-b pb-3 last:border-0 last:pb-0">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">{agentsById.get(conversation.agentId)?.name ?? conversation.agentId}</div>
+                    <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="capitalize">{conversation.channel}</span>
+                      <span>·</span>
+                      <Mono>{conversation.id}</Mono>
+                    </div>
+                  </div>
+                  <div className="whitespace-nowrap text-[11px] text-muted-foreground">{conversation.lastActivity}</div>
                 </div>
-                <div className="text-[11px] text-muted-foreground whitespace-nowrap">{c.lastActivity}</div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="mt-6 rounded-lg border bg-surface">
+      <div className="mt-6 rounded-lg border bg-surface shadow-sm">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <h2 className="text-sm font-semibold">Recent calls</h2>
           <Link to="/calls" className="text-xs text-muted-foreground hover:text-foreground">View all</Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2.5 text-left font-medium">ID</th>
-                <th className="px-4 py-2.5 text-left font-medium">Direction</th>
-                <th className="px-4 py-2.5 text-left font-medium">From → To</th>
-                <th className="px-4 py-2.5 text-left font-medium">Agent</th>
-                <th className="px-4 py-2.5 text-left font-medium">Status</th>
-                <th className="px-4 py-2.5 text-left font-medium">Duration</th>
-                <th className="px-4 py-2.5 text-right font-medium">Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              {calls.map((c) => (
-                <tr key={c.id} className="border-t">
-                  <td className="px-4 py-2.5"><Mono>{c.id}</Mono></td>
-                  <td className="px-4 py-2.5 capitalize">{c.direction}</td>
-                  <td className="px-4 py-2.5"><Mono className="text-muted-foreground">{c.from} → {c.to}</Mono></td>
-                  <td className="px-4 py-2.5">{nameFor(c.agentId)}</td>
-                  <td className="px-4 py-2.5"><StatusBadge status={c.status} /></td>
-                  <td className="px-4 py-2.5 tabular-nums">{c.duration}s</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">${c.cost.toFixed(2)}</td>
+        {isLoading ? (
+          <div className="p-4">
+            <div className="space-y-3">{Array.from({ length: 5 }).map((_, index) => <div key={index} className="h-10 animate-pulse rounded-md bg-muted" />)}</div>
+          </div>
+        ) : recentCalls.length === 0 ? (
+          <EmptyState title="No calls yet" description="Start a mock outbound call or receive an inbound call to populate this table." />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full table-fixed text-sm">
+              <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="w-[220px] px-4 py-3 text-left font-medium">ID</th>
+                  <th className="w-[110px] px-4 py-3 text-left font-medium">Direction</th>
+                  <th className="px-4 py-3 text-left font-medium">From / To</th>
+                  <th className="w-[180px] px-4 py-3 text-left font-medium">Agent</th>
+                  <th className="w-[140px] px-4 py-3 text-left font-medium">Status</th>
+                  <th className="w-[100px] px-4 py-3 text-right font-medium">Duration</th>
+                  <th className="w-[100px] px-4 py-3 text-right font-medium">Cost</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {recentCalls.map((call) => (
+                  <tr key={call.id} className="border-b last:border-b-0 hover:bg-muted/35">
+                    <td className="px-4 py-3"><Mono className="text-muted-foreground">{call.id}</Mono></td>
+                    <td className="px-4 py-3 capitalize">{call.direction}</td>
+                    <td className="px-4 py-3"><Mono className="text-muted-foreground">{call.from} / {call.to}</Mono></td>
+                    <td className="px-4 py-3"><span className="block truncate">{agentsById.get(call.agentId)?.name ?? call.agentId}</span></td>
+                    <td className="px-4 py-3"><StatusBadge status={call.status} /></td>
+                    <td className="px-4 py-3 text-right tabular-nums">{call.duration}s</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{formatUsd(call.cost)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
+}
+
+function formatUsd(value: number) {
+  return `$${value.toFixed(2)}`;
 }

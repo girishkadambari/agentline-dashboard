@@ -535,3 +535,71 @@ Fix:
 Verification:
 
 - `npm run build` passed.
+
+## 2026-05-07 - Phase F3F-2 API Keys Backend Integration
+
+Status: implemented
+
+Implemented:
+
+- Added `src/lib/api/api-keys.ts` for backend API-key list/create/update/revoke
+  calls.
+- Replaced the API Keys route mock import with real backend data.
+- Connected `/api-keys` to:
+  - `GET /api-keys`
+  - `POST /api-keys`
+  - `PATCH /api-keys/:id`
+  - `DELETE /api-keys/:id`
+- Added one-time full key reveal after key creation.
+- Added copy controls for created keys and key prefixes.
+- Added rename and revoke actions.
+- Added loading, empty, validation, and API error states.
+- Updated the frontend next-phase plan and mock import audit.
+
+Verification:
+
+- `npm run build` passed.
+
+Next implementation priority:
+
+1. Replace Overview mock data with backend-derived summaries.
+2. Connect Playground to backend-backed agents, calls, messages, and webhooks.
+3. Replace Service Health mock data with backend health/status checks.
+4. Add Contacts backend support or convert Contacts to a tracked backend-gap
+   placeholder.
+
+## 2026-05-07 - Phase F3F-3 Overview Backend Integration
+
+Status: implemented
+
+Implemented:
+
+- Replaced Overview route mock imports with backend API calls.
+- Connected `/` overview to:
+  - `GET /agents`
+  - `GET /numbers`
+  - `GET /calls`
+  - `GET /conversations`
+  - `GET /usage/daily`
+  - `GET /billing/balance`
+  - `GET /webhooks/deliveries?status=failed`
+- Added backend-derived stats for active agents, active numbers, recent calls,
+  conversations, failed webhooks, seven-day spend, and billing balance.
+- Added backend-derived usage trend chart.
+- Added backend-derived recent conversations and recent calls sections.
+- Added loading, empty, and API error states.
+- Updated the next-phase plan to make Playground backend integration the next
+  frontend priority.
+
+Verification:
+
+- `npm run build` passed.
+- Mock import audit now shows direct mock route imports only in Playground and
+  Service Health.
+
+Next implementation priority:
+
+1. Connect Playground to backend-backed agents, calls, messages, and webhooks.
+2. Replace Service Health mock data with backend health/status checks.
+3. Add Contacts backend support or convert Contacts to a tracked backend-gap
+   placeholder.
