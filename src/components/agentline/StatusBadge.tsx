@@ -10,6 +10,7 @@ const styles: Record<string, string> = {
   queued: "bg-info/10 text-info border-info/20",
   draft: "bg-muted text-muted-foreground border-border",
   paused: "bg-muted text-muted-foreground border-border",
+  disabled: "bg-muted text-muted-foreground border-border",
   released: "bg-muted text-muted-foreground border-border",
   revoked: "bg-muted text-muted-foreground border-border",
   pending: "bg-warning/15 text-warning-foreground border-warning/30",

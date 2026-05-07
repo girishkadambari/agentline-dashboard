@@ -1,11 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Phone, PhoneOff, Repeat } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { Stat } from "@/components/agentline/Stat";
-import { getCall, callTimeline, callTranscript } from "@/lib/api/calls";
-import { getAgent } from "@/lib/api/agents";
-import { ArrowLeft, Phone, PhoneOff, Repeat } from "lucide-react";
+import { EmptyState } from "@/components/agentline/EmptyState";
+import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { getBackendAgent, type AgentListItem } from "@/lib/api/agents";
+import {
+  endBackendCall,
+  getBackendCall,
+  getBackendCallTranscript,
+  transferBackendCall,
+  type CallListItem,
+  type TranscriptTurn,
+} from "@/lib/api/calls";
 
 export const Route = createFileRoute("/_app/calls/$callId")({
   component: CallDetail,
@@ -14,26 +24,105 @@ export const Route = createFileRoute("/_app/calls/$callId")({
 
 function CallDetail() {
   const { callId } = Route.useParams();
-  const { data: call } = getCall(callId);
-  if (!call) return <div className="rounded-lg border border-dashed bg-surface px-6 py-16 text-center"><h2 className="text-sm font-semibold">Call not found</h2><Link to="/calls" className="mt-3 inline-block text-xs underline">Back to calls</Link></div>;
+  const [call, setCall] = useState<CallListItem | null>(null);
+  const [agent, setAgent] = useState<AgentListItem | null>(null);
+  const [transcript, setTranscript] = useState<TranscriptTurn[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const agent = getAgent(call.agentId).data;
-  const timeline = callTimeline(call.id).data;
-  const transcript = callTranscript(call.id).data;
+  async function loadCall() {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const callResponse = await getBackendCall(callId);
+      setCall(callResponse.data);
+      const [agentResponse, transcriptResponse] = await Promise.all([
+        getBackendAgent(callResponse.data.agentId).catch(() => null),
+        getBackendCallTranscript(callResponse.data.id),
+      ]);
+      setAgent(agentResponse?.data ?? null);
+      setTranscript(transcriptResponse.data);
+    } catch (caught) {
+      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load call.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadCall();
+  }, [callId]);
+
+  async function endCall() {
+    if (!call) {
+      return;
+    }
+
+    setIsActionLoading(true);
+    setError(null);
+    try {
+      const response = await endBackendCall(call.id);
+      setCall(response.data);
+    } catch (caught) {
+      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not end call.");
+    } finally {
+      setIsActionLoading(false);
+    }
+  }
+
+  async function transferCall() {
+    if (!call) {
+      return;
+    }
+
+    const to = window.prompt("Transfer to phone number");
+    if (!to) {
+      return;
+    }
+
+    setIsActionLoading(true);
+    setError(null);
+    try {
+      const response = await transferBackendCall(call.id, to);
+      setCall(response.data);
+    } catch (caught) {
+      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not transfer call.");
+    } finally {
+      setIsActionLoading(false);
+    }
+  }
+
+  if (isLoading) {
+    return <div className="rounded-lg border bg-surface p-6 text-sm text-muted-foreground">Loading call...</div>;
+  }
+
+  if (!call) {
+    return (
+      <EmptyState
+        title="Call not found"
+        description={error ?? `No call with id ${callId}.`}
+        action={<Link to="/calls" className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted">Back to calls</Link>}
+      />
+    );
+  }
+
+  const terminal = ["completed", "failed", "busy", "no_answer", "canceled", "transferred"].includes(call.status);
 
   return (
     <div>
       <Link to="/calls" className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><ArrowLeft className="h-3 w-3" /> Calls</Link>
       <PageHeader
         title={`${call.direction === "inbound" ? "Inbound" : "Outbound"} call`}
-        description={<><Mono>{call.from}</Mono> → <Mono>{call.to}</Mono></>}
+        description={<><Mono>{call.from}</Mono> {"->"} <Mono>{call.to}</Mono></>}
         actions={
           <>
-            <button className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"><Repeat className="h-3.5 w-3.5" /> Transfer</button>
-            <button className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10"><PhoneOff className="h-3.5 w-3.5" /> End call</button>
+            <button onClick={transferCall} disabled={isActionLoading || terminal} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"><Repeat className="h-3.5 w-3.5" /> Transfer</button>
+            <button onClick={endCall} disabled={isActionLoading || terminal} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"><PhoneOff className="h-3.5 w-3.5" /> End call</button>
           </>
         }
       />
+      {error && <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
       <div className="mb-6 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         <Mono>{call.id}</Mono><span>·</span>
         <Link to="/agents/$agentId" params={{ agentId: call.agentId }} className="hover:underline">{agent?.name ?? call.agentId}</Link><span>·</span>
@@ -50,56 +139,60 @@ function CallDetail() {
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
-          <div>
+          <section>
             <h3 className="mb-2 text-sm font-semibold">Transcript</h3>
-            <div className="rounded-lg border bg-surface divide-y">
-              {transcript.map((t, i) => (
-                <div key={i} className="flex gap-3 px-4 py-3 text-sm">
-                  <Mono className="w-12 shrink-0 text-muted-foreground">{t.at}</Mono>
-                  <span className={`w-16 shrink-0 text-xs font-medium uppercase ${t.role === "agent" ? "text-info" : "text-muted-foreground"}`}>{t.role}</span>
-                  <span>{t.text}</span>
+            <div className="divide-y rounded-lg border bg-surface">
+              {transcript.length === 0 ? (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">No transcript turns yet.</div>
+              ) : transcript.map((turn) => (
+                <div key={turn.id} className="flex gap-3 px-4 py-3 text-sm">
+                  <Mono className="w-14 shrink-0 text-muted-foreground">{formatMs(turn.startedAtMs)}</Mono>
+                  <span className={`w-16 shrink-0 text-xs font-medium uppercase ${turn.speaker === "agent" ? "text-info" : "text-muted-foreground"}`}>{turn.speaker}</span>
+                  <span>{turn.text}</span>
                 </div>
               ))}
             </div>
-          </div>
-          <div>
+          </section>
+          <section>
             <h3 className="mb-2 text-sm font-semibold">Summary</h3>
-            <div className="rounded-lg border bg-surface px-4 py-3 text-sm">User reported login issue. Agent sent password reset email. User confirmed resolution.</div>
-          </div>
-          <div>
+            <div className="rounded-lg border bg-surface px-4 py-3 text-sm">{call.summary || "No summary available."}</div>
+          </section>
+          <section>
             <h3 className="mb-2 text-sm font-semibold">Structured outcome</h3>
-            <pre className="rounded-md border bg-foreground p-3 font-mono text-xs text-background overflow-x-auto">{JSON.stringify({ resolved: true, category: "auth", followup_required: false }, null, 2)}</pre>
-          </div>
-          <div>
-            <h3 className="mb-2 text-sm font-semibold">Recording</h3>
-            <div className="flex items-center gap-3 rounded-lg border bg-surface px-4 py-3 text-sm text-muted-foreground"><Phone className="h-4 w-4" /> Recording placeholder · stored 30 days</div>
-          </div>
+            <pre className="overflow-x-auto rounded-md border bg-foreground p-3 font-mono text-xs text-background">{JSON.stringify({ outcome: call.outcome, status: call.status }, null, 2)}</pre>
+          </section>
         </div>
-        <div className="space-y-4">
-          <div>
+        <aside className="space-y-4">
+          <section>
             <h3 className="mb-2 text-sm font-semibold">Lifecycle</h3>
             <div className="rounded-lg border bg-surface px-3 py-2 text-xs">
-              {timeline.map((t, i) => (
-                <div key={i} className="flex gap-2 border-b py-1.5 last:border-0">
-                  <Mono className="w-20 text-muted-foreground">{t.at}</Mono>
-                  <span className="font-medium">{t.event}</span>
-                  {t.detail && <span className="text-muted-foreground">— {t.detail}</span>}
-                </div>
-              ))}
+              <LifecycleRow label="started" value={call.startedAt} />
+              <LifecycleRow label="ended" value={call.endedAt ?? "Not ended"} />
+              <LifecycleRow label="provider" value={call.provider} />
             </div>
-          </div>
-          <div>
-            <h3 className="mb-2 text-sm font-semibold">Webhook events</h3>
-            <div className="rounded-md border bg-surface px-3 py-2 text-xs"><Mono>agent.call.ended</Mono> <span className="text-success">200 OK</span></div>
-          </div>
-          {call.status === "failed" && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs">
-              <div className="font-medium text-destructive">Failure reason</div>
-              <div className="mt-1 text-muted-foreground">provider_error: upstream returned 503</div>
-            </div>
-          )}
-        </div>
+          </section>
+          <section>
+            <h3 className="mb-2 text-sm font-semibold">Recording</h3>
+            <div className="flex items-center gap-3 rounded-lg border bg-surface px-4 py-3 text-sm text-muted-foreground"><Phone className="h-4 w-4" /> Recording support is tracked for a later phase.</div>
+          </section>
+        </aside>
       </div>
+    </div>
+  );
+}
+
+function formatMs(value: number) {
+  const seconds = Math.floor(value / 1000);
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
+
+function LifecycleRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-2 border-b py-1.5 last:border-0">
+      <span className="w-20 font-medium">{label}</span>
+      <span className="text-muted-foreground">{value}</span>
     </div>
   );
 }

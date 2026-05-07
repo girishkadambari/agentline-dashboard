@@ -1,24 +1,106 @@
-import { numbers } from "./mock";
-import { wrap, wrapList } from "./client";
-import type { PhoneNumber } from "./types";
+import { apiRequest } from "./client";
 
-export const listNumbers = () => wrapList<PhoneNumber>(numbers);
-export const getNumber = (id: string) => {
-  const n = numbers.find((x) => x.id === id);
-  return n ? wrap(n) : { data: null as PhoneNumber | null, error: { code: "not_found", message: id } };
-};
-export const provisionNumber = (input: { country: string; areaCode: string; capabilities: string[]; provider: PhoneNumber["provider"]; agentId?: string }) =>
-  wrap<PhoneNumber>({
-    id: `pn_${Math.random().toString(36).slice(2, 6)}`,
-    number: `+1 ${input.areaCode} 555 0${Math.floor(100 + Math.random() * 899)}`,
-    country: input.country,
-    areaCode: input.areaCode,
-    capabilities: input.capabilities,
-    provider: input.provider,
-    agentId: input.agentId,
-    status: "pending",
+export interface BackendNumber {
+  id: string;
+  workspaceId: string;
+  projectId: string;
+  agentId?: string | null;
+  phoneNumber: string;
+  country: string;
+  areaCode?: string | null;
+  capabilities: string[];
+  status: string;
+  provider: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NumberListItem {
+  id: string;
+  agentId?: string;
+  number: string;
+  country: string;
+  areaCode: string;
+  capabilities: string[];
+  provider: string;
+  status: string;
+  monthlyCost: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProvisionNumberInput {
+  agentId?: string;
+  country?: string;
+  areaCode?: string;
+  capabilities?: string[];
+}
+
+export interface UpdateNumberInput {
+  agentId?: string | null;
+}
+
+function mapBackendNumber(number: BackendNumber): NumberListItem {
+  return {
+    id: number.id,
+    agentId: number.agentId ?? undefined,
+    number: number.phoneNumber,
+    country: number.country,
+    areaCode: number.areaCode ?? "",
+    capabilities: number.capabilities,
+    provider: number.provider,
+    status: number.status,
     monthlyCost: 1.15,
+    createdAt: number.createdAt,
+    updatedAt: number.updatedAt,
+  };
+}
+
+export async function listBackendNumbers() {
+  const response = await apiRequest<{ data: BackendNumber[]; pagination: { limit: number; nextCursor: string | null } }>("/numbers");
+
+  return {
+    data: response.data.map(mapBackendNumber),
+    pagination: response.pagination,
+  };
+}
+
+export async function getBackendNumber(id: string) {
+  const response = await apiRequest<{ data: BackendNumber }>(`/numbers/${id}`);
+
+  return { data: mapBackendNumber(response.data) };
+}
+
+export async function provisionBackendNumber(input: ProvisionNumberInput) {
+  const response = await apiRequest<{ data: BackendNumber }>("/numbers", {
+    method: "POST",
+    body: JSON.stringify(input),
   });
-export const attachNumber = (numberId: string, agentId: string) => wrap({ numberId, agentId });
-export const detachNumber = (numberId: string) => wrap({ numberId });
-export const releaseNumber = (numberId: string) => wrap({ numberId, status: "released" as const });
+
+  return { data: mapBackendNumber(response.data) };
+}
+
+export async function updateBackendNumber(id: string, input: UpdateNumberInput) {
+  const response = await apiRequest<{ data: BackendNumber }>(`/numbers/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+
+  return { data: mapBackendNumber(response.data) };
+}
+
+export async function releaseBackendNumber(id: string) {
+  const response = await apiRequest<{ data: BackendNumber }>(`/numbers/${id}`, {
+    method: "DELETE",
+  });
+
+  return { data: mapBackendNumber(response.data) };
+}
+
+export const listNumbers = listBackendNumbers;
+export const getNumber = getBackendNumber;
+export const provisionNumber = provisionBackendNumber;
+export const attachNumber = (numberId: string, agentId: string) =>
+  updateBackendNumber(numberId, { agentId });
+export const detachNumber = (numberId: string) => updateBackendNumber(numberId, { agentId: null });
+export const releaseNumber = releaseBackendNumber;

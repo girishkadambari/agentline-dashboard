@@ -1,13 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { Stat } from "@/components/agentline/Stat";
-import { InlineTabs } from "@/components/agentline/Tabs";
-import { getNumber } from "@/lib/api/numbers";
-import { getAgent } from "@/lib/api/agents";
-import { listCalls } from "@/lib/api/calls";
-import { ArrowLeft } from "lucide-react";
+import { EmptyState } from "@/components/agentline/EmptyState";
+import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
+import {
+  getBackendNumber,
+  releaseBackendNumber,
+  updateBackendNumber,
+  type NumberListItem,
+} from "@/lib/api/numbers";
 
 export const Route = createFileRoute("/_app/numbers/$numberId")({
   component: NumberDetail,
@@ -16,59 +22,133 @@ export const Route = createFileRoute("/_app/numbers/$numberId")({
 
 function NumberDetail() {
   const { numberId } = Route.useParams();
-  const { data: n } = getNumber(numberId);
-  if (!n) return <Empty id={numberId} />;
-  const agent = n.agentId ? getAgent(n.agentId).data : null;
-  const recentCalls = listCalls().data.filter((c) => c.from === n.number || c.to === n.number);
+  const [number, setNumber] = useState<NumberListItem | null>(null);
+  const [agents, setAgents] = useState<AgentListItem[]>([]);
+  const [agentId, setAgentId] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+
+    Promise.all([getBackendNumber(numberId), listBackendAgents()])
+      .then(([numberResponse, agentsResponse]) => {
+        if (!cancelled) {
+          setNumber(numberResponse.data);
+          setAgentId(numberResponse.data.agentId ?? "");
+          setAgents(agentsResponse.data);
+        }
+      })
+      .catch((caught) => {
+        if (!cancelled) {
+          setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load number.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [numberId]);
+
+  const agentsById = useMemo(() => new Map(agents.map((agent) => [agent.id, agent])), [agents]);
+  const agent = number?.agentId ? agentsById.get(number.agentId) : null;
+
+  async function saveAssignment() {
+    if (!number) {
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+    try {
+      const response = await updateBackendNumber(number.id, { agentId: agentId || null });
+      setNumber(response.data);
+    } catch (caught) {
+      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not update number.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function releaseNumber() {
+    if (!number || !window.confirm(`Release ${number.number}?`)) {
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+    try {
+      const response = await releaseBackendNumber(number.id);
+      setNumber(response.data);
+    } catch (caught) {
+      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not release number.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  if (isLoading) {
+    return <div className="rounded-lg border bg-surface p-6 text-sm text-muted-foreground">Loading number...</div>;
+  }
+
+  if (!number) {
+    return <Empty id={numberId} error={error} />;
+  }
 
   return (
     <div>
       <Link to="/numbers" className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><ArrowLeft className="h-3 w-3" /> Numbers</Link>
       <PageHeader
-        title={n.number}
-        description={`${n.country} · ${n.areaCode}`}
+        title={number.number}
+        description={`${number.country}${number.areaCode ? ` · ${number.areaCode}` : ""}`}
         actions={
           <>
-            <button className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted">{n.agentId ? "Detach" : "Attach to agent"}</button>
-            <button className="rounded-md border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10">Release number</button>
+            <button onClick={saveAssignment} disabled={isSaving} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60"><Pencil className="h-3.5 w-3.5" />Save assignment</button>
+            <button onClick={releaseNumber} disabled={isSaving || number.status === "released"} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-60"><Trash2 className="h-3.5 w-3.5" />Release number</button>
           </>
         }
       />
+      {error && <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
       <div className="mb-6 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-        <Mono>{n.id}</Mono><span>·</span>
-        <span className="capitalize">Provider: {n.provider}</span><span>·</span>
-        <StatusBadge status={n.status} />
+        <Mono>{number.id}</Mono><span>·</span>
+        <span className="capitalize">Provider: {number.provider}</span><span>·</span>
+        <StatusBadge status={number.status} />
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="Capabilities" value={<span className="text-base font-medium uppercase">{n.capabilities.join(", ")}</span>} />
-        <Stat label="Attached agent" value={<span className="text-base font-medium">{agent?.name ?? "—"}</span>} />
-        <Stat label="Monthly cost" value={`$${n.monthlyCost.toFixed(2)}`} />
-        <Stat label="Compliance" value={<span className="text-base font-medium">10DLC verified</span>} />
+        <Stat label="Capabilities" value={<span className="text-base font-medium uppercase">{number.capabilities.join(", ")}</span>} />
+        <Stat label="Attached agent" value={<span className="text-base font-medium">{agent?.name ?? "Unassigned"}</span>} />
+        <Stat label="Monthly cost" value={`$${number.monthlyCost.toFixed(2)}`} />
+        <Stat label="Status" value={<StatusBadge status={number.status} />} />
       </div>
 
-      <div className="mt-6">
-        <InlineTabs tabs={[
-          { id: "activity", label: "Recent activity", content: (
-            <div className="rounded-lg border bg-surface overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr><th className="px-4 py-2 text-left font-medium">Call</th><th className="px-4 py-2 text-left font-medium">Direction</th><th className="px-4 py-2 text-left font-medium">Status</th><th className="px-4 py-2 text-left font-medium">Started</th></tr>
-                </thead>
-                <tbody>{recentCalls.length === 0 ? <tr><td colSpan={4} className="px-4 py-6 text-center text-sm text-muted-foreground">No recent calls.</td></tr> : recentCalls.map((c) => (
-                  <tr key={c.id} className="border-t"><td className="px-4 py-2"><Link to="/calls/$callId" params={{ callId: c.id }} className="hover:underline"><Mono>{c.id}</Mono></Link></td><td className="px-4 py-2 capitalize">{c.direction}</td><td className="px-4 py-2"><StatusBadge status={c.status} /></td><td className="px-4 py-2 text-muted-foreground">{c.startedAt}</td></tr>
-                ))}</tbody>
-              </table>
-            </div>
-          ) },
-          { id: "provider", label: "Provider metadata", content: (
-            <pre className="rounded-md border bg-foreground p-3 font-mono text-xs text-background overflow-x-auto">{JSON.stringify({ sid: "PNxxxxxxxxxxxxxxxx", trunk: "default", region: "us-west", e164: n.number }, null, 2)}</pre>
-          ) },
-        ]} />
+      <div className="mt-6 max-w-xl rounded-lg border bg-surface p-4">
+        <h3 className="text-sm font-semibold">Assignment</h3>
+        <label className="mt-4 block text-sm font-medium">
+          Agent
+          <select value={agentId} onChange={(event) => setAgentId(event.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm">
+            <option value="">Unassigned</option>
+            {agents.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+        </label>
       </div>
     </div>
   );
 }
 
-function Empty({ id }: { id: string }) {
-  return <div className="rounded-lg border border-dashed bg-surface px-6 py-16 text-center"><h2 className="text-sm font-semibold">Number not found</h2><p className="mt-1 text-xs text-muted-foreground"><Mono>{id}</Mono></p><Link to="/numbers" className="mt-3 inline-block text-xs underline">Back to numbers</Link></div>;
+function Empty({ id, error }: { id: string; error: string | null }) {
+  return (
+    <EmptyState
+      title="Number not found"
+      description={error ?? `No number with id ${id}.`}
+      action={<Link to="/numbers" className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted">Back to numbers</Link>}
+    />
+  );
 }

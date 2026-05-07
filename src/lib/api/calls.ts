@@ -1,29 +1,149 @@
-import { calls } from "./mock";
-import { wrap, wrapList } from "./client";
-import type { Call } from "./types";
+import { apiRequest } from "./client";
 
-export const listCalls = (opts: { agentId?: string } = {}) =>
-  wrapList<Call>(opts.agentId ? calls.filter((c) => c.agentId === opts.agentId) : calls);
-export const getCall = (id: string) => {
-  const c = calls.find((x) => x.id === id);
-  return c ? wrap(c) : { data: null as Call | null, error: { code: "not_found", message: id } };
-};
-export const startOutboundCall = (input: { agentId: string; to: string }) => wrap({ id: `call_out_${Date.now()}`, ...input, status: "in_progress" as const });
-export const simulateInboundCall = (input: { agentId: string; from: string }) => wrap({ id: `call_in_${Date.now()}`, ...input, status: "in_progress" as const });
-export const endCall = (id: string) => wrap({ id, status: "completed" as const });
-export const transferCall = (id: string, to: string) => wrap({ id, transferTo: to });
+export interface BackendCall {
+  id: string;
+  workspaceId: string;
+  projectId: string;
+  agentId: string;
+  conversationId?: string | null;
+  phoneNumberId?: string | null;
+  contactId?: string | null;
+  direction: "inbound" | "outbound";
+  fromNumber: string;
+  toNumber: string;
+  status: string;
+  durationSeconds: number;
+  summary?: string | null;
+  outcome?: string | null;
+  recordingId?: string | null;
+  provider: string;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
-export const callTranscript = (_id: string) => wrap([
-  { role: "agent", at: "00:00", text: "Hi, this is the AcmeCo support line. How can I help today?" },
-  { role: "caller", at: "00:04", text: "Hi, my login isn't working." },
-  { role: "agent", at: "00:09", text: "Sorry to hear. Let me get a reset link sent to you." },
-  { role: "caller", at: "00:21", text: "Got it, thanks." },
-]);
+export interface TranscriptTurn {
+  id: string;
+  callId: string;
+  speaker: "agent" | "user" | string;
+  text: string;
+  startedAtMs: number;
+  endedAtMs: number;
+  confidence?: number | null;
+  createdAt: string;
+}
 
-export const callTimeline = (_id: string) => wrap([
-  { at: "10:42:01", event: "call.started" },
-  { at: "10:42:02", event: "provider.connected", detail: "twilio · sip" },
-  { at: "10:42:03", event: "agent.greeted" },
-  { at: "10:45:08", event: "call.ended", detail: "duration 184s" },
-  { at: "10:45:09", event: "webhook.delivered", detail: "200 OK in 142ms" },
-]);
+export interface CallListItem {
+  id: string;
+  agentId: string;
+  direction: "inbound" | "outbound";
+  from: string;
+  to: string;
+  status: string;
+  duration: number;
+  outcome: string;
+  summary: string;
+  provider: string;
+  startedAt: string;
+  endedAt?: string;
+  cost: number;
+}
+
+function formatDate(value?: string | null) {
+  if (!value) {
+    return "Not started";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function estimateVoiceCost(durationSeconds: number) {
+  const billableMinutes = Math.max(1, Math.ceil(durationSeconds / 60));
+  return billableMinutes * 0.04;
+}
+
+export function mapBackendCall(call: BackendCall): CallListItem {
+  return {
+    id: call.id,
+    agentId: call.agentId,
+    direction: call.direction,
+    from: call.fromNumber,
+    to: call.toNumber,
+    status: call.status,
+    duration: call.durationSeconds,
+    outcome: call.outcome ?? call.status,
+    summary: call.summary ?? "",
+    provider: call.provider,
+    startedAt: formatDate(call.startedAt ?? call.createdAt),
+    endedAt: call.endedAt ? formatDate(call.endedAt) : undefined,
+    cost: estimateVoiceCost(call.durationSeconds),
+  };
+}
+
+export async function listBackendCalls() {
+  const response = await apiRequest<{ data: BackendCall[]; pagination: { limit: number; nextCursor: string | null } }>("/calls");
+
+  return {
+    data: response.data.map(mapBackendCall),
+    pagination: response.pagination,
+  };
+}
+
+export async function getBackendCall(id: string) {
+  const response = await apiRequest<{ data: BackendCall }>(`/calls/${id}`);
+
+  return { data: mapBackendCall(response.data) };
+}
+
+export async function startOutboundBackendCall(input: { agentId: string; to: string }) {
+  const response = await apiRequest<{ data: BackendCall }>("/calls", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+  return { data: mapBackendCall(response.data) };
+}
+
+export async function endBackendCall(id: string) {
+  const response = await apiRequest<{ data: BackendCall }>(`/calls/${id}/end`, {
+    method: "POST",
+  });
+
+  return { data: mapBackendCall(response.data) };
+}
+
+export async function transferBackendCall(id: string, to: string) {
+  const response = await apiRequest<{ data: BackendCall }>(`/calls/${id}/transfer`, {
+    method: "POST",
+    body: JSON.stringify({ to }),
+  });
+
+  return { data: mapBackendCall(response.data) };
+}
+
+export async function getBackendCallTranscript(id: string) {
+  return apiRequest<{ data: TranscriptTurn[]; pagination: { limit: number; nextCursor: string | null } }>(`/calls/${id}/transcript`);
+}
+
+export const listCalls = listBackendCalls;
+export const getCall = getBackendCall;
+export const startOutboundCall = startOutboundBackendCall;
+export const endCall = endBackendCall;
+export const transferCall = transferBackendCall;
+export const callTranscript = getBackendCallTranscript;
+export const callTimeline = async (id: string) => ({
+  data: [
+    { at: "created", event: "call.created", detail: id },
+  ],
+});

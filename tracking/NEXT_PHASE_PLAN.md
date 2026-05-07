@@ -1,0 +1,269 @@
+# AgentLine Frontend Next Phase Plan
+
+## Phase F1: Backend Auth And API Foundation
+
+Status: implemented, pending live backend smoke test
+
+Goal:
+
+Make the dashboard usable against the NestJS backend without waiting for Google
+SSO or a full frontend rewrite.
+
+Build:
+
+- API client with base URL config.
+- API-key session storage.
+- Login form that validates API key against the backend.
+- App-shell auth guard.
+- Workspace loading in sidebar/header.
+- Environment example for local backend URL.
+
+Exit Criteria:
+
+- `/login` can validate `sk_test_agentline_local` against a running backend.
+- Authenticated users can enter the dashboard.
+- Unauthenticated users are sent to `/login`.
+- Build passes. Completed with `npm run build` on 2026-05-07.
+
+Remaining Review:
+
+- Run the dashboard with the backend server and manually smoke test login.
+- Confirm whether the backend route is exactly `/workspaces/current` in the
+  active backend branch.
+
+## Phase F2: Onboarding Connected To Backend
+
+Status: partially implemented, pending live backend smoke test
+
+Goal:
+
+Turn onboarding from local mock state into real workspace and first-agent setup.
+
+Build:
+
+- Load current workspace.
+- Update workspace name. Implemented.
+- Create first agent. Implemented.
+- Optional webhook setup if endpoint exists.
+- Route completed onboarding to dashboard/playground.
+- Add clear backend-offline and validation states.
+
+Exit Criteria:
+
+- Onboarding creates or updates real backend records.
+- User can see the created agent on the Agents page once that page is connected.
+
+## Phase F3A: Agents Backend Integration
+
+Status: implemented
+
+Goal:
+
+Make the agent created during onboarding visible and manageable from the Agents
+screens.
+
+Build:
+
+- Convert `src/lib/api/agents.ts` from mock wrappers to backend functions.
+- Add backend agent mappers for list/detail UI needs.
+- Connect `/agents` to `GET /agents`.
+- Connect `/agents/$agentId` to `GET /agents/:id` and `PATCH /agents/:id`.
+- Connect create action to `POST /agents`.
+- Connect disable action to `DELETE /agents/:id`.
+- Add loading, empty, error, and invalid-agent states.
+- Refresh list/detail state after create/update/disable.
+
+Exit Criteria:
+
+- Agent created from onboarding appears on `/agents`.
+- Agent detail opens from backend data.
+- User can edit agent prompt/mode/voice/webhook URL and see persisted changes.
+- User can disable an agent without mutating mock data.
+- No production route touched in this phase imports mock agents.
+
+Verification:
+
+- `npm run build` passed after implementation.
+
+Review Risks:
+
+- Current UI expects fields like `numbers`, `calls`, `messages`, and
+  `lastActivity`, but backend agent responses do not include those rollups yet.
+  Use zero/empty display values or derive later from related endpoints.
+- Agent status values differ between Lovable mock data and backend status.
+  Normalize status in the API mapper.
+- The current create button has no drawer wired to real backend behavior.
+  Resolved with a backend-backed create dialog.
+
+## Phase F3B: Numbers Backend Integration
+
+Status: implemented
+
+Goal:
+
+Make phone-number provisioning and agent assignment usable from the frontend
+against the backend mock provider.
+
+Build:
+
+- Convert `src/lib/api/numbers.ts` from mock wrappers to backend functions.
+- Connect `/numbers` to `GET /numbers`.
+- Connect provision action to `POST /numbers`.
+- Support agent assignment during provisioning.
+- Support attach/detach via `PATCH /numbers/:id`.
+- Connect number detail to `GET /numbers/:id`.
+- Support release via `DELETE /numbers/:id`.
+- Add loading, empty, error, insufficient-balance, and provider-error states.
+
+Exit Criteria:
+
+- User can provision a mock number from the dashboard.
+- User can attach that number to an agent created from onboarding or Agents.
+- Number appears in list/detail from backend data after refresh.
+- No production route touched in this phase imports mock numbers.
+
+Verification:
+
+- `npm run build` passed after implementation.
+- Mock import audit passed for `src/lib/api/numbers.ts`, `/numbers`, and
+  `/numbers/$numberId`.
+
+Known follow-ups:
+
+- Monthly number cost is a frontend display constant until backend exposes price
+  metadata.
+- Number detail does not show real SMS/call activity yet; those wait for Inbox
+  and Calls backend integration.
+
+## Phase F3C: Calls Backend Integration
+
+Status: implemented
+
+Goal:
+
+Make outbound mock calls and call history usable from the frontend against the
+backend.
+
+Build:
+
+- Convert `src/lib/api/calls.ts` from mock wrappers to backend functions.
+- Connect `/calls` to `GET /calls`.
+- Add start outbound call drawer using `POST /calls`.
+- Let user choose a backend agent and enter destination phone number.
+- Connect `/calls/$callId` to `GET /calls/:id`.
+- Connect transcript view to `GET /calls/:id/transcript`.
+- Support end/transfer actions only where backend state allows them.
+- Add loading, empty, error, and validation states.
+
+Exit Criteria:
+
+- User can start a mock outbound call from the frontend.
+- Call appears in list/detail from backend data after refresh.
+- Transcript renders from backend data.
+- No production route touched in this phase imports mock calls.
+
+Verification:
+
+- `npm run build` passed after implementation.
+- Mock import audit passed for calls API and calls routes.
+
+Known follow-ups:
+
+- Starting a call requires the selected agent to have an active voice-capable
+  number. The drawer surfaces the backend conflict, but the UI can later
+  pre-filter or warn before submit.
+- Transfer uses a browser prompt for now; convert to a drawer/form once live
+  voice workflows are deeper.
+
+## Phase F3D: Inbox And Messages Backend Integration
+
+Status: planned next
+
+Goal:
+
+Make conversations and SMS messages usable from backend data.
+
+Build:
+
+- Convert `src/lib/api/messages.ts` from mock wrappers to backend functions.
+- Connect `/inbox` to `GET /conversations`.
+- Connect conversation messages to `GET /conversations/:id/messages`.
+- Add outbound SMS drawer using `POST /messages`.
+- Add inbound SMS simulation form using `POST /simulations/inbound-sms` if the
+  backend route exists in the active branch.
+- Add loading, empty, error, and validation states.
+
+Exit Criteria:
+
+- User can send a mock outbound SMS from the frontend.
+- Conversations and messages appear from backend data after refresh.
+- No production route touched in this phase imports mock conversations/messages.
+
+## Phase F3E: Core Dashboard Data Integration
+
+Goal:
+
+Replace mock data on primary dashboard screens with backend API calls.
+
+Build:
+
+- Overview from agents, numbers, calls, conversations, usage, billing.
+- Agents CRUD.
+- Numbers list/provision/attach/release.
+- Inbox conversations/messages.
+- Calls list/detail/transcript.
+- Webhooks list/test/delivery logs.
+- Usage and billing.
+- API keys.
+
+Exit Criteria:
+
+- Main navigation screens use backend APIs or explicit backend-gap placeholders.
+- No route silently imports `src/lib/mock/data` for production data.
+
+Current Mock Import Audit:
+
+- Direct route mock imports remain in Overview, Playground, Inbox, Usage,
+  Billing, API Keys, and Service Health.
+- API wrapper mock imports remain in Agents, Numbers, Messages, Calls,
+  Webhooks, Usage, Billing, Contacts, and API key support.
+- Contacts still needs a backend API or a temporary backend-gap placeholder.
+
+## Phase F4: Drawer And Action Quality Pass
+
+Goal:
+
+Fix Lovable-generated interaction issues before deep backend wiring continues.
+
+Build:
+
+- Standard drawer layout.
+- Consistent loading, error, and empty states.
+- Form validation and disabled states.
+- Confirm destructive actions.
+- Responsive drawer behavior.
+
+Exit Criteria:
+
+- Drawer flows are predictable on desktop and mobile.
+- Actions do not mutate local-only mock state.
+
+## Phase F5: Backend Gap Closure
+
+Goal:
+
+Track frontend needs that require backend additions.
+
+Likely gaps:
+
+- Contacts API.
+- Dashboard summary endpoint.
+- Onboarding completion field.
+- Google SSO/session endpoints.
+- User profile endpoint.
+- Team/member invitation screens.
+
+Exit Criteria:
+
+- Every frontend screen either has a backend API, a tracked backend gap, or is
+  removed from the MVP navigation until it is real.

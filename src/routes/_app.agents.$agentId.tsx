@@ -1,47 +1,153 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Pencil, Power, Save } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { Stat } from "@/components/agentline/Stat";
 import { InlineTabs } from "@/components/agentline/Tabs";
-import { getAgent } from "@/lib/api/agents";
-import { listNumbers } from "@/lib/api/numbers";
-import { listCalls } from "@/lib/api/calls";
-import { listConversations } from "@/lib/api/messages";
-import { listUsageEvents } from "@/lib/api/usage";
-import { listWebhooks } from "@/lib/api/webhooks";
-import { ArrowLeft, MessageSquare, PhoneOutgoing, Power } from "lucide-react";
+import { EmptyState } from "@/components/agentline/EmptyState";
+import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import {
+  disableBackendAgent,
+  getBackendAgent,
+  updateBackendAgent,
+  type AgentListItem,
+  type BackendAgentMode,
+} from "@/lib/api/agents";
 
 export const Route = createFileRoute("/_app/agents/$agentId")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: search.tab === "config" ? "config" : undefined,
+  }),
   component: AgentDetail,
   head: () => ({ meta: [{ title: "Agent — AgentLine" }] }),
 });
 
 function AgentDetail() {
   const { agentId } = Route.useParams();
-  const { data: agent } = getAgent(agentId);
-  if (!agent) return <NotFound id={agentId} kind="Agent" backTo="/agents" />;
+  const search = Route.useSearch();
+  const [activeTab, setActiveTab] = useState(search.tab ?? "overview");
+  const [agent, setAgent] = useState<AgentListItem | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDisabling, setIsDisabling] = useState(false);
 
-  const numbers = listNumbers().data.filter((n) => n.agentId === agent.id);
-  const calls = listCalls({ agentId: agent.id }).data;
-  const convos = listConversations({ agentId: agent.id }).data;
-  const usage = listUsageEvents({ agentId: agent.id }).data;
-  const webhooks = listWebhooks().data;
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+
+    getBackendAgent(agentId)
+      .then((response) => {
+        if (!cancelled) {
+          setAgent(response.data);
+        }
+      })
+      .catch((caught) => {
+        if (!cancelled) {
+          setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load agent.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [agentId]);
+
+  useEffect(() => {
+    if (search.tab === "config") {
+      setActiveTab("config");
+    }
+  }, [search.tab]);
+
+  async function saveAgent(input: AgentFormState) {
+    if (!agent) {
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+    try {
+      const response = await updateBackendAgent(agent.id, {
+        name: input.name,
+        description: input.description || undefined,
+        mode: input.mode,
+        voice: input.voice || undefined,
+        beginMessage: input.beginMessage || undefined,
+        systemPrompt: input.systemPrompt || undefined,
+        webhookUrl: input.webhookUrl || undefined,
+        transferNumber: input.transferNumber || undefined,
+        voicemailMessage: input.voicemailMessage || undefined,
+      });
+      setAgent(response.data);
+    } catch (caught) {
+      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not save agent.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function disableAgent() {
+    if (!agent || !window.confirm(`Disable ${agent.name}?`)) {
+      return;
+    }
+
+    setIsDisabling(true);
+    setError(null);
+    try {
+      const response = await disableBackendAgent(agent.id);
+      setAgent(response.data);
+    } catch (caught) {
+      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not disable agent.");
+    } finally {
+      setIsDisabling(false);
+    }
+  }
+
+  if (isLoading) {
+    return <div className="rounded-lg border bg-surface p-6 text-sm text-muted-foreground">Loading agent...</div>;
+  }
+
+  if (!agent) {
+    return <NotFound id={agentId} error={error} />;
+  }
 
   return (
     <div>
       <Link to="/agents" className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><ArrowLeft className="h-3 w-3" /> Agents</Link>
       <PageHeader
         title={agent.name}
-        description={agent.description}
+        description={agent.description || "No description"}
         actions={
           <>
-            <button className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"><MessageSquare className="h-3.5 w-3.5" /> Test SMS</button>
-            <button className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"><PhoneOutgoing className="h-3.5 w-3.5" /> Test call</button>
-            <button className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10"><Power className="h-3.5 w-3.5" /> Disable</button>
+            <button
+              onClick={() => setActiveTab("config")}
+              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+            >
+              <Pencil className="h-3.5 w-3.5" /> Update config
+            </button>
+            <button
+              onClick={disableAgent}
+              disabled={isDisabling || agent.status === "disabled"}
+              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Power className="h-3.5 w-3.5" /> {isDisabling ? "Disabling..." : "Disable"}
+            </button>
           </>
         }
       />
+      {error && (
+        <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      )}
       <div className="mb-6 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         <Mono>{agent.id}</Mono>
         <span>·</span>
@@ -51,149 +157,164 @@ function AgentDetail() {
       </div>
 
       <InlineTabs
+        active={activeTab}
+        onChange={setActiveTab}
         tabs={[
-          { id: "overview", label: "Overview", content: (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                <Stat label="Numbers" value={numbers.length} />
-                <Stat label="Calls" value={agent.calls} />
-                <Stat label="Messages" value={agent.messages} />
-                <Stat label="Last activity" value={<span className="text-base font-medium">{agent.lastActivity}</span>} />
-              </div>
-              <Section title="Recent calls">
-                <SimpleTable
-                  head={["ID", "Direction", "Status", "Duration"]}
-                  rows={calls.slice(0, 5).map((c) => [<Mono key="i">{c.id}</Mono>, c.direction, <StatusBadge key="s" status={c.status} />, `${c.duration}s`])}
-                />
-              </Section>
-              <Section title="Recent messages">
-                <SimpleTable
-                  head={["Contact", "Last message", "Activity"]}
-                  rows={convos.map((c) => [c.contactName, <span key="m" className="text-muted-foreground">{c.lastMessage}</span>, c.lastActivity])}
-                />
-              </Section>
-              <Section title="Latest webhook events">
-                <SimpleTable head={["Endpoint", "Events", "Status"]} rows={webhooks.map((w) => [<Mono key="u">{w.url}</Mono>, w.events.length + " events", <StatusBadge key="s" status={w.status} />])} />
-              </Section>
-            </div>
-          ) },
-          { id: "config", label: "Configuration", content: (
-            <div className="max-w-2xl space-y-4">
-              <Field label="Name" defaultValue={agent.name} />
-              <Field label="Description" defaultValue={agent.description} />
-              <Field label="Mode" defaultValue={agent.mode} mono />
-              <Field label="Voice" defaultValue={agent.voice} mono />
-              <Field label="Begin message" defaultValue={agent.beginMessage} />
-              <Field label="Transfer number" defaultValue="+1 415 555 0000" mono />
-              <Field label="Voicemail message" defaultValue="Please leave a message after the tone." />
-              <Field label="Webhook URL" defaultValue={agent.webhookUrl ?? ""} mono />
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground">System prompt</label>
-                <textarea defaultValue={agent.systemPrompt} className="mt-1.5 h-32 w-full rounded-md border bg-surface px-3 py-2 font-mono text-sm" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground">Metadata (JSON)</label>
-                <textarea defaultValue='{\n  "team": "support"\n}' className="mt-1.5 h-24 w-full rounded-md border bg-surface px-3 py-2 font-mono text-sm" />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button className="rounded-md border px-3 py-1.5 text-xs">Cancel</button>
-                <button className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background">Save changes</button>
-              </div>
-            </div>
-          ) },
-          { id: "numbers", label: "Numbers", content: (
-            <SimpleTable
-              head={["Number", "Capabilities", "Provider", "Status", ""]}
-              rows={numbers.map((n) => [
-                <Mono key="n">{n.number}</Mono>,
-                n.capabilities.join(", "),
-                <span key="p" className="capitalize text-muted-foreground">{n.provider}</span>,
-                <StatusBadge key="s" status={n.status} />,
-                <button key="d" className="rounded border px-2 py-0.5 text-xs hover:bg-muted">Detach</button>,
-              ])}
-              empty="No numbers attached. Attach one from the Numbers page."
-            />
-          ) },
-          { id: "convos", label: "Conversations", content: (
-            <SimpleTable head={["Contact", "Last message", "Activity"]} rows={convos.map((c) => [c.contactName, c.lastMessage, c.lastActivity])} empty="No conversations yet." />
-          ) },
-          { id: "calls", label: "Calls", content: (
-            <SimpleTable head={["ID", "Direction", "Status", "Outcome", "Duration"]} rows={calls.map((c) => [
-              <Link key="i" to="/calls/$callId" params={{ callId: c.id }} className="hover:underline"><Mono>{c.id}</Mono></Link>,
-              c.direction, <StatusBadge key="s" status={c.status} />, c.outcome, `${c.duration}s`,
-            ])} empty="No calls yet." />
-          ) },
-          { id: "usage", label: "Usage", content: (
-            <SimpleTable head={["Time", "Resource", "Channel", "Qty", "Total $"]} rows={usage.map((u) => [
-              u.time, <Mono key="r">{u.resourceId}</Mono>, u.channel, u.quantity, `$${u.totalCost.toFixed(4)}`,
-            ])} empty="No usage events." />
-          ) },
-          { id: "webhooks", label: "Webhooks", content: (
-            <SimpleTable head={["URL", "Events", "Status"]} rows={webhooks.map((w) => [
-              <Link key="u" to="/webhooks/$webhookId" params={{ webhookId: w.id }} className="hover:underline"><Mono>{w.url}</Mono></Link>,
-              w.events.join(", "), <StatusBadge key="s" status={w.status} />,
-            ])} />
-          ) },
-          { id: "logs", label: "Logs", content: (
-            <div className="rounded-md border bg-foreground p-3 font-mono text-[12px] leading-relaxed text-background">
-              {[
-                "[10:55:01] agent.call.started call_e5f6",
-                "[10:55:02] provider.connected twilio",
-                "[10:55:43] agent.message.sent msg_2",
-                "[10:55:48] webhook.delivered wh_01 (200, 142ms)",
-              ].map((l) => <div key={l}>{l}</div>)}
-            </div>
-          ) },
+          { id: "overview", label: "Overview", content: <AgentOverview agent={agent} /> },
+          { id: "config", label: "Configuration", content: <AgentConfigForm agent={agent} isSaving={isSaving} onSave={saveAgent} /> },
+          { id: "numbers", label: "Numbers", content: <EmptyState title="Numbers connect in the next phase" description="The Numbers page will attach real or mock numbers to this backend agent." /> },
+          { id: "conversations", label: "Conversations", content: <EmptyState title="No conversations loaded yet" description="Inbox integration is tracked after Agents and Numbers." /> },
+          { id: "calls", label: "Calls", content: <EmptyState title="No calls loaded yet" description="Call history will use backend call records in a later phase." /> },
         ]}
       />
     </div>
   );
 }
 
-function NotFound({ id, kind, backTo }: { id: string; kind: string; backTo: "/agents" | "/numbers" | "/calls" | "/contacts" | "/webhooks" }) {
+function AgentOverview({ agent }: { agent: AgentListItem }) {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Stat label="Numbers" value={agent.numbers} />
+        <Stat label="Calls" value={agent.calls} />
+        <Stat label="Messages" value={agent.messages} />
+        <Stat label="Last activity" value={<span className="text-base font-medium">{agent.lastActivity}</span>} />
+      </div>
+      <div className="rounded-lg border bg-surface p-4">
+        <h3 className="text-sm font-semibold">Runtime configuration</h3>
+        <dl className="mt-4 grid gap-3 text-sm md:grid-cols-2">
+          <Info label="Voice" value={agent.voice || "Not set"} />
+          <Info label="Webhook URL" value={agent.webhookUrl || "Not set"} mono />
+          <Info label="Begin message" value={agent.beginMessage || "Not set"} />
+          <Info label="System prompt" value={agent.systemPrompt || "Not set"} />
+        </dl>
+      </div>
+    </div>
+  );
+}
+
+function Info({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+      <dd className={`mt-1 break-words ${mono ? "font-mono text-xs" : ""}`}>{value}</dd>
+    </div>
+  );
+}
+
+interface AgentFormState {
+  name: string;
+  description: string;
+  mode: BackendAgentMode;
+  voice: string;
+  beginMessage: string;
+  systemPrompt: string;
+  transferNumber: string;
+  voicemailMessage: string;
+  webhookUrl: string;
+}
+
+function AgentConfigForm({
+  agent,
+  isSaving,
+  onSave,
+}: {
+  agent: AgentListItem;
+  isSaving: boolean;
+  onSave: (input: AgentFormState) => void;
+}) {
+  const [form, setForm] = useState<AgentFormState>({
+    name: agent.name,
+    description: agent.description,
+    mode: agent.mode,
+    voice: agent.voice,
+    beginMessage: agent.beginMessage,
+    systemPrompt: agent.systemPrompt,
+    transferNumber: agent.transferNumber ?? "",
+    voicemailMessage: agent.voicemailMessage ?? "",
+    webhookUrl: agent.webhookUrl ?? "",
+  });
+
+  useEffect(() => {
+    setForm({
+      name: agent.name,
+      description: agent.description,
+      mode: agent.mode,
+      voice: agent.voice,
+      beginMessage: agent.beginMessage,
+      systemPrompt: agent.systemPrompt,
+      transferNumber: agent.transferNumber ?? "",
+      voicemailMessage: agent.voicemailMessage ?? "",
+      webhookUrl: agent.webhookUrl ?? "",
+    });
+  }, [agent]);
+
+  function setField<Key extends keyof AgentFormState>(key: Key, value: AgentFormState[Key]) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onSave(form);
+  }
+
+  return (
+    <form className="max-w-2xl space-y-4" onSubmit={submit}>
+      <Field label="Name" value={form.name} onChange={(value) => setField("name", value)} />
+      <Field label="Description" value={form.description} onChange={(value) => setField("description", value)} />
+      <label className="block text-sm font-medium">
+        Mode
+        <select value={form.mode} onChange={(event) => setField("mode", event.target.value as BackendAgentMode)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm">
+          <option value="webhook">Webhook</option>
+          <option value="hosted">Hosted</option>
+          <option value="web">Web</option>
+        </select>
+      </label>
+      <Field label="Voice" value={form.voice} onChange={(value) => setField("voice", value)} mono />
+      <Field label="Begin message" value={form.beginMessage} onChange={(value) => setField("beginMessage", value)} />
+      <Field label="Transfer number" value={form.transferNumber} onChange={(value) => setField("transferNumber", value)} mono />
+      <Field label="Voicemail message" value={form.voicemailMessage} onChange={(value) => setField("voicemailMessage", value)} />
+      <Field label="Webhook URL" value={form.webhookUrl} onChange={(value) => setField("webhookUrl", value)} mono />
+      <label className="block text-sm font-medium">
+        System prompt
+        <textarea value={form.systemPrompt} onChange={(event) => setField("systemPrompt", event.target.value)} className="mt-1.5 h-32 w-full rounded-md border bg-surface px-3 py-2 font-mono text-sm" />
+      </label>
+      <div className="flex justify-end gap-2 pt-2">
+        <button type="submit" disabled={isSaving || !form.name.trim()} className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
+          <Save className="h-3.5 w-3.5" /> {isSaving ? "Saving..." : "Save changes"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  mono,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  mono?: boolean;
+}) {
+  return (
+    <label className="block text-sm font-medium">
+      {label}
+      <input value={value} onChange={(event) => onChange(event.target.value)} className={`mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm ${mono ? "font-mono" : ""}`} />
+    </label>
+  );
+}
+
+function NotFound({ id, error }: { id: string; error: string | null }) {
   return (
     <div className="rounded-lg border border-dashed bg-surface px-6 py-16 text-center">
-      <h2 className="text-sm font-semibold">{kind} not found</h2>
-      <p className="mt-1 text-xs text-muted-foreground">No {kind.toLowerCase()} with id <span className="font-mono">{id}</span>.</p>
-      <Link to={backTo} className="mt-3 inline-block text-xs underline">Back</Link>
-    </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h3 className="mb-2 text-sm font-semibold">{title}</h3>
-      {children}
-    </div>
-  );
-}
-
-function SimpleTable({ head, rows, empty }: { head: string[]; rows: React.ReactNode[][]; empty?: string }) {
-  if (!rows.length && empty) return <div className="rounded-lg border border-dashed bg-surface px-4 py-8 text-center text-sm text-muted-foreground">{empty}</div>;
-  return (
-    <div className="rounded-lg border bg-surface overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
-          <tr>{head.map((h) => <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>)}</tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i} className="border-t hover:bg-muted/30">
-              {r.map((cell, j) => <td key={j} className="px-4 py-2">{cell}</td>)}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function Field({ label, defaultValue, mono }: { label: string; defaultValue: string; mono?: boolean }) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-muted-foreground">{label}</label>
-      <input defaultValue={defaultValue} className={`mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm ${mono ? "font-mono" : ""}`} />
+      <h2 className="text-sm font-semibold">Agent not found</h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {error ?? <>No agent with id <span className="font-mono">{id}</span>.</>}
+      </p>
+      <Link to="/agents" className="mt-3 inline-block text-xs underline">Back to agents</Link>
     </div>
   );
 }
