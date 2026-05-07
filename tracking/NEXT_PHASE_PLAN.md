@@ -422,7 +422,7 @@ Known follow-ups:
 
 Current Mock Import Audit:
 
-- Direct route mock imports remain in Overview, Playground, and Service Health.
+- Direct route mock imports remain only in Service Health.
 - API wrapper mock imports remain in legacy mock/type helpers and Contacts.
 - Contacts still needs a backend API or a temporary backend-gap placeholder.
 
@@ -474,20 +474,67 @@ Verification:
 
 - `npm run build` passed.
 
-## Next Priority: Playground Backend Integration
+## Phase F3F-4: Playground Backend Integration
+
+Status: implemented
 
 Goal:
 
 Replace Playground mock agent data with backend-backed agent, call, message, and webhook test actions.
 
-Build:
+Implemented:
 
 - Load agents from `GET /agents`.
+- Load webhook endpoints from `GET /webhooks`.
 - Start outbound calls through `POST /calls`.
+- Create web call tokens through `POST /calls/web`.
 - Send SMS through `POST /messages`.
 - Simulate inbound SMS through `POST /simulations/inbound-sms`.
 - Test webhooks through `POST /webhooks/:id/test` after selecting endpoint.
+- Simulate webhook failure through `POST /webhooks/:id/test`.
 - Show response/error panels for each action.
+- Add editable destination, inbound-from, and message body fields.
+- Add backend response event log.
+
+Verification:
+
+- `npm run build` passed.
+
+## Phase F3F-5: Service Health Backend Integration
+
+Status: implemented
+
+Goal:
+
+Replace Service Health mock service rows with backend health/status checks.
+
+Implemented:
+
+- Use `GET /health` for backend status.
+- Use `GET /workspaces/current` for authenticated API reachability.
+- Use `GET /billing/stripe/status` for safe Stripe billing configuration.
+- Show frontend/backend/API connectivity states.
+- Mark telecom provider status as a tracked backend gap because no safe provider
+  status endpoint is exposed yet.
+- Add backend URL and last-checked metadata.
+- Add refresh, loading, and API error states.
+
+Verification:
+
+- `npm run build` passed.
+
+## Next Priority: Contacts Backend Gap Closure
+
+Goal:
+
+Make Contacts real or explicitly tracked as unavailable until backend list/detail endpoints exist.
+
+Build:
+
+- Inspect backend Contacts module.
+- If list/detail routes exist, connect Contacts to backend.
+- If routes do not exist, add backend Contacts list/detail/update endpoints and then wire the dashboard.
+- Remove Contacts mock route import after backend support exists.
 
 ## Phase F4: Drawer And Action Quality Pass
 

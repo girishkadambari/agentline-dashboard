@@ -115,6 +115,13 @@ export async function startOutboundBackendCall(input: { agentId: string; to: str
   return { data: mapBackendCall(response.data) };
 }
 
+export async function createBackendWebCallToken(input: { agentId: string }) {
+  return apiRequest<{ data: { token: string; agentId: string; expiresAt: string } }>("/calls/web", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function endBackendCall(id: string) {
   const response = await apiRequest<{ data: BackendCall }>(`/calls/${id}/end`, {
     method: "POST",
@@ -139,6 +146,7 @@ export async function getBackendCallTranscript(id: string) {
 export const listCalls = listBackendCalls;
 export const getCall = getBackendCall;
 export const startOutboundCall = startOutboundBackendCall;
+export const createWebCallToken = createBackendWebCallToken;
 export const endCall = endBackendCall;
 export const transferCall = transferBackendCall;
 export const callTranscript = getBackendCallTranscript;

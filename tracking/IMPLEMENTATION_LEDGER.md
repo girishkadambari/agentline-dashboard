@@ -603,3 +603,71 @@ Next implementation priority:
 2. Replace Service Health mock data with backend health/status checks.
 3. Add Contacts backend support or convert Contacts to a tracked backend-gap
    placeholder.
+
+## 2026-05-07 - Phase F3F-4 Playground Backend Integration
+
+Status: implemented
+
+Implemented:
+
+- Replaced Playground route mock imports with backend API calls.
+- Connected `/playground` to:
+  - `GET /agents`
+  - `GET /webhooks`
+  - `POST /calls`
+  - `POST /calls/web`
+  - `POST /messages`
+  - `POST /simulations/inbound-sms`
+  - `POST /webhooks/:id/test`
+- Added selectable agent and webhook endpoint setup.
+- Added editable destination number, inbound-from number, and message body.
+- Added backend-backed actions for outbound calls, web call token creation,
+  outbound SMS, inbound SMS simulation, webhook test, and webhook failure
+  simulation.
+- Added a live event log with serialized backend response details.
+- Added loading, pending-action, validation, and API error states.
+- Updated the next-phase plan to make Service Health backend integration the
+  next frontend priority.
+
+Verification:
+
+- `npm run build` passed.
+- Mock import audit now shows direct mock route imports only in Service Health.
+
+Next implementation priority:
+
+1. Replace Service Health mock data with backend health/status checks.
+2. Add Contacts backend support or convert Contacts to a tracked backend-gap
+   placeholder.
+
+## 2026-05-07 - Phase F3F-5 Service Health Backend Integration
+
+Status: implemented
+
+Implemented:
+
+- Added `src/lib/api/health.ts` for public backend health checks.
+- Replaced Service Health route mock imports with live backend checks.
+- Connected `/service-health` to:
+  - `GET /health`
+  - `GET /workspaces/current`
+  - `GET /billing/stripe/status`
+- Added live status rows for Backend API, Authenticated API, Dashboard, Stripe
+  Billing, and Telecom Provider.
+- Marked Telecom Provider as degraded with an explicit note that no safe runtime
+  provider status endpoint exists yet.
+- Added backend URL, last-checked, workspace metadata, refresh, loading, and API
+  error states.
+- Updated the next-phase plan to make Contacts backend gap closure the next
+  frontend/backend priority.
+
+Verification:
+
+- `npm run build` passed.
+- Mock import audit now shows no direct route imports from `src/lib/mock/data`.
+
+Next implementation priority:
+
+1. Close the Contacts backend gap and remove remaining Contacts mock API usage.
+2. Remove or quarantine legacy mock helper modules once no production route
+   depends on them.
