@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
-import { calls, agents } from "@/lib/mock/data";
+import { listCalls } from "@/lib/api/calls";
+import { listAgents } from "@/lib/api/agents";
 import { PhoneOutgoing, PhoneIncoming } from "lucide-react";
 
 export const Route = createFileRoute("/_app/calls")({
@@ -11,6 +12,8 @@ export const Route = createFileRoute("/_app/calls")({
 });
 
 function Calls() {
+  const calls = listCalls().data;
+  const agents = listAgents().data;
   return (
     <div>
       <PageHeader
@@ -42,7 +45,7 @@ function Calls() {
           <tbody>
             {calls.map((c) => (
               <tr key={c.id} className="border-t hover:bg-muted/30">
-                <td className="px-4 py-2.5"><Mono>{c.id}</Mono></td>
+                <td className="px-4 py-2.5"><Link to="/calls/$callId" params={{ callId: c.id }} className="hover:underline"><Mono>{c.id}</Mono></Link></td>
                 <td className="px-4 py-2.5 capitalize">{c.direction}</td>
                 <td className="px-4 py-2.5"><Mono className="text-muted-foreground">{c.from}</Mono></td>
                 <td className="px-4 py-2.5"><Mono className="text-muted-foreground">{c.to}</Mono></td>
