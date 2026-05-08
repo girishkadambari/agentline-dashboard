@@ -175,9 +175,8 @@ function AgentTable({
   const navigate = useNavigate();
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-surface shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-sm">
+    <div className="rounded-lg border bg-surface shadow-sm overflow-x-auto scrollbar-thin">
+        <table className="w-full min-w-[1100px] text-sm">
           <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="w-[260px] px-4 py-3 text-left font-medium">Name</th>
