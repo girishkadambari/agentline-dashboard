@@ -182,7 +182,7 @@ function Overview() {
         ) : recentCalls.length === 0 ? (
           <EmptyState title="No calls yet" description="Start a mock outbound call or receive an inbound call to populate this table." />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-thin">
             <table className="w-full min-w-[960px] text-sm">
               <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
