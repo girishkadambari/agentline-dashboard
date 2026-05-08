@@ -90,6 +90,25 @@
   --sidebar-ring: oklch(0.65 0.17 250);
 }
 
+/* Dark sidebar even in light mode (reference design direction). */
+:root {
+  --sidebar: oklch(0.16 0.005 260);
+  --sidebar-foreground: oklch(0.78 0.005 260);
+  --sidebar-muted: oklch(0.55 0.005 260);
+  --sidebar-accent: oklch(0.22 0.006 260);
+  --sidebar-accent-foreground: oklch(0.99 0 0);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.55 0.005 260);
+  --sidebar-active: oklch(0.26 0.008 260);
+  --sidebar-active-foreground: oklch(0.99 0 0);
+}
+
+@theme inline {
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
+}
+
 .dark {
   --background: oklch(0.13 0 0);
   --foreground: oklch(0.97 0 0);
