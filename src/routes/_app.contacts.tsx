@@ -77,8 +77,8 @@ function Contacts() {
       ) : contacts.length === 0 ? (
         <EmptyState icon={<UserRound className="h-5 w-5" />} title="No contacts yet" description="Send or receive SMS and calls to create contacts automatically." />
       ) : (
-        <div className="overflow-hidden rounded-lg border bg-surface shadow-sm">
-          <table className="w-full table-fixed text-sm">
+        <div className="rounded-lg border bg-surface shadow-sm overflow-x-auto scrollbar-thin">
+          <table className="w-full min-w-[960px] text-sm">
             <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="w-[260px] px-4 py-3 text-left font-medium">Name</th>

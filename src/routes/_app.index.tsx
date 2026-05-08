@@ -183,7 +183,7 @@ function Overview() {
           <EmptyState title="No calls yet" description="Start a mock outbound call or receive an inbound call to populate this table." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full table-fixed text-sm">
+            <table className="w-full min-w-[960px] text-sm">
               <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="w-[220px] px-4 py-3 text-left font-medium">ID</th>

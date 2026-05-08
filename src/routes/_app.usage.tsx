@@ -171,9 +171,9 @@ function UsageEventsTable({
   agentsById: Map<string, AgentListItem>;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border bg-surface shadow-sm">
+    <div className="rounded-lg border bg-surface shadow-sm overflow-x-auto scrollbar-thin">
       <div className="border-b px-4 py-3"><h2 className="text-sm font-semibold">Usage events</h2></div>
-      <table className="w-full table-fixed text-sm">
+      <table className="w-full min-w-[960px] text-sm">
         <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
             <th className="w-[150px] px-4 py-3 text-left font-medium">Time</th>
