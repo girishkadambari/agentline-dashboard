@@ -240,7 +240,6 @@ function AgentTable({
             ))}
           </tbody>
         </table>
-      </div>
     </div>
   );
 }
