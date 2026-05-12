@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, Bot, Phone, Inbox, PhoneCall, Users, Webhook, BarChart3,
   CreditCard, KeyRound, FlaskConical, Settings, Activity,
-  LogOut, Menu, X, Check, Circle,
+  LogOut, Menu, X, Check, Circle, ChevronUp, UserRound,
 } from "lucide-react";
 import { Logo } from "@/components/agentline/Logo";
 import { getCurrentWorkspace, type Workspace } from "@/lib/api/workspace";
@@ -140,6 +140,7 @@ function SidebarContent({
   workspace: Workspace | null;
   workspaceError: string | null;
   onNav?: () => void;
+  onSignOut: () => void;
 }) {
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
@@ -177,19 +178,89 @@ function SidebarContent({
           </div>
         ))}
       </nav>
-      <div className="border-t border-sidebar-border px-3 py-3">
-        <div className="mb-2 flex items-center gap-2 rounded-md px-1.5 py-1 text-[11px] text-sidebar-muted">
-          <span className={cn("h-1.5 w-1.5 rounded-full", workspaceError ? "bg-destructive" : "bg-success")} />
-          {workspaceError ? "Backend disconnected" : "Backend connected"}
+      <ProfileSection workspace={workspace} workspaceError={workspaceError} onNav={onNav} onSignOut={onSignOut} />
+    </div>
+  );
+}
+
+function ProfileSection({
+  workspace,
+  workspaceError,
+  onNav,
+  onSignOut,
+}: {
+  workspace: Workspace | null;
+  workspaceError: string | null;
+  onNav?: () => void;
+  onSignOut: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handle(event: MouseEvent) {
+      if (!ref.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handle);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, []);
+
+  const email = workspace?.billingEmail ?? null;
+  const displayName = email?.split("@")[0] ?? workspace?.name ?? "Account";
+  const subtitle = email ?? (workspaceError ? "Backend unreachable" : "Signed in");
+  const initials = displayName.slice(0, 2).toUpperCase();
+
+  return (
+    <div ref={ref} className="relative border-t border-sidebar-border p-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-sidebar-accent"
+      >
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-[11px] font-semibold text-sidebar-accent-foreground">
+          {initials}
         </div>
-        <button
-          onClick={onSignOut}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        >
-          <LogOut className="h-4 w-4 text-sidebar-muted" />
-          Sign out
-        </button>
-      </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13px] font-medium text-sidebar-accent-foreground">{displayName}</div>
+          <div className="flex items-center gap-1 truncate text-[11px] text-sidebar-muted">
+            <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", workspaceError ? "bg-destructive" : "bg-success")} />
+            <span className="truncate">{subtitle}</span>
+          </div>
+        </div>
+        <ChevronUp className={cn("h-3.5 w-3.5 shrink-0 text-sidebar-muted transition-transform", !open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="absolute bottom-full left-2 right-2 z-50 mb-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg">
+          <div className="px-2 py-2 text-xs">
+            <div className="truncate font-medium">{displayName}</div>
+            {email && <div className="truncate text-muted-foreground">{email}</div>}
+          </div>
+          <div className="my-1 border-t" />
+          <Link
+            to="/settings"
+            onClick={() => { setOpen(false); onNav?.(); }}
+            className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-muted"
+          >
+            <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
+            Account & workspace
+          </Link>
+          <button
+            type="button"
+            onClick={() => { setOpen(false); onSignOut(); }}
+            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted"
+          >
+            <LogOut className="h-3.5 w-3.5 text-muted-foreground" />
+            Sign out
+          </button>
+        </div>
+      )}
     </div>
   );
 }
