@@ -172,10 +172,10 @@ function UsageEventsTable({
   agentsById: Map<string, AgentListItem>;
 }) {
   return (
-    <div className="rounded-lg border bg-surface shadow-sm overflow-x-auto scrollbar-thin">
+    <div className="rounded-lg border bg-surface shadow-sm">
       <div className="border-b px-4 py-3"><h2 className="text-sm font-semibold">Usage events</h2></div>
-      <table className="w-full min-w-[960px] text-sm">
-        <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
+      <DataTable minWidth={960} className="rounded-none border-0 shadow-none">
+        <thead className="border-b bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground">
           <tr>
             <th className="w-[150px] px-4 py-3 text-left font-medium">Time</th>
             <th className="w-[180px] px-4 py-3 text-left font-medium">Agent</th>
@@ -206,6 +206,7 @@ function UsageEventsTable({
           ))}
         </tbody>
       </DataTable>
+    </div>
   );
 }
 

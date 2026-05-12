@@ -183,9 +183,8 @@ function Overview() {
         ) : recentCalls.length === 0 ? (
           <EmptyState title="No calls yet" description="Start an outbound call or receive an inbound call to populate this table." />
         ) : (
-          <div className="overflow-x-auto scrollbar-thin">
-            <table className="w-full min-w-[960px] text-sm">
-              <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
+          <DataTable minWidth={960} className="rounded-none border-0 shadow-none">
+              <thead className="border-b bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="w-[220px] px-4 py-3 text-left font-medium">ID</th>
                   <th className="w-[110px] px-4 py-3 text-left font-medium">Direction</th>
@@ -209,7 +208,7 @@ function Overview() {
                   </tr>
                 ))}
               </tbody>
-            </DataTable>
+          </DataTable>
         )}
       </div>
     </div>
