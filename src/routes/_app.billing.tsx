@@ -119,7 +119,7 @@ function Billing() {
             Stripe is in <strong>{stripeStatus.mode}</strong> mode. Secret key {stripeStatus.secretKeyConfigured ? "configured" : "missing"}, mode match {stripeStatus.secretKeyMatchesMode ? "ok" : "failed"}, webhook secret {stripeStatus.webhookSecretConfigured ? "configured" : "missing"}.
           </span>
         ) : (
-          "Stripe sessions depend on backend Stripe configuration. Local mock usage and balance remain available without real charges."
+          "Stripe sessions depend on backend Stripe configuration. Configure Stripe before collecting real top-ups."
         )}
       </div>
 

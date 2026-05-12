@@ -7,7 +7,7 @@ import { Mono } from "@/components/agentline/Mono";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import { createBackendWebCallToken, startOutboundBackendCall } from "@/lib/api/calls";
-import { sendBackendMessage, simulateBackendInboundSms } from "@/lib/api/messages";
+import { sendBackendMessage } from "@/lib/api/messages";
 import { listBackendWebhooks, testBackendWebhook, type WebhookEndpointListItem } from "@/lib/api/webhooks";
 
 export const Route = createFileRoute("/_app/playground")({
@@ -15,16 +15,15 @@ export const Route = createFileRoute("/_app/playground")({
   head: () => ({ meta: [{ title: "Playground — AgentLine" }] }),
 });
 
-type PlaygroundAction = "outbound-call" | "web-call" | "send-sms" | "inbound-sms" | "webhook" | "webhook-failure";
+type PlaygroundAction = "outbound-call" | "web-call" | "send-sms" | "webhook" | "webhook-failure";
 
 function Playground() {
   const [agents, setAgents] = useState<AgentListItem[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookEndpointListItem[]>([]);
   const [agentId, setAgentId] = useState("");
   const [webhookId, setWebhookId] = useState("");
-  const [to, setTo] = useState("+14155550123");
-  const [from, setFrom] = useState("+14155550144");
-  const [body, setBody] = useState("Hello from AgentLine playground.");
+  const [to, setTo] = useState("");
+  const [body, setBody] = useState("");
   const [log, setLog] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingAction, setPendingAction] = useState<PlaygroundAction | null>(null);
@@ -129,20 +128,6 @@ function Playground() {
     });
   }
 
-  async function simulateInboundSms() {
-    if (!requireAgent()) {
-      return;
-    }
-
-    await runAction("inbound-sms", async () => {
-      const response = await simulateBackendInboundSms({ agentId, from, body });
-      append("sms.inbound", `created ${response.data.id}`, {
-        status: response.data.status,
-        conversationId: response.data.conversationId,
-      });
-    });
-  }
-
   async function testWebhook(simulateFailure = false) {
     if (!webhookId) {
       setError("Create or select a webhook endpoint before testing webhook delivery.");
@@ -163,7 +148,7 @@ function Playground() {
     <div>
       <PageHeader
         title="Playground"
-        description="Run backend-backed mock calls, SMS, web call tokens, and webhook deliveries."
+        description="Run live backend actions and inspect the exact API responses."
         actions={
           <button onClick={loadSetup} disabled={isLoading} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60">
             <RefreshCw className="h-3.5 w-3.5" />Refresh
@@ -195,7 +180,6 @@ function Playground() {
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               <Field label="Destination" value={to} onChange={setTo} />
-              <Field label="Inbound from" value={from} onChange={setFrom} />
               <label className="block md:col-span-3">
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Message body</span>
                 <textarea value={body} onChange={(event) => setBody(event.target.value)} className="mt-1 min-h-20 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:border-foreground" />
@@ -214,7 +198,6 @@ function Playground() {
               <ActionButton action="outbound-call" pendingAction={pendingAction} onClick={startOutboundCall} icon={<PhoneOutgoing className="h-3.5 w-3.5" />} label="Outbound call" />
               <ActionButton action="web-call" pendingAction={pendingAction} onClick={createWebToken} icon={<FlaskConical className="h-3.5 w-3.5" />} label="Web call token" />
               <ActionButton action="send-sms" pendingAction={pendingAction} onClick={sendSms} icon={<MessageSquare className="h-3.5 w-3.5" />} label="Send SMS" />
-              <ActionButton action="inbound-sms" pendingAction={pendingAction} onClick={simulateInboundSms} icon={<MessageSquare className="h-3.5 w-3.5 rotate-180" />} label="Inbound SMS" />
               <ActionButton action="webhook" pendingAction={pendingAction} onClick={() => testWebhook(false)} icon={<Webhook className="h-3.5 w-3.5" />} label="Test webhook" />
               <ActionButton action="webhook-failure" pendingAction={pendingAction} onClick={() => testWebhook(true)} icon={<Webhook className="h-3.5 w-3.5" />} label="Webhook failure" danger />
             </div>

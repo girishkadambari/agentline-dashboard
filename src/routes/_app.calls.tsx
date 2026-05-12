@@ -87,7 +87,7 @@ function Calls() {
         <EmptyState
           icon={<PhoneOutgoing className="h-5 w-5" />}
           title="No calls yet"
-          description="Start a mock outbound call from an agent with an attached voice-capable number."
+          description="Start a live provider-backed call from an agent with an attached voice-capable number."
           action={<button onClick={() => setStartOpen(true)} className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background">Start outbound</button>}
         />
       ) : (
@@ -181,7 +181,7 @@ function StartCallDrawer({
   onCreated: (call: CallListItem) => void;
 }) {
   const [agentId, setAgentId] = useState("");
-  const [to, setTo] = useState("+14155550123");
+  const [to, setTo] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -232,7 +232,7 @@ function StartCallDrawer({
           </label>
           <label className="block text-sm font-medium">
             Destination number
-            <input value={to} onChange={(event) => setTo(event.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm font-mono" />
+            <input value={to} onChange={(event) => setTo(event.target.value)} placeholder="+19015550123" className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm font-mono" />
           </label>
           <SheetFooter>
             <button type="button" onClick={() => onOpenChange(false)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">Cancel</button>

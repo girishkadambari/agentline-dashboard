@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Inbox as InboxIcon, MessageSquarePlus, Send } from "lucide-react";
+import { Inbox as InboxIcon, Send } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
@@ -11,7 +11,6 @@ import {
   listBackendConversationMessages,
   listBackendConversations,
   sendBackendMessage,
-  simulateBackendInboundSms,
   type ConversationListItem,
   type MessageListItem,
 } from "@/lib/api/messages";
@@ -39,7 +38,7 @@ function Inbox() {
   const [isThreadLoading, setIsThreadLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [threadError, setThreadError] = useState<string | null>(null);
-  const [drawerMode, setDrawerMode] = useState<"send" | "simulate" | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const threadRequestId = useRef(0);
 
   async function loadInbox(preferredConversationId = activeConversationId) {
@@ -111,36 +110,24 @@ function Inbox() {
     return latest;
   }, [messages]);
 
-  function openDrawer(mode: "send" | "simulate") {
-    setDrawerMode(mode);
-  }
-
   async function handleMessageCreated(message: MessageListItem) {
     await loadInbox(message.conversationId);
     await loadThread(message.conversationId);
-    setDrawerMode(null);
+    setDrawerOpen(false);
   }
 
   return (
     <div>
       <PageHeader
         title="Inbox"
-        description="SMS conversations across agents, numbers, contacts, and mock provider events."
+        description="SMS conversations created by real outbound sends and Twilio inbound webhooks."
         actions={
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => openDrawer("simulate")}
-              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"
-            >
-              <MessageSquarePlus className="h-3.5 w-3.5" />Simulate inbound
-            </button>
-            <button
-              onClick={() => openDrawer("send")}
-              className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90"
-            >
-              <Send className="h-3.5 w-3.5" />Send SMS
-            </button>
-          </div>
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90"
+          >
+            <Send className="h-3.5 w-3.5" />Send SMS
+          </button>
         }
       />
 
@@ -158,12 +145,9 @@ function Inbox() {
         <EmptyState
           icon={<InboxIcon className="h-5 w-5" />}
           title="No conversations yet"
-          description="Send a mock SMS or simulate an inbound SMS from an agent with an active SMS-capable number."
+          description="Send an SMS from AgentLine or text your Twilio number from your verified phone."
           action={
-            <div className="flex items-center justify-center gap-2">
-              <button onClick={() => openDrawer("simulate")} className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted">Simulate inbound</button>
-              <button onClick={() => openDrawer("send")} className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background">Send SMS</button>
-            </div>
+            <button onClick={() => setDrawerOpen(true)} className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background">Send SMS</button>
           }
         />
       ) : (
@@ -181,18 +165,17 @@ function Inbox() {
             agent={activeConversation ? agentsById.get(activeConversation.agentId) : undefined}
             isLoading={isThreadLoading}
             error={threadError}
-            onSend={() => openDrawer("send")}
+            onSend={() => setDrawerOpen(true)}
           />
           <DetailsPanel conversation={activeConversation} agent={activeConversation ? agentsById.get(activeConversation.agentId) : undefined} />
         </div>
       )}
 
       <MessageDrawer
-        mode={drawerMode}
-        open={drawerMode !== null}
+        open={drawerOpen}
         onOpenChange={(open) => {
           if (!open) {
-            setDrawerMode(null);
+            setDrawerOpen(false);
           }
         }}
         agents={agents}
@@ -340,20 +323,18 @@ function DetailsPanel({
 }
 
 function MessageDrawer({
-  mode,
   open,
   onOpenChange,
   agents,
   onCreated,
 }: {
-  mode: "send" | "simulate" | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   agents: AgentListItem[];
   onCreated: (message: MessageListItem) => void;
 }) {
   const [agentId, setAgentId] = useState("");
-  const [phone, setPhone] = useState(mode === "simulate" ? "+14155550123" : "+14155550123");
+  const [phone, setPhone] = useState("");
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -361,11 +342,11 @@ function MessageDrawer({
   useEffect(() => {
     if (open) {
       setAgentId((current) => current || agents[0]?.id || "");
-      setPhone("+14155550123");
-      setBody(mode === "simulate" ? "Can you help me reschedule my appointment?" : "Hi, this is your AgentLine assistant.");
+      setPhone("");
+      setBody("");
       setError(null);
     }
-  }, [agents, mode, open]);
+  }, [agents, open]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -377,7 +358,7 @@ function MessageDrawer({
     }
 
     if (!phone.trim()) {
-      setError(mode === "simulate" ? "From number is required." : "Recipient number is required.");
+      setError("Recipient number is required.");
       return;
     }
 
@@ -388,10 +369,7 @@ function MessageDrawer({
 
     setIsSaving(true);
     try {
-      const response =
-        mode === "simulate"
-          ? await simulateBackendInboundSms({ agentId, from: phone.trim(), body: body.trim() })
-          : await sendBackendMessage({ agentId, to: phone.trim(), body: body.trim() });
+      const response = await sendBackendMessage({ agentId, to: phone.trim(), body: body.trim() });
       onCreated(response.data);
     } catch (caught) {
       setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not create message.");
@@ -400,18 +378,12 @@ function MessageDrawer({
     }
   }
 
-  const title = mode === "simulate" ? "Simulate inbound SMS" : "Send outbound SMS";
-  const description =
-    mode === "simulate"
-      ? "Create a mock inbound message as if a contact texted an attached AgentLine number."
-      : "Send a mock outbound SMS through an agent with an active SMS-capable number.";
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
         <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-          <SheetDescription>{description}</SheetDescription>
+          <SheetTitle>Send outbound SMS</SheetTitle>
+          <SheetDescription>Send a real provider-backed SMS through an agent with an active SMS-capable number.</SheetDescription>
         </SheetHeader>
         <form className="mt-6 space-y-4" onSubmit={submit}>
           {error && <div className="whitespace-pre-line rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
@@ -423,8 +395,8 @@ function MessageDrawer({
             </select>
           </label>
           <label className="block text-sm font-medium">
-            {mode === "simulate" ? "From number" : "Recipient number"}
-            <input value={phone} onChange={(event) => setPhone(event.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm font-mono" />
+            Recipient number
+            <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+19015550123" className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm font-mono" />
           </label>
           <label className="block text-sm font-medium">
             Message
@@ -433,7 +405,7 @@ function MessageDrawer({
           <SheetFooter>
             <button type="button" onClick={() => onOpenChange(false)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">Cancel</button>
             <button type="submit" disabled={isSaving} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
-              {isSaving ? "Saving..." : mode === "simulate" ? "Simulate SMS" : "Send SMS"}
+              {isSaving ? "Sending..." : "Send SMS"}
             </button>
           </SheetFooter>
         </form>

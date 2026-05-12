@@ -36,6 +36,14 @@ export interface ProvisionNumberInput {
   capabilities?: string[];
 }
 
+export interface ImportNumberInput {
+  agentId?: string;
+  phoneNumber: string;
+  country?: string;
+  areaCode?: string;
+  capabilities?: string[];
+}
+
 export interface UpdateNumberInput {
   agentId?: string | null;
 }
@@ -80,6 +88,15 @@ export async function provisionBackendNumber(input: ProvisionNumberInput) {
   return { data: mapBackendNumber(response.data) };
 }
 
+export async function importBackendNumber(input: ImportNumberInput) {
+  const response = await apiRequest<{ data: BackendNumber }>("/numbers/import", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+  return { data: mapBackendNumber(response.data) };
+}
+
 export async function updateBackendNumber(id: string, input: UpdateNumberInput) {
   const response = await apiRequest<{ data: BackendNumber }>(`/numbers/${id}`, {
     method: "PATCH",
@@ -100,6 +117,7 @@ export async function releaseBackendNumber(id: string) {
 export const listNumbers = listBackendNumbers;
 export const getNumber = getBackendNumber;
 export const provisionNumber = provisionBackendNumber;
+export const importNumber = importBackendNumber;
 export const attachNumber = (numberId: string, agentId: string) =>
   updateBackendNumber(numberId, { agentId });
 export const detachNumber = (numberId: string) => updateBackendNumber(numberId, { agentId: null });

@@ -180,7 +180,7 @@ function Overview() {
             <div className="space-y-3">{Array.from({ length: 5 }).map((_, index) => <div key={index} className="h-10 animate-pulse rounded-md bg-muted" />)}</div>
           </div>
         ) : recentCalls.length === 0 ? (
-          <EmptyState title="No calls yet" description="Start a mock outbound call or receive an inbound call to populate this table." />
+          <EmptyState title="No calls yet" description="Start an outbound call or receive an inbound call to populate this table." />
         ) : (
           <div className="overflow-x-auto scrollbar-thin">
             <table className="w-full min-w-[960px] text-sm">

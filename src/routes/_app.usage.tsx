@@ -154,7 +154,7 @@ function Usage() {
             <div className="space-y-3">{Array.from({ length: 5 }).map((_, index) => <div key={index} className="h-9 animate-pulse rounded-md bg-muted" />)}</div>
           </div>
         ) : events.length === 0 ? (
-          <EmptyState icon={<BarChart3 className="h-5 w-5" />} title="No usage events" description="Send SMS, provision numbers, or start mock calls to create usage events." />
+          <EmptyState icon={<BarChart3 className="h-5 w-5" />} title="No usage events" description="Send SMS, provision numbers, or start calls to create usage events." />
         ) : (
           <UsageEventsTable events={events} agentsById={agentsById} />
         )}

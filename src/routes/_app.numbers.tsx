@@ -9,6 +9,7 @@ import { CopyButton } from "@/components/agentline/CopyButton";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import {
+  importBackendNumber,
   listBackendNumbers,
   provisionBackendNumber,
   releaseBackendNumber,
@@ -35,7 +36,7 @@ function Numbers() {
   const [agents, setAgents] = useState<AgentListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [drawerMode, setDrawerMode] = useState<"create" | "update" | null>(null);
+  const [drawerMode, setDrawerMode] = useState<"create" | "import" | "update" | null>(null);
   const [selectedNumber, setSelectedNumber] = useState<NumberListItem | null>(null);
 
   async function loadData() {
@@ -64,7 +65,7 @@ function Numbers() {
     [agents],
   );
 
-  function openDrawer(mode: "create" | "update", number?: NumberListItem) {
+  function openDrawer(mode: "create" | "import" | "update", number?: NumberListItem) {
     setSelectedNumber(number ?? null);
     setDrawerMode(mode);
   }
@@ -97,12 +98,20 @@ function Numbers() {
         title="Numbers"
         description="Phone numbers attached to your agents."
         actions={
-          <button
-            onClick={() => openDrawer("create")}
-            className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90"
-          >
-            <Plus className="h-3.5 w-3.5" />Provision number
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => openDrawer("import")}
+              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+            >
+              Import existing
+            </button>
+            <button
+              onClick={() => openDrawer("create")}
+              className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90"
+            >
+              <Plus className="h-3.5 w-3.5" />Provision number
+            </button>
+          </div>
         }
       />
 
@@ -122,8 +131,13 @@ function Numbers() {
         <EmptyState
           icon={<Phone className="h-5 w-5" />}
           title="No numbers yet"
-          description="Provision a mock number and attach it to a backend agent."
-          action={<button onClick={() => openDrawer("create")} className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background">Provision number</button>}
+          description="Import your existing Twilio number or provision a new provider-backed number."
+          action={
+            <div className="flex items-center justify-center gap-2">
+              <button onClick={() => openDrawer("import")} className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted">Import existing</button>
+              <button onClick={() => openDrawer("create")} className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background">Provision number</button>
+            </div>
+          }
         />
       ) : (
         <NumbersTable
@@ -233,7 +247,7 @@ function NumberDrawer({
   onCreated,
   onUpdated,
 }: {
-  mode: "create" | "update" | null;
+  mode: "create" | "import" | "update" | null;
   number: NumberListItem | null;
   agents: AgentListItem[];
   onOpenChange: (open: boolean) => void;
@@ -241,7 +255,9 @@ function NumberDrawer({
   onUpdated: (number: NumberListItem) => void;
 }) {
   const isCreate = mode === "create";
+  const isImport = mode === "import";
   const isUpdate = mode === "update";
+  const [phoneNumber, setPhoneNumber] = useState("+19012316325");
   const [country, setCountry] = useState("US");
   const [areaCode, setAreaCode] = useState("415");
   const [agentId, setAgentId] = useState("");
@@ -261,6 +277,16 @@ function NumberDrawer({
       return;
     }
 
+    if (isImport) {
+      setPhoneNumber("+19012316325");
+      setCountry("US");
+      setAreaCode("901");
+      setAgentId("");
+      setSms(true);
+      setVoice(true);
+      return;
+    }
+
     if (number) {
       setCountry(number.country);
       setAreaCode(number.areaCode);
@@ -268,7 +294,7 @@ function NumberDrawer({
       setSms(number.capabilities.includes("sms"));
       setVoice(number.capabilities.includes("voice"));
     }
-  }, [isCreate, number]);
+  }, [isCreate, isImport, number]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -276,14 +302,17 @@ function NumberDrawer({
     setIsSaving(true);
 
     try {
-      if (isCreate) {
+      if (isCreate || isImport) {
         const capabilities = [sms ? "sms" : null, voice ? "voice" : null].filter(Boolean) as string[];
-        const response = await provisionBackendNumber({
+        const payload = {
           country: country.trim() || "US",
           areaCode: areaCode.trim() || undefined,
           agentId: agentId || undefined,
           capabilities: capabilities.length ? capabilities : ["sms", "voice"],
-        });
+        };
+        const response = isImport
+          ? await importBackendNumber({ ...payload, phoneNumber: phoneNumber.trim() })
+          : await provisionBackendNumber(payload);
         onCreated(response.data);
       } else if (isUpdate && number) {
         const response = await updateBackendNumber(number.id, {
@@ -299,10 +328,12 @@ function NumberDrawer({
   }
 
   const open = mode !== null;
-  const title = isCreate ? "Provision number" : "Update number";
+  const title = isCreate ? "Provision number" : isImport ? "Import existing number" : "Update number";
   const description = isCreate
-    ? "Create a mock phone number and optionally attach it to an agent."
-    : "Attach this number to an agent or leave it unassigned.";
+    ? "Buy a real Twilio number and optionally attach it to an agent. Twilio charges begin when the number is provisioned."
+    : isImport
+      ? "Connect a Twilio number that already exists in your account, configure webhooks, and attach it to an agent without buying another number."
+      : "Attach this number to an agent or leave it unassigned.";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -313,7 +344,10 @@ function NumberDrawer({
         </SheetHeader>
         <form className="mt-6 space-y-4" onSubmit={submit}>
             {error && <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
-            {isCreate && (
+            {isImport && (
+              <Field label="Phone number" value={phoneNumber} onChange={setPhoneNumber} />
+            )}
+            {(isCreate || isImport) && (
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Country" value={country} onChange={setCountry} />
                 <Field label="Area code" value={areaCode} onChange={setAreaCode} />
@@ -326,7 +360,7 @@ function NumberDrawer({
                 {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
               </select>
             </label>
-            {isCreate && (
+            {(isCreate || isImport) && (
               <div>
                 <div className="text-sm font-medium">Capabilities</div>
                 <div className="mt-2 flex gap-3 text-sm">
@@ -343,7 +377,7 @@ function NumberDrawer({
             <SheetFooter>
               <button type="button" onClick={() => onOpenChange(false)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">Cancel</button>
               <button type="submit" disabled={isSaving} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
-                {isSaving ? "Saving..." : isCreate ? "Provision number" : "Save changes"}
+                {isSaving ? "Saving..." : isCreate ? "Provision number" : isImport ? "Import number" : "Save changes"}
               </button>
             </SheetFooter>
         </form>

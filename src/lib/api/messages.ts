@@ -65,12 +65,6 @@ export interface SendMessageInput {
   body: string;
 }
 
-export interface SimulateInboundSmsInput {
-  agentId: string;
-  from: string;
-  body: string;
-}
-
 export interface UpdateConversationInput {
   status?: BackendConversationStatus;
   metadata?: Record<string, unknown>;
@@ -159,15 +153,6 @@ export async function listBackendConversationMessages(conversationId: string) {
 
 export async function sendBackendMessage(input: SendMessageInput) {
   const response = await apiRequest<{ data: BackendMessage }>("/messages", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-
-  return { data: mapBackendMessage(response.data) };
-}
-
-export async function simulateBackendInboundSms(input: SimulateInboundSmsInput) {
-  const response = await apiRequest<{ data: BackendMessage }>("/simulations/inbound-sms", {
     method: "POST",
     body: JSON.stringify(input),
   });

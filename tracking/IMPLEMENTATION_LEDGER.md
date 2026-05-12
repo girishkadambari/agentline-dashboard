@@ -792,3 +792,58 @@ Product rule:
 - With API-key auth, the API key selects one workspace and one project. To work
   in another workspace/project during Phase 1, sign in with that workspace's
   API key.
+
+## 2026-05-08 - Live Provider Flow Cleanup
+
+Status: implemented
+
+Implemented:
+
+- Removed the frontend inbound SMS simulation action from Inbox.
+- Removed the `POST /simulations/inbound-sms` client helper.
+- Removed inbound SMS simulation from Playground.
+- Removed the orphaned `src/lib/mock/data.ts` fixture file.
+- Replaced user-facing "mock" copy in primary live-flow screens with
+  provider-backed language.
+- Cleared default fake phone numbers from SMS/call forms so live testing uses
+  the tester's actual verified destination number.
+- Left webhook test delivery controls in place because they call the backend
+  webhook test endpoint and are explicitly labeled as tests.
+
+Verification:
+
+- Source audit shows no production source imports from `src/lib/mock`.
+- Source audit shows no frontend calls to `/simulations`.
+- `npm run build` passed.
+
+Live test note:
+
+- Inbound SMS must now come from Twilio calling
+  `/v1/providers/twilio/sms/inbound`.
+- Outbound SMS and calls go through the backend provider APIs.
+
+## 2026-05-08 - Existing Number Import UI
+
+Status: implemented
+
+Implemented:
+
+- Added an **Import existing** action to the Numbers page.
+- Added a Numbers drawer mode for importing a Twilio number that already exists
+  in the connected Twilio account.
+- Import flow calls `POST /numbers/import` instead of provisioning/buying a new
+  number.
+- Empty state now offers both paths:
+  - Import existing: connect the trial/live-dev Twilio number already owned.
+  - Provision number: buy a new provider number when the Twilio account allows
+    it.
+
+Verification:
+
+- `npm run build` passed.
+
+Product rule:
+
+- During Twilio trial testing, use **Import existing** for the one Twilio-owned
+  number. Use **Provision number** only after upgrading or when intentionally
+  buying another number.

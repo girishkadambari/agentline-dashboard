@@ -461,7 +461,7 @@ function WebhookDrawer({
     : isUpdate
       ? "Update endpoint URL, event subscriptions, and status."
       : isTest
-        ? "Create a mock delivery and show the signed test headers."
+        ? "Create a signed test delivery and show the exact request headers."
         : "Endpoint details, subscribed events, and recent delivery attempts.";
 
   return (

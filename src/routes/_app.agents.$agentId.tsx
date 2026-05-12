@@ -162,7 +162,7 @@ function AgentDetail() {
         tabs={[
           { id: "overview", label: "Overview", content: <AgentOverview agent={agent} /> },
           { id: "config", label: "Configuration", content: <AgentConfigForm agent={agent} isSaving={isSaving} onSave={saveAgent} /> },
-          { id: "numbers", label: "Numbers", content: <EmptyState title="Numbers connect in the next phase" description="The Numbers page will attach real or mock numbers to this backend agent." /> },
+          { id: "numbers", label: "Numbers", content: <EmptyState title="Numbers are managed from the Numbers page" description="Attach real provider-backed numbers to this agent from Numbers." /> },
           { id: "conversations", label: "Conversations", content: <EmptyState title="No conversations loaded yet" description="Inbox integration is tracked after Agents and Numbers." /> },
           { id: "calls", label: "Calls", content: <EmptyState title="No calls loaded yet" description="Call history will use backend call records in a later phase." /> },
         ]}
