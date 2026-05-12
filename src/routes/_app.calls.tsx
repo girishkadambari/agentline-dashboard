@@ -2,6 +2,7 @@ import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tansta
 import { useEffect, useMemo, useState } from "react";
 import { Eye, PhoneOutgoing } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
+import { DataTable } from "@/components/agentline/DataTable";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
@@ -117,8 +118,7 @@ function CallsTable({
   const navigate = useNavigate();
 
   return (
-    <div className="rounded-lg border bg-surface shadow-sm overflow-x-auto scrollbar-thin">
-      <table className="w-full min-w-[960px] text-sm">
+    <DataTable minWidth={960}>
         <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
             <th className="w-[260px] px-4 py-3 text-left font-medium">ID</th>
@@ -164,8 +164,7 @@ function CallsTable({
             </tr>
           ))}
         </tbody>
-      </table>
-    </div>
+      </DataTable>
   );
 }
 

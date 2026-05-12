@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/agentline/PageHeader";
+import { DataTable } from "@/components/agentline/DataTable";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
@@ -175,8 +176,7 @@ function AgentTable({
   const navigate = useNavigate();
 
   return (
-    <div className="rounded-lg border bg-surface shadow-sm overflow-x-auto scrollbar-thin">
-        <table className="w-full min-w-[1100px] text-sm">
+    <DataTable minWidth={1100}>
           <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="w-[260px] px-4 py-3 text-left font-medium">Name</th>
@@ -239,8 +239,7 @@ function AgentTable({
               </tr>
             ))}
           </tbody>
-        </table>
-    </div>
+        </DataTable>
   );
 }
 

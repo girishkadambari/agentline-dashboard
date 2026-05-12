@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { FlaskConical, Phone, Plus, Webhook } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
+import { DataTable } from "@/components/agentline/DataTable";
 import { Stat } from "@/components/agentline/Stat";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
@@ -208,8 +209,7 @@ function Overview() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
+            </DataTable>
         )}
       </div>
     </div>

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { CreditCard, ExternalLink, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
+import { DataTable } from "@/components/agentline/DataTable";
 import { Stat } from "@/components/agentline/Stat";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { Mono } from "@/components/agentline/Mono";
@@ -199,8 +200,7 @@ function BillingTransactionsTable({ transactions }: { transactions: BillingTrans
             </tr>
           ))}
         </tbody>
-      </table>
-    </div>
+      </DataTable>
   );
 }
 

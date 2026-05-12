@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { BarChart3 } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
+import { DataTable } from "@/components/agentline/DataTable";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { Stat } from "@/components/agentline/Stat";
@@ -204,8 +205,7 @@ function UsageEventsTable({
             </tr>
           ))}
         </tbody>
-      </table>
-    </div>
+      </DataTable>
   );
 }
 

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { KeyRound, Pencil, Plus, Save, ShieldAlert, Trash2, X } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
+import { DataTable } from "@/components/agentline/DataTable";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
@@ -231,8 +232,7 @@ function ApiKeysTable({
   onRevoke: (apiKey: ApiKeyListItem) => void;
 }) {
   return (
-    <div className="rounded-lg border bg-surface shadow-sm overflow-x-auto scrollbar-thin">
-      <table className="w-full min-w-[960px] text-sm">
+    <DataTable minWidth={960}>
         <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
             <th className="w-[260px] px-4 py-3 text-left font-medium">Label</th>
@@ -332,7 +332,6 @@ function ApiKeysTable({
             );
           })}
         </tbody>
-      </table>
-    </div>
+      </DataTable>
   );
 }

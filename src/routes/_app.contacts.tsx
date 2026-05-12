@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Pencil, Save, UserRound, X } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
+import { DataTable } from "@/components/agentline/DataTable";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { CopyButton } from "@/components/agentline/CopyButton";
@@ -77,8 +78,7 @@ function Contacts() {
       ) : contacts.length === 0 ? (
         <EmptyState icon={<UserRound className="h-5 w-5" />} title="No contacts yet" description="Send or receive SMS and calls to create contacts automatically." />
       ) : (
-        <div className="rounded-lg border bg-surface shadow-sm overflow-x-auto scrollbar-thin">
-          <table className="w-full min-w-[960px] text-sm">
+        <DataTable minWidth={960}>
             <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="w-[260px] px-4 py-3 text-left font-medium">Name</th>
@@ -175,8 +175,7 @@ function Contacts() {
                 );
               })}
             </tbody>
-          </table>
-        </div>
+          </DataTable>
       )}
     </div>
   );
