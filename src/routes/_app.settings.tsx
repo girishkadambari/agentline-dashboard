@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CopyButton } from "@/components/agentline/CopyButton";
+import { DataTable } from "@/components/agentline/DataTable";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { Mono } from "@/components/agentline/Mono";
 import { PageHeader } from "@/components/agentline/PageHeader";
@@ -298,8 +299,7 @@ function MembersPanel({
           description="Invite a teammate to give them workspace access."
         />
       ) : (
-        <div className="overflow-hidden rounded-lg border">
-          <table className="w-full text-sm">
+        <DataTable minWidth={820}>
             <thead className="border-b bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-medium">User</th>
@@ -350,8 +350,7 @@ function MembersPanel({
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
+        </DataTable>
       )}
     </PanelShell>
   );
@@ -477,8 +476,7 @@ function InvitesPanel({
             description="Create an invite when you are ready to add a teammate."
           />
         ) : (
-          <div className="overflow-hidden rounded-lg border">
-            <table className="w-full text-sm">
+          <DataTable minWidth={920}>
               <thead className="border-b bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 font-medium">Email</th>
@@ -528,8 +526,7 @@ function InvitesPanel({
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
+          </DataTable>
         )}
       </div>
     </PanelShell>
