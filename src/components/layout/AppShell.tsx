@@ -440,9 +440,9 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-svh max-w-full overflow-hidden bg-background">
       <Toaster position="bottom-right" />
-      <aside className="hidden w-60 shrink-0 bg-sidebar md:flex md:flex-col">
+      <aside className="hidden h-svh w-60 shrink-0 overflow-hidden bg-sidebar md:flex md:flex-col">
         <SidebarContent
           pathname={pathname}
           user={user}
@@ -468,7 +468,7 @@ export function AppShell() {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b bg-background/90 px-4 backdrop-blur md:hidden">
           <button
             className="rounded-md border p-1.5"
@@ -479,7 +479,7 @@ export function AppShell() {
           </button>
           <Logo />
         </header>
-        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 md:px-8 md:py-8">
           <Outlet />
         </main>
       </div>
