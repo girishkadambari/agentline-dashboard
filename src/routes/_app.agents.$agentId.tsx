@@ -8,6 +8,7 @@ import { Mono } from "@/components/agentline/Mono";
 import { Stat } from "@/components/agentline/Stat";
 import { InlineTabs } from "@/components/agentline/Tabs";
 import { EmptyState } from "@/components/agentline/EmptyState";
+import { DataTable as StandardDataTable } from "@/components/agentline/DataTable";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import type { CallListItem } from "@/lib/api/calls";
 import type { ConversationListItem } from "@/lib/api/messages";
@@ -703,32 +704,28 @@ function DataTable({
   rows: Array<{ key: string; cells: ReactNode[] }>;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border bg-surface">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              {headers.map((header) => (
-                <th key={header} className="px-4 py-3 font-medium">
-                  {header}
-                </th>
+    <StandardDataTable minWidth={760}>
+        <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+          <tr>
+            {headers.map((header) => (
+              <th key={header} className="px-4 py-3 font-medium">
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.key} className="border-t hover:bg-muted/40">
+              {row.cells.map((cell, index) => (
+                <td key={index} className="px-4 py-3 align-middle">
+                  {cell}
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.key} className="border-t hover:bg-muted/40">
-                {row.cells.map((cell, index) => (
-                  <td key={index} className="px-4 py-3 align-middle">
-                    {cell}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          ))}
+        </tbody>
+    </StandardDataTable>
   );
 }
 
