@@ -47,23 +47,30 @@ Remaining:
 
 Priority: P1
 
-Needed:
+Status: closed for frontend integration, pending live OAuth smoke test
+
+Implemented:
 
 - Session-based authentication.
 - Google OAuth start and callback endpoints.
 - Current user/profile endpoint.
 - Logout/session revocation endpoint.
-- Route-level frontend session refresh.
 - User workspace list endpoint.
 - Workspace creation endpoint.
 - Active workspace/project context endpoint.
+- Frontend login starts backend Google OAuth.
+- Frontend app shell loads `GET /v1/users/me`.
+- Frontend writes send session CSRF token.
+- Frontend workspace switcher calls backend session switch endpoint.
+
+Remaining:
+
+- Live browser smoke test with Google OAuth credentials configured.
 
 Reason:
 
-The current dashboard uses API-key login for fast local development. That is
-good for backend/API work, but not enough for production user access.
-API-key auth resolves one workspace/project pair, so workspace creation and
-workspace switching must wait for real user sessions.
+Backend session auth now supports production user access, while API-key login is
+kept only as an explicit developer fallback.
 
 ### Dashboard Summary Endpoint
 

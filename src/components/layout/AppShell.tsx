@@ -6,8 +6,16 @@ import {
   LogOut, Menu, X, Check, Circle, ChevronUp, UserRound,
 } from "lucide-react";
 import { Logo } from "@/components/agentline/Logo";
+import {
+  getCurrentUser,
+  logoutSession,
+  switchSessionWorkspace,
+  type CurrentUser,
+  type CurrentUserWorkspace,
+} from "@/lib/api/auth";
+import { AgentLineApiError } from "@/lib/api/client";
 import { getCurrentWorkspace, type Workspace } from "@/lib/api/workspace";
-import { clearStoredApiKey, hasStoredApiKey } from "@/lib/auth/session";
+import { clearStoredApiKey, getStoredApiKey } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -52,14 +60,52 @@ function isItemActive(pathname: string, to: string) {
   return to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
 }
 
+function buildApiKeyUser(workspace: Workspace): CurrentUser {
+  return {
+    id: "api_key_user",
+    email: workspace.billingEmail ?? "",
+    name: "API key session",
+    avatarUrl: null,
+    activeWorkspaceId: workspace.id,
+    activeProjectId: "api_key_project",
+    activeWorkspace: {
+      id: workspace.id,
+      name: workspace.name,
+    },
+    activeProject: {
+      id: "api_key_project",
+      name: "API key project",
+      environment: "test",
+    },
+    workspaces: [
+      {
+        id: workspace.id,
+        name: workspace.name,
+        role: "developer",
+        status: "active",
+        projects: [
+          {
+            id: "api_key_project",
+            name: "API key project",
+            environment: "test",
+          },
+        ],
+      },
+    ],
+  };
+}
+
 function WorkspaceSwitcher({
-  workspace,
+  user,
   workspaceError,
+  onWorkspaceChanged,
 }: {
-  workspace: Workspace | null;
+  user: CurrentUser | null;
   workspaceError: string | null;
+  onWorkspaceChanged: (user: CurrentUser) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [isSwitching, setIsSwitching] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -77,10 +123,29 @@ function WorkspaceSwitcher({
     };
   }, []);
 
-  const name = workspace?.name ?? (workspaceError ? "Backend offline" : "Loading...");
-  const initial = (workspace?.name ?? "A").charAt(0).toUpperCase();
+  const activeWorkspace = user?.activeWorkspace;
+  const name = activeWorkspace?.name ?? (workspaceError ? "Backend offline" : "Loading...");
+  const initial = (activeWorkspace?.name ?? "A").charAt(0).toUpperCase();
   const env = (import.meta.env.VITE_AGENTLINE_API_URL ?? "").includes("localhost") ? "Local" : "Live";
   const envColor = env === "Live" ? "text-success" : "text-sidebar-muted";
+
+  async function switchWorkspace(workspace: CurrentUserWorkspace) {
+    const projectId = workspace.projects[0]?.id;
+    if (!projectId || workspace.id === user?.activeWorkspaceId) {
+      setOpen(false);
+      return;
+    }
+
+    setIsSwitching(true);
+    try {
+      await switchSessionWorkspace(workspace.id, { projectId });
+      const response = await getCurrentUser();
+      onWorkspaceChanged(response.data);
+      setOpen(false);
+    } finally {
+      setIsSwitching(false);
+    }
+  }
 
   return (
     <div ref={ref} className="relative px-3 pb-3">
@@ -108,10 +173,28 @@ function WorkspaceSwitcher({
             <div className="min-w-0 flex-1">
               <div className="truncate font-medium">{name}</div>
               <div className="text-[11px] text-muted-foreground">
-                {workspaceError ? "Backend unreachable" : "Selected by your API key"}
+                {workspaceError ? "Backend unreachable" : user?.activeProject.name ?? "Active project"}
               </div>
             </div>
           </div>
+          {user?.workspaces.map((workspace) => {
+            const isActive = workspace.id === user.activeWorkspaceId;
+            return (
+              <button
+                key={workspace.id}
+                type="button"
+                disabled={isActive || isSwitching}
+                onClick={() => void switchWorkspace(workspace)}
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:cursor-default disabled:opacity-60"
+              >
+                <span className="flex h-5 w-5 items-center justify-center rounded bg-muted text-[10px] font-semibold">
+                  {workspace.name.charAt(0).toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1 truncate">{workspace.name}</span>
+                {isActive && <Check className="h-3.5 w-3.5 text-success" />}
+              </button>
+            );
+          })}
           <div className="my-1 border-t" />
           <Link
             to="/settings"
@@ -121,7 +204,7 @@ function WorkspaceSwitcher({
             Workspace settings
           </Link>
           <div className="px-2 pb-1.5 pt-1 text-[11px] text-muted-foreground">
-            Switching workspaces requires a different API key.
+            Workspace changes update your backend session.
           </div>
         </div>
       )}
@@ -131,14 +214,16 @@ function WorkspaceSwitcher({
 
 function SidebarContent({
   pathname,
-  workspace,
+  user,
   workspaceError,
+  onWorkspaceChanged,
   onNav,
   onSignOut,
 }: {
   pathname: string;
-  workspace: Workspace | null;
+  user: CurrentUser | null;
   workspaceError: string | null;
+  onWorkspaceChanged: (user: CurrentUser) => void;
   onNav?: () => void;
   onSignOut: () => void;
 }) {
@@ -147,7 +232,7 @@ function SidebarContent({
       <div className="flex items-center justify-between px-4 pb-3 pt-4">
         <Logo />
       </div>
-      <WorkspaceSwitcher workspace={workspace} workspaceError={workspaceError} />
+      <WorkspaceSwitcher user={user} workspaceError={workspaceError} onWorkspaceChanged={onWorkspaceChanged} />
       <nav className="flex-1 overflow-y-auto px-2 pb-4">
         {navGroups.map((group) => (
           <div key={group.label} className="mb-3">
@@ -178,18 +263,18 @@ function SidebarContent({
           </div>
         ))}
       </nav>
-      <ProfileSection workspace={workspace} workspaceError={workspaceError} onNav={onNav} onSignOut={onSignOut} />
+      <ProfileSection user={user} workspaceError={workspaceError} onNav={onNav} onSignOut={onSignOut} />
     </div>
   );
 }
 
 function ProfileSection({
-  workspace,
+  user,
   workspaceError,
   onNav,
   onSignOut,
 }: {
-  workspace: Workspace | null;
+  user: CurrentUser | null;
   workspaceError: string | null;
   onNav?: () => void;
   onSignOut: () => void;
@@ -212,8 +297,8 @@ function ProfileSection({
     };
   }, []);
 
-  const email = workspace?.billingEmail ?? null;
-  const displayName = email?.split("@")[0] ?? workspace?.name ?? "Account";
+  const email = user?.email ?? null;
+  const displayName = user?.name ?? email?.split("@")[0] ?? user?.activeWorkspace.name ?? "Account";
   const subtitle = email ?? (workspaceError ? "Backend unreachable" : "Signed in");
   const initials = displayName.slice(0, 2).toUpperCase();
 
@@ -270,30 +355,56 @@ export function AppShell() {
   const [open, setOpen] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
-  const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [user, setUser] = useState<CurrentUser | null>(null);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!hasStoredApiKey()) {
-      setIsAuthChecked(true);
-      setIsAuthed(false);
-      window.location.href = "/login";
-      return;
-    }
-
-    setIsAuthed(true);
-    setIsAuthChecked(true);
     let cancelled = false;
-    getCurrentWorkspace()
+    getCurrentUser()
       .then((response) => {
         if (!cancelled) {
-          setWorkspace(response.data);
+          setUser(response.data);
           setWorkspaceError(null);
+          setIsAuthed(true);
         }
       })
-      .catch(() => {
+      .catch((caught) => {
         if (!cancelled) {
+          if (caught instanceof AgentLineApiError && caught.status === 401) {
+            const fallbackApiKey = getStoredApiKey();
+            if (!fallbackApiKey) {
+              window.location.href = "/login";
+              return;
+            }
+
+            getCurrentWorkspace(fallbackApiKey)
+              .then((response) => {
+                if (!cancelled) {
+                  setUser(buildApiKeyUser(response.data));
+                  setWorkspaceError(null);
+                  setIsAuthed(true);
+                }
+              })
+              .catch(() => {
+                if (!cancelled) {
+                  clearStoredApiKey();
+                  window.location.href = "/login";
+                }
+              })
+              .finally(() => {
+                if (!cancelled) {
+                  setIsAuthChecked(true);
+                }
+              });
+            return;
+          }
           setWorkspaceError("Could not reach the backend.");
+          setIsAuthed(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsAuthChecked(true);
         }
       });
 
@@ -302,7 +413,12 @@ export function AppShell() {
     };
   }, []);
 
-  function signOut() {
+  async function signOut() {
+    try {
+      await logoutSession();
+    } catch {
+      // Local cleanup still signs the user out if the backend session is already gone.
+    }
     clearStoredApiKey();
     window.location.href = "/login";
   }
@@ -329,8 +445,9 @@ export function AppShell() {
       <aside className="hidden w-60 shrink-0 bg-sidebar md:flex md:flex-col">
         <SidebarContent
           pathname={pathname}
-          workspace={workspace}
+          user={user}
           workspaceError={workspaceError}
+          onWorkspaceChanged={setUser}
           onSignOut={signOut}
         />
       </aside>
@@ -341,8 +458,9 @@ export function AppShell() {
           <aside className="absolute left-0 top-0 h-full w-64 bg-sidebar">
             <SidebarContent
               pathname={pathname}
-              workspace={workspace}
+              user={user}
               workspaceError={workspaceError}
+              onWorkspaceChanged={setUser}
               onNav={() => setOpen(false)}
               onSignOut={signOut}
             />

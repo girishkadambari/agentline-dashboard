@@ -1,4 +1,5 @@
 const API_KEY_STORAGE_KEY = "agentline.apiKey";
+export const CSRF_COOKIE_NAME = "agentline_csrf";
 
 const canUseStorage = () =>
   typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -29,4 +30,17 @@ export function clearStoredApiKey() {
 
 export function hasStoredApiKey() {
   return Boolean(getStoredApiKey());
+}
+
+export function getCsrfToken() {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const cookie = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${CSRF_COOKIE_NAME}=`));
+
+  return cookie ? decodeURIComponent(cookie.slice(CSRF_COOKIE_NAME.length + 1)) : null;
 }

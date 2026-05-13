@@ -11,9 +11,9 @@ function Callback() {
       <div className="text-center">
         <div className="mb-6 flex justify-center"><Logo /></div>
         <div className="rounded-lg border bg-surface p-6">
-          <h2 className="text-sm font-semibold">Google SSO is not configured yet</h2>
+          <h2 className="text-sm font-semibold">Finishing Google sign in</h2>
           <p className="mt-1 max-w-sm text-xs text-muted-foreground">
-            AgentLine is using API-key login while backend session auth is being built.
+            Google OAuth is handled by the AgentLine backend. If you landed here directly, start sign in again.
           </p>
           <Link to="/login" className="mt-4 inline-flex rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted">Back to sign in</Link>
         </div>

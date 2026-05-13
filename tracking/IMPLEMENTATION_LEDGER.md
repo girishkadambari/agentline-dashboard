@@ -847,3 +847,40 @@ Product rule:
 - During Twilio trial testing, use **Import existing** for the one Twilio-owned
   number. Use **Provision number** only after upgrading or when intentionally
   buying another number.
+
+## 2026-05-13 - Session Auth Frontend Integration
+
+Status: implemented
+
+Implemented:
+
+- Added `src/lib/api/auth.ts` for backend session APIs:
+  - `GET /users/me`
+  - `POST /auth/logout`
+  - `GET /auth/google/start` redirect helper
+  - session workspace list/create/switch/invite accept helpers
+- Updated the API client to:
+  - send cookies with requests
+  - add `X-CSRF-Token` from the `agentline_csrf` cookie for session writes
+  - keep developer API-key fallback support when explicitly stored
+- Updated login:
+  - primary action now starts real backend Google OAuth
+  - API-key login is hidden behind a developer fallback
+- Updated the app shell:
+  - primary auth check is now `GET /users/me`
+  - sidebar/profile use real current-user/session context
+  - workspace switcher calls backend session switch endpoint
+  - sign out calls backend logout and then clears local fallback state
+- Updated onboarding:
+  - loads active workspace from `GET /users/me`
+  - uses the same session-aware API client for workspace and agent writes
+- Updated `/auth/callback` copy so it no longer says Google SSO is pending.
+
+Verification:
+
+- `npm run build` passed.
+
+Follow-ups:
+
+- Run a live browser smoke test with backend Google OAuth configured.
+- Clean up Settings auth copy to show real session status.

@@ -597,30 +597,57 @@ Implemented:
 - Replaced fake Settings integration states with explicit pending backend-gap
   panels.
 
-## Next Priority: Auth And Provider Runtime Status
+## Phase F6: Session Auth Frontend Integration
+
+Status: implemented
 
 Goal:
 
-Close the two biggest remaining production-readiness gaps after Settings:
-real user auth and provider health visibility.
+Align the dashboard with the backend session/auth changes.
+
+Implemented:
+
+- API client now sends cookies with backend requests.
+- Session-authenticated write requests automatically include
+  `X-CSRF-Token` from the `agentline_csrf` cookie.
+- Added current-user/session workspace API helpers.
+- Login now starts real backend Google OAuth through
+  `/v1/auth/google/start`.
+- API-key login remains only as an explicit developer fallback.
+- App shell now loads `GET /v1/users/me` as the primary auth check.
+- App shell supports backend session logout.
+- Workspace switcher uses session workspaces and calls
+  `POST /v1/workspaces/:workspaceId/switch`.
+- Onboarding loads the active workspace from `GET /v1/users/me` and uses the
+  session-backed API client for workspace/agent writes.
+
+Verification:
+
+- `npm run build` passed.
+
+Remaining:
+
+- Live browser smoke test with backend Google OAuth configured.
+- Replace any old settings copy that still describes auth as pending.
+
+## Next Priority: Provider Runtime Status
+
+Goal:
+
+Close the biggest remaining production-readiness gap after session auth:
+provider health visibility.
 
 Build:
 
-- Backend current-user/profile endpoint.
-- Backend session/Google SSO plan and API contract.
-- Backend user workspace list, workspace creation, and active context contract.
 - Provider runtime status endpoint for active telecom provider readiness.
-- Frontend Auth Settings panel using real current-user/auth status once
-  available.
+- Frontend Auth Settings panel cleanup now that real session auth exists.
 - Service Health telecom row backed by the provider status endpoint.
 
 Exit Criteria:
 
-- Dashboard can show who the current user is without relying on API-key-only
-  assumptions.
-- Workspace switching is implemented only after session auth, or the UI remains
-  a current-workspace indicator.
-- Google SSO remains disabled unless real backend endpoints exist.
+- Dashboard can show who the current user is from backend sessions.
+- Workspace switching uses backend session context.
+- Google SSO starts through the real backend OAuth endpoint.
 - Service Health reports telecom provider readiness from backend data.
 
 ## Parallel UI Track: Platform Polish

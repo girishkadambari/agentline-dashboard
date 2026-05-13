@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { Logo } from "@/components/agentline/Logo";
 import { Check } from "lucide-react";
 import { createBackendAgent } from "@/lib/api/agents";
+import { getCurrentUser } from "@/lib/api/auth";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
-import { getCurrentWorkspace, updateCurrentWorkspace } from "@/lib/api/workspace";
-import { hasStoredApiKey } from "@/lib/auth/session";
+import { updateCurrentWorkspace } from "@/lib/api/workspace";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/onboarding")({
@@ -28,20 +28,19 @@ function Onboarding() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!hasStoredApiKey()) {
-      window.location.href = "/login";
-      return;
-    }
-
     let cancelled = false;
-    getCurrentWorkspace()
+    getCurrentUser()
       .then((response) => {
-        if (!cancelled && response.data.name) {
-          setWorkspace(response.data.name);
+        if (!cancelled && response.data.activeWorkspace.name) {
+          setWorkspace(response.data.activeWorkspace.name);
         }
       })
-      .catch(() => {
+      .catch((caught) => {
         if (!cancelled) {
+          if (caught instanceof AgentLineApiError && caught.status === 401) {
+            window.location.href = "/login";
+            return;
+          }
           setError("Could not load your workspace. Check that the backend is running.");
         }
       });

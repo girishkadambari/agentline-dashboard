@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/agentline/EmptyState";
 import { Mono } from "@/components/agentline/Mono";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
+import { getCurrentUser, type CurrentUser } from "@/lib/api/auth";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import {
   createWorkspaceInvite,
@@ -37,6 +38,7 @@ const roles: WorkspaceRole[] = ["owner", "admin", "developer", "billing", "viewe
 function Settings() {
   const [tab, setTab] = useState<(typeof tabs)[number]>("Workspace");
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [invites, setInvites] = useState<WorkspaceInvite[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,12 +48,14 @@ function Settings() {
     setLoading(true);
     setError(null);
     try {
-      const [workspaceResponse, memberResponse, inviteResponse] = await Promise.all([
+      const [workspaceResponse, userResponse, memberResponse, inviteResponse] = await Promise.all([
         getCurrentWorkspace(),
+        getCurrentUser(),
         listWorkspaceMembers(),
         listWorkspaceInvites(),
       ]);
       setWorkspace(workspaceResponse.data);
+      setCurrentUser(userResponse.data);
       setMembers(memberResponse.data);
       setInvites(inviteResponse.data);
     } catch (caught) {
@@ -120,15 +124,7 @@ function Settings() {
           <InvitesPanel invites={invites} loading={loading} onChanged={loadSettings} />
         )}
         {tab === "Auth" && (
-          <BackendGapPanel
-            title="Auth and Google SSO"
-            items={[
-              "Session auth endpoint",
-              "Google OAuth callback",
-              "User profile endpoint",
-              "Route-level session refresh",
-            ]}
-          />
+          <AuthPanel currentUser={currentUser} loading={loading} />
         )}
         {tab === "Providers" && (
           <BackendGapPanel
@@ -554,6 +550,51 @@ function BackendGapPanel({ title, items }: { title: string; items: string[] }) {
           </div>
         ))}
       </div>
+    </PanelShell>
+  );
+}
+
+function AuthPanel({ currentUser, loading }: { currentUser: CurrentUser | null; loading: boolean }) {
+  return (
+    <PanelShell title="Auth and Google SSO">
+      {loading ? (
+        <SkeletonRows />
+      ) : !currentUser ? (
+        <EmptyState
+          title="No session loaded"
+          description="Sign in with Google to create a backend session."
+        />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-lg border bg-muted/15 p-4">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">User</div>
+            <div className="mt-2 text-sm font-medium">{currentUser.name ?? currentUser.email}</div>
+            <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+              <span>{currentUser.email}</span>
+              <CopyButton value={currentUser.email} label="Copy email" />
+            </div>
+          </div>
+          <div className="rounded-lg border bg-muted/15 p-4">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Session context</div>
+            <div className="mt-2 text-sm font-medium">{currentUser.activeWorkspace.name}</div>
+            <div className="mt-1 text-sm text-muted-foreground">{currentUser.activeProject.name}</div>
+          </div>
+          <div className="rounded-lg border bg-muted/15 p-4">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Workspaces</div>
+            <div className="mt-2 text-2xl font-semibold">{currentUser.workspaces.length}</div>
+            <div className="mt-1 text-sm text-muted-foreground">Available through backend session switching.</div>
+          </div>
+          <div className="rounded-lg border bg-success/5 p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Google SSO</span>
+              <StatusBadge status="active" />
+            </div>
+            <div className="mt-2 text-sm text-muted-foreground">
+              Dashboard requests use HTTP-only session cookies and CSRF-protected writes.
+            </div>
+          </div>
+        </div>
+      )}
     </PanelShell>
   );
 }

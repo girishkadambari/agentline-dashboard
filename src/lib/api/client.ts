@@ -1,4 +1,4 @@
-import { getStoredApiKey } from "@/lib/auth/session";
+import { getCsrfToken, getStoredApiKey } from "@/lib/auth/session";
 
 export const API_BASE_URL =
   import.meta.env.VITE_AGENTLINE_API_URL ?? "http://localhost:3000/v1";
@@ -84,6 +84,7 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   const { auth = true, authToken, query, headers, body, ...init } = options;
   const token = authToken ?? getStoredApiKey();
   const requestHeaders = new Headers(headers);
+  const method = init.method?.toUpperCase() ?? "GET";
 
   if (body && !requestHeaders.has("Content-Type")) {
     requestHeaders.set("Content-Type", "application/json");
@@ -93,9 +94,17 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     requestHeaders.set("Authorization", `Bearer ${token}`);
   }
 
+  if (auth && !token && ["POST", "PATCH", "PUT", "DELETE"].includes(method)) {
+    const csrf = getCsrfToken();
+    if (csrf && !requestHeaders.has("X-CSRF-Token")) {
+      requestHeaders.set("X-CSRF-Token", csrf);
+    }
+  }
+
   const response = await fetch(buildUrl(path, query), {
     ...init,
     body,
+    credentials: "include",
     headers: requestHeaders,
   });
   const payload = await readJson(response);
