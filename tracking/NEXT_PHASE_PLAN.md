@@ -650,6 +650,57 @@ Exit Criteria:
 - Google SSO starts through the real backend OAuth endpoint.
 - Service Health reports telecom provider readiness from backend data.
 
+## Phase F7: Agent Operating Console
+
+Status: in progress
+
+Goal:
+
+Make the agent detail page the main place to verify the ICP loop: attached
+numbers, real conversations, calls, usage, webhook delivery, and recent
+activity.
+
+Implemented:
+
+- Agent detail now consumes `GET /agents/:id/summary`.
+- Agent overview shows real usage cost, usage event count, webhook failure
+  count, conversation count, and activity timeline.
+- Agent detail has a Debug tab with recent usage events and webhook delivery
+  diagnostics.
+- Frontend API mapping now includes agent-scoped usage events, webhook
+  deliveries, and timeline items from the backend summary response.
+- Debug view now shows provider issues derived from Twilio callback failures.
+- Overview now includes provider issue counts.
+
+Remaining:
+
+- Add filters/cursors for large histories.
+- Add a “next setup step” panel when the agent has no number, webhook, usage, or
+  recent activity.
+
+## Phase F8: Call Lifecycle Detail
+
+Status: implemented
+
+Goal:
+
+Make live Twilio calls understandable while they are happening and after they
+complete.
+
+Implemented:
+
+- Call detail auto-refreshes every 3 seconds while a call is non-terminal.
+- Call detail has a manual Refresh action.
+- Call API mapping includes `providerCallId` and provider diagnostics.
+- Call detail shows provider callback history, provider status, provider event
+  IDs, and provider error code/message when available.
+
+Remaining:
+
+- Replace polling with SSE/WebSocket once the backend has a realtime stream.
+- Add a first-class call timeline endpoint if provider/internal event history
+  grows beyond the call detail response.
+
 ## Parallel UI Track: Platform Polish
 
 Status: planned

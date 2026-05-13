@@ -17,10 +17,26 @@ export interface BackendCall {
   outcome?: string | null;
   recordingId?: string | null;
   provider: string;
+  providerCallId?: string | null;
+  providerDiagnostics?: {
+    events: ProviderDiagnosticEvent[];
+    issues: ProviderDiagnosticEvent[];
+  };
   startedAt?: string | null;
   endedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProviderDiagnosticEvent {
+  id: string;
+  provider: string;
+  providerEventId?: string | null;
+  eventType: string;
+  status?: string | null;
+  code?: string | null;
+  message?: string | null;
+  createdAt: string;
 }
 
 export interface TranscriptTurn {
@@ -45,6 +61,11 @@ export interface CallListItem {
   outcome: string;
   summary: string;
   provider: string;
+  providerCallId?: string;
+  providerDiagnostics: {
+    events: ProviderDiagnosticEvent[];
+    issues: ProviderDiagnosticEvent[];
+  };
   startedAt: string;
   endedAt?: string;
   cost: number;
@@ -85,6 +106,8 @@ export function mapBackendCall(call: BackendCall): CallListItem {
     outcome: call.outcome ?? call.status,
     summary: call.summary ?? "",
     provider: call.provider,
+    providerCallId: call.providerCallId ?? undefined,
+    providerDiagnostics: call.providerDiagnostics ?? { events: [], issues: [] },
     startedAt: formatDate(call.startedAt ?? call.createdAt),
     endedAt: call.endedAt ? formatDate(call.endedAt) : undefined,
     cost: estimateVoiceCost(call.durationSeconds),
@@ -92,7 +115,10 @@ export function mapBackendCall(call: BackendCall): CallListItem {
 }
 
 export async function listBackendCalls() {
-  const response = await apiRequest<{ data: BackendCall[]; pagination: { limit: number; nextCursor: string | null } }>("/calls");
+  const response = await apiRequest<{
+    data: BackendCall[];
+    pagination: { limit: number; nextCursor: string | null };
+  }>("/calls");
 
   return {
     data: response.data.map(mapBackendCall),
@@ -140,7 +166,10 @@ export async function transferBackendCall(id: string, to: string) {
 }
 
 export async function getBackendCallTranscript(id: string) {
-  return apiRequest<{ data: TranscriptTurn[]; pagination: { limit: number; nextCursor: string | null } }>(`/calls/${id}/transcript`);
+  return apiRequest<{
+    data: TranscriptTurn[];
+    pagination: { limit: number; nextCursor: string | null };
+  }>(`/calls/${id}/transcript`);
 }
 
 export const listCalls = listBackendCalls;
@@ -151,7 +180,5 @@ export const endCall = endBackendCall;
 export const transferCall = transferBackendCall;
 export const callTranscript = getBackendCallTranscript;
 export const callTimeline = async (id: string) => ({
-  data: [
-    { at: "created", event: "call.created", detail: id },
-  ],
+  data: [{ at: "created", event: "call.created", detail: id }],
 });

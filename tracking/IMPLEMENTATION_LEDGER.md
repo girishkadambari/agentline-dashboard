@@ -201,6 +201,46 @@ Known follow-ups:
 - Transfer currently uses a browser prompt and should become a drawer/form in a
   voice workflow quality pass.
 
+## 2026-05-13 - Phase F7 Agent Operating Console
+
+Status: implemented first slice
+
+Implemented:
+
+- Added frontend mapping for `GET /agents/:id/summary`.
+- Agent detail now uses the backend summary response for real agent-scoped
+  numbers, conversations, calls, message count, usage, webhook deliveries, and
+  timeline.
+- Added usage cost, usage event count, webhook failure count, and conversation
+  count to the Agent overview.
+- Added an activity timeline to the Agent overview.
+- Added a Debug tab for recent usage events and webhook delivery diagnostics.
+- Added provider issue count and provider issue diagnostics to the Agent
+  overview/debug flow.
+
+Verification:
+
+- Frontend `npm run build` passed. Wrangler printed its known local log-file
+  permission warning, but the build completed successfully.
+
+## 2026-05-13 - Phase F8 Call Lifecycle Detail
+
+Status: implemented
+
+Implemented:
+
+- Call detail refreshes automatically while a call is queued, ringing, or in
+  progress.
+- Added manual Refresh action on call detail.
+- Added provider callback diagnostics to the call detail sidebar.
+- Frontend call API mapping now includes provider call id and provider
+  diagnostics.
+
+Verification:
+
+- Frontend `npm run build` passed. Wrangler printed the known local log-file
+  permission warning, but the build completed successfully.
+
 Route rendering fix:
 
 - Fixed nested detail route rendering for Agents, Numbers, and Calls by

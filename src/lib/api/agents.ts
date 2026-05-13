@@ -1,4 +1,18 @@
 import { apiRequest } from "./client";
+import type { CallListItem, BackendCall } from "./calls";
+import { mapBackendCall } from "./calls";
+import type {
+  BackendConversation,
+  BackendMessage,
+  ConversationListItem,
+  MessageListItem,
+} from "./messages";
+import { mapBackendConversation, mapBackendMessage } from "./messages";
+import type { BackendNumber, NumberListItem } from "./numbers";
+import type { BackendUsageEvent, UsageEventListItem } from "./usage";
+import { mapBackendUsageEvent } from "./usage";
+import type { BackendWebhookDelivery, WebhookDeliveryListItem } from "./webhooks";
+import { mapBackendWebhookDelivery } from "./webhooks";
 
 export type BackendAgentMode = "hosted" | "webhook" | "web";
 
@@ -52,6 +66,66 @@ export interface CreateBackendAgentInput {
   metadata?: Record<string, unknown>;
 }
 
+export interface BackendAgentSummary {
+  agent: BackendAgent;
+  counts: {
+    numbers: number;
+    activeNumbers: number;
+    conversations: number;
+    messages: number;
+    calls: number;
+    failedWebhookDeliveries: number;
+    providerIssues: number;
+  };
+  numbers: BackendNumber[];
+  recentConversations: BackendConversation[];
+  recentCalls: BackendCall[];
+  recentMessages: BackendMessage[];
+  recentUsageEvents: BackendUsageEvent[];
+  recentWebhookDeliveries: BackendWebhookDelivery[];
+  providerIssues: Array<{
+    id: string;
+    provider: string;
+    providerEventId: string | null;
+    eventType: string;
+    status: string | null;
+    resourceType: string;
+    resourceId: string;
+    code: string | null;
+    message: string | null;
+    occurredAt: string;
+  }>;
+  timeline: Array<{
+    id: string;
+    type: "call" | "message" | "usage" | "webhook" | "provider_issue";
+    title: string;
+    status: string;
+    resourceId: string;
+    occurredAt: string;
+    metadata: Record<string, unknown>;
+  }>;
+  usage: {
+    eventCount: number;
+    totalCost: string;
+  };
+  lastActivityAt: string;
+}
+
+export interface AgentSummary {
+  agent: AgentListItem;
+  counts: BackendAgentSummary["counts"];
+  numbers: NumberListItem[];
+  recentConversations: ConversationListItem[];
+  recentCalls: CallListItem[];
+  recentMessages: MessageListItem[];
+  recentUsageEvents: UsageEventListItem[];
+  recentWebhookDeliveries: WebhookDeliveryListItem[];
+  providerIssues: BackendAgentSummary["providerIssues"];
+  timeline: BackendAgentSummary["timeline"];
+  usage: BackendAgentSummary["usage"];
+  lastActivity: string;
+}
+
 export type UpdateBackendAgentInput = Partial<CreateBackendAgentInput> & {
   transferNumber?: string;
   voicemailMessage?: string;
@@ -94,7 +168,10 @@ export function mapBackendAgent(agent: BackendAgent): AgentListItem {
 }
 
 export async function listBackendAgents() {
-  const response = await apiRequest<{ data: BackendAgent[]; pagination: { limit: number; nextCursor: string | null } }>("/agents");
+  const response = await apiRequest<{
+    data: BackendAgent[];
+    pagination: { limit: number; nextCursor: string | null };
+  }>("/agents");
 
   return {
     data: response.data.map(mapBackendAgent),
@@ -106,6 +183,39 @@ export async function getBackendAgent(id: string) {
   const response = await apiRequest<{ data: BackendAgent }>(`/agents/${id}`);
 
   return { data: mapBackendAgent(response.data) };
+}
+
+export async function getBackendAgentSummary(id: string) {
+  const response = await apiRequest<{ data: BackendAgentSummary }>(`/agents/${id}/summary`);
+
+  return {
+    data: {
+      agent: mapBackendAgent(response.data.agent),
+      counts: response.data.counts,
+      numbers: response.data.numbers.map((number) => ({
+        id: number.id,
+        agentId: number.agentId ?? undefined,
+        number: number.phoneNumber,
+        country: number.country,
+        areaCode: number.areaCode ?? "",
+        capabilities: number.capabilities,
+        provider: number.provider,
+        status: number.status,
+        monthlyCost: 1.15,
+        createdAt: number.createdAt,
+        updatedAt: number.updatedAt,
+      })),
+      recentConversations: response.data.recentConversations.map(mapBackendConversation),
+      recentCalls: response.data.recentCalls.map(mapBackendCall),
+      recentMessages: response.data.recentMessages.map(mapBackendMessage),
+      recentUsageEvents: response.data.recentUsageEvents.map(mapBackendUsageEvent),
+      recentWebhookDeliveries: response.data.recentWebhookDeliveries.map(mapBackendWebhookDelivery),
+      providerIssues: response.data.providerIssues,
+      timeline: response.data.timeline,
+      usage: response.data.usage,
+      lastActivity: formatActivity(response.data.lastActivityAt),
+    },
+  };
 }
 
 export function createBackendAgent(input: CreateBackendAgentInput) {
