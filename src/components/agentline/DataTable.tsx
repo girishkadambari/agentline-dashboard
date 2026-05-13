@@ -24,7 +24,7 @@ export function DataTable({
   return (
     <div
       className={cn(
-        "data-table-scroll rounded-lg border bg-surface shadow-sm scrollbar-thin",
+        "data-table-scroll min-w-0 max-w-full rounded-lg border bg-surface shadow-sm scrollbar-thin",
         className,
       )}
     >
