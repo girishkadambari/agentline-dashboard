@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, Bot, Phone, Inbox, PhoneCall, Users, Webhook, BarChart3,
   CreditCard, KeyRound, FlaskConical, Settings, Activity,
-  LogOut, Menu, X, Check, Circle, ChevronUp, UserRound,
+  LogOut, Menu, X, Check, Circle, ChevronUp, UserRound, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { Logo } from "@/components/agentline/Logo";
 import {
