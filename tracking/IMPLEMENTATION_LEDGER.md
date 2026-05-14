@@ -954,3 +954,33 @@ Verification:
 - `npm run build` completed; Wrangler still logs a sandbox warning while trying
   to write under the user preferences directory, but Vite client/server bundles
   were generated.
+
+## 2026-05-15 - Stripe Billing Frontend Integration
+
+Status: implemented
+
+Implemented:
+
+- Added billing API client support for:
+  - `GET /billing/plans`
+  - `GET /billing/subscription`
+  - `POST /billing/subscription-checkout-sessions`
+- Rebuilt the Billing screen around real backend billing state:
+  - plan catalog
+  - current subscription
+  - Stripe customer id
+  - trial/included allowance grants
+  - allowance consumed/remaining progress
+  - prepaid balance
+  - MTD usage spend
+  - Stripe readiness and usage-meter readiness
+  - billing transactions
+- Added product actions:
+  - prepaid credit Checkout
+  - Starter/Growth subscription Checkout
+  - Stripe Customer Portal
+- No mock billing data was introduced.
+
+Verification:
+
+- `npm run build` passed with filesystem permission for Wrangler log output.
