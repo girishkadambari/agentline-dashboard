@@ -99,10 +99,12 @@ function WorkspaceSwitcher({
   user,
   workspaceError,
   onWorkspaceChanged,
+  collapsed,
 }: {
   user: CurrentUser | null;
   workspaceError: string | null;
   onWorkspaceChanged: (user: CurrentUser) => void;
+  collapsed?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
@@ -148,28 +150,39 @@ function WorkspaceSwitcher({
   }
 
   return (
-    <div ref={ref} className="relative px-3 pb-3">
+    <div ref={ref} className={cn("relative pb-3", collapsed ? "px-2" : "px-3")}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 rounded-lg border border-sidebar-border/80 bg-sidebar-accent/30 px-2 py-1.5 text-left text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+        title={collapsed ? `${name} · ${env}` : undefined}
+        className={cn(
+          "flex w-full items-center rounded-lg border border-sidebar-border/80 bg-sidebar-accent/30 text-left text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent",
+          collapsed ? "justify-center p-1.5" : "gap-2 px-2 py-1.5"
+        )}
       >
         <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-white/95 to-white/70 text-[11px] font-semibold text-sidebar shadow-[0_1px_0_rgba(255,255,255,0.4)_inset]">
           {initial}
         </div>
-        <div className="min-w-0 flex-1 leading-tight">
-          <div className="truncate text-[12.5px] font-medium text-sidebar-accent-foreground">{name}</div>
-          <div className="truncate text-[10.5px] text-sidebar-muted">
-            {user?.activeProject.name ?? "Workspace"}
-          </div>
-        </div>
-        <span className={cn("flex items-center gap-1 rounded-full bg-black/20 px-1.5 py-0.5 text-[9.5px] font-medium uppercase tracking-wide", envColor)}>
-          <Circle className="h-1.5 w-1.5 fill-current" />
-          {env}
-        </span>
+        {!collapsed && (
+          <>
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="truncate text-[12.5px] font-medium text-sidebar-accent-foreground">{name}</div>
+              <div className="truncate text-[10.5px] text-sidebar-muted">
+                {user?.activeProject.name ?? "Workspace"}
+              </div>
+            </div>
+            <span className={cn("flex items-center gap-1 rounded-full bg-black/20 px-1.5 py-0.5 text-[9.5px] font-medium uppercase tracking-wide", envColor)}>
+              <Circle className="h-1.5 w-1.5 fill-current" />
+              {env}
+            </span>
+          </>
+        )}
       </button>
       {open && (
-        <div className="absolute left-3 right-3 top-full z-50 mt-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg">
+        <div className={cn(
+          "absolute top-full z-50 mt-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg",
+          collapsed ? "left-2 w-60" : "left-3 right-3"
+        )}>
           <div className="px-2 py-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">Current workspace</div>
           <div className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm">
             <Check className="h-3.5 w-3.5 text-success" />
