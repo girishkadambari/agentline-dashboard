@@ -89,6 +89,9 @@ interface Scenario {
   bodyPlaceholder?: string;
   cta: string;
   danger?: boolean;
+  sampleDestination?: string;
+  sampleBody?: string;
+  successHint?: string;
 }
 
 const SCENARIOS: Scenario[] = [
@@ -105,6 +108,8 @@ const SCENARIOS: Scenario[] = [
     destinationLabel: "Phone number to call",
     destinationPlaceholder: "+15551234567",
     cta: "Place call",
+    sampleDestination: "+15551234567",
+    successHint: "Inspect the call ID in the log to follow status webhooks.",
   },
   {
     id: "web-call",
@@ -117,6 +122,7 @@ const SCENARIOS: Scenario[] = [
     needsBody: false,
     needsWebhook: false,
     cta: "Generate token",
+    successHint: "Tokens expire in ~10 minutes. Use them with the Web SDK.",
   },
   {
     id: "send-sms",
@@ -133,6 +139,9 @@ const SCENARIOS: Scenario[] = [
     bodyLabel: "Message body",
     bodyPlaceholder: "Hi! This is a test from the playground.",
     cta: "Send message",
+    sampleDestination: "+15551234567",
+    sampleBody: "Hi! This is a test from the AgentLine playground.",
+    successHint: "Replies stream into Inbox under the same conversation ID.",
   },
   {
     id: "webhook-test",
@@ -145,6 +154,7 @@ const SCENARIOS: Scenario[] = [
     needsBody: false,
     needsWebhook: true,
     cta: "Send test event",
+    successHint: "Use this to verify your endpoint signature & 2xx response.",
   },
   {
     id: "webhook-failure",
@@ -158,6 +168,7 @@ const SCENARIOS: Scenario[] = [
     needsWebhook: true,
     cta: "Trigger failure",
     danger: true,
+    successHint: "Watch retry attempts in Webhooks → Deliveries.",
   },
 ];
 
@@ -165,6 +176,30 @@ const CATEGORY_LABEL: Record<Scenario["category"], string> = {
   voice: "Voice",
   messaging: "Messaging",
   webhooks: "Webhooks",
+};
+
+const CATEGORY_TONE: Record<
+  Scenario["category"],
+  { dot: string; chip: string; soft: string; ring: string }
+> = {
+  voice: {
+    dot: "bg-[oklch(0.55_0.16_255)]",
+    chip: "bg-[oklch(0.55_0.16_255)]/10 text-[oklch(0.45_0.16_255)] border-[oklch(0.55_0.16_255)]/20",
+    soft: "bg-[oklch(0.55_0.16_255)]/8",
+    ring: "ring-[oklch(0.55_0.16_255)]/30",
+  },
+  messaging: {
+    dot: "bg-success",
+    chip: "bg-success/10 text-success border-success/20",
+    soft: "bg-success/8",
+    ring: "ring-success/30",
+  },
+  webhooks: {
+    dot: "bg-warning",
+    chip: "bg-warning/15 text-[oklch(0.45_0.14_75)] border-warning/25",
+    soft: "bg-warning/10",
+    ring: "ring-warning/35",
+  },
 };
 
 function Playground() {
