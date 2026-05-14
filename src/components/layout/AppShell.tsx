@@ -6,7 +6,6 @@ import {
   LogOut, Menu, X, Check, Circle, ChevronUp, ChevronDown, UserRound, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { Logo } from "@/components/agentline/Logo";
-import { Breadcrumbs } from "@/components/agentline/Breadcrumbs";
 import {
   getCurrentUser,
   logoutSession,
