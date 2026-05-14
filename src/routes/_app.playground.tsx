@@ -361,100 +361,146 @@ function Playground() {
     );
   }, []);
 
+  const tone = CATEGORY_TONE[scenario.category];
+  const runsCount = log.filter((e) => e.scenario !== "system").length;
+  const successCount = log.filter((e) => e.level === "success").length;
+  const errorCount = log.filter((e) => e.level === "error").length;
+  const canFillSample = Boolean(scenario.sampleDestination || scenario.sampleBody);
+  function fillSample() {
+    if (scenario.sampleDestination) setDestination(scenario.sampleDestination);
+    if (scenario.sampleBody) setBody(scenario.sampleBody);
+  }
+
   return (
     <div className="min-w-0">
       <PageHeader
         eyebrow="Developer"
         title="Playground"
-        description="Run live backend actions for every supported scenario and inspect the exact API responses."
+        description="Test every supported scenario against the live backend, inspect raw responses, and copy production-ready cURL snippets."
         actions={
-          <button
-            onClick={loadSetup}
-            disabled={isLoading}
-            className="inline-flex items-center gap-1.5 rounded-md border bg-surface px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
-            Refresh
-          </button>
+          <>
+            <div className="hidden items-center gap-1.5 rounded-md border bg-surface px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground md:inline-flex">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
+              </span>
+              <Mono className="text-[11px] text-muted-foreground">{API_BASE_URL}</Mono>
+            </div>
+            <button
+              onClick={loadSetup}
+              disabled={isLoading}
+              className="inline-flex items-center gap-1.5 rounded-md border bg-surface px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
+              Refresh
+            </button>
+          </>
         }
       />
 
-      <div className="grid min-w-0 gap-4 lg:grid-cols-[280px_minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard icon={<Zap className="h-3.5 w-3.5" />} label="Agents" value={agents.length} hint="available" />
+        <StatCard icon={<Webhook className="h-3.5 w-3.5" />} label="Webhooks" value={webhooks.length} hint="endpoints" />
+        <StatCard icon={<FlaskConical className="h-3.5 w-3.5" />} label="Runs" value={runsCount} hint="this session" />
+        <StatCard
+          icon={<CircleDot className="h-3.5 w-3.5" />}
+          label="Outcomes"
+          value={successCount}
+          hint={`${errorCount} error${errorCount === 1 ? "" : "s"}`}
+          tone={errorCount > 0 ? "warn" : "ok"}
+        />
+      </div>
+
+      <div className="grid min-w-0 gap-5 lg:grid-cols-[300px_minmax(0,1.05fr)_minmax(0,1fr)]">
         {/* Scenario picker */}
         <aside className="min-w-0">
-          <div className="sticky top-4 rounded-lg border bg-surface p-2 shadow-sm">
-            <div className="px-2 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Scenarios
+          <div className="sticky top-4 rounded-xl border bg-surface p-3 shadow-sm">
+            <div className="flex items-center justify-between px-1 pb-2">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                Scenarios
+              </div>
+              <Badge variant="secondary" className="h-5 text-[10px]">{SCENARIOS.length}</Badge>
             </div>
-            <div className="space-y-3">
-              {(Object.keys(grouped) as Array<Scenario["category"]>).map((cat) => (
-                <div key={cat}>
-                  <div className="px-2 pb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-                    {CATEGORY_LABEL[cat]}
-                  </div>
-                  <div className="space-y-1">
-                    {grouped[cat].map((s) => {
-                      const active = s.id === scenarioId;
-                      return (
-                        <button
-                          key={s.id}
-                          onClick={() => setScenarioId(s.id)}
-                          className={cn(
-                            "group flex w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors",
-                            active ? "bg-accent/10 text-foreground ring-1 ring-inset ring-accent/30" : "hover:bg-muted",
-                          )}
-                        >
-                          <span
+            <div className="space-y-4">
+              {(Object.keys(grouped) as Array<Scenario["category"]>).map((cat) => {
+                const ct = CATEGORY_TONE[cat];
+                return (
+                  <div key={cat}>
+                    <div className="mb-1.5 flex items-center gap-1.5 px-1">
+                      <span className={cn("h-1.5 w-1.5 rounded-full", ct.dot)} />
+                      <div className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                        {CATEGORY_LABEL[cat]}
+                      </div>
+                      <div className="ml-auto text-[10px] text-muted-foreground/70">
+                        {grouped[cat].length}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      {grouped[cat].map((s) => {
+                        const active = s.id === scenarioId;
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => setScenarioId(s.id)}
                             className={cn(
-                              "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border",
+                              "group flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-sm transition-all",
                               active
-                                ? "border-accent/30 bg-accent/15 text-accent"
-                                : "border-border bg-background text-muted-foreground",
-                              s.danger && !active && "text-destructive/70",
+                                ? cn("ring-1 ring-inset", ct.soft, ct.ring)
+                                : "hover:bg-muted/60",
                             )}
                           >
-                            {s.icon}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="flex items-center justify-between gap-2">
-                              <span className="truncate font-medium">{s.title}</span>
-                              {active && <ChevronRight className="h-3.5 w-3.5 text-accent" />}
+                            <span
+                              className={cn(
+                                "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition-colors",
+                                active
+                                  ? cn("border-transparent text-foreground", ct.soft)
+                                  : "border-border bg-background text-muted-foreground group-hover:text-foreground",
+                                s.danger && !active && "text-destructive/70",
+                              )}
+                            >
+                              {s.icon}
                             </span>
-                            <span className="mt-0.5 line-clamp-2 block text-[11.5px] leading-snug text-muted-foreground">
-                              {s.description}
+                            <span className="min-w-0 flex-1">
+                              <span className="flex items-center justify-between gap-2">
+                                <span className="truncate text-[13px] font-medium">{s.title}</span>
+                                {active && <ChevronRight className="h-3.5 w-3.5 text-foreground/60" />}
+                              </span>
+                              <span className="mt-0.5 line-clamp-2 block text-[11.5px] leading-snug text-muted-foreground">
+                                {s.description}
+                              </span>
                             </span>
-                          </span>
-                        </button>
-                      );
-                    })}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </aside>
 
         {/* Form */}
-        <section className="min-w-0 space-y-4">
-          <div className="rounded-lg border bg-surface shadow-sm">
-            <div className="flex items-start justify-between gap-3 border-b px-4 py-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent/10 text-accent">
-                    {scenario.icon}
-                  </span>
-                  <h2 className="truncate text-sm font-semibold">{scenario.title}</h2>
+        <section className="min-w-0 space-y-5">
+          <div className="overflow-hidden rounded-xl border bg-surface shadow-sm">
+            <div className={cn("flex items-start justify-between gap-3 border-b px-5 py-4", tone.soft)}>
+              <div className="flex min-w-0 items-center gap-3">
+                <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface text-foreground shadow-sm ring-1", tone.ring)}>
+                  {scenario.icon}
+                </span>
+                <div className="min-w-0">
+                  <h2 className="truncate text-[15px] font-semibold leading-tight">{scenario.title}</h2>
+                  <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground">
+                    {scenario.description}
+                  </p>
                 </div>
-                <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
-                  {scenario.description}
-                </p>
               </div>
-              <Badge variant="outline" className="shrink-0 text-[10px] uppercase tracking-wide">
+              <Badge variant="outline" className={cn("shrink-0 text-[10px] uppercase tracking-wide", tone.chip)}>
                 {CATEGORY_LABEL[scenario.category]}
               </Badge>
             </div>
 
-            <div className="space-y-4 p-4">
+            <div className="space-y-5 px-5 py-5">
               {scenario.needsAgent && (
                 <Field label="Agent" hint={selectedAgent ? <Mono>{selectedAgent.id}</Mono> : "Choose which agent runs this scenario"}>
                   <Select value={agentId} onValueChange={setAgentId} disabled={isLoading || agents.length === 0}>
@@ -518,35 +564,54 @@ function Playground() {
                     value={body}
                     onChange={(e) => setBody(e.target.value)}
                     placeholder={scenario.bodyPlaceholder}
-                    className="min-h-[96px] resize-y"
+                    className="min-h-[112px] resize-y"
                   />
                 </Field>
               )}
 
               {!scenario.needsAgent && !scenario.needsWebhook && !scenario.needsDestination && !scenario.needsBody && (
-                <div className="flex items-start gap-2 rounded-md border border-dashed bg-muted/30 px-3 py-2.5 text-[12.5px] text-muted-foreground">
-                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  No inputs required — just run the scenario.
+                <div className="flex items-start gap-2.5 rounded-lg border border-dashed bg-muted/30 px-3.5 py-3 text-[12.5px] text-muted-foreground">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
+                  <span>
+                    No inputs needed — just press{" "}
+                    <span className="font-medium text-foreground">{scenario.cta}</span> to run this scenario.
+                  </span>
+                </div>
+              )}
+
+              {scenario.successHint && (
+                <div className="flex items-start gap-2 text-[11.5px] text-muted-foreground">
+                  <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+                  <span>{scenario.successHint}</span>
                 </div>
               )}
 
               {error && (
-                <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-[12.5px] text-destructive">
-                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[12.5px] text-destructive">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span className="whitespace-pre-line">{error}</span>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center justify-between gap-3 border-t bg-muted/30 px-4 py-3">
-              <span className="truncate text-[11.5px] text-muted-foreground">
-                Runs against <Mono>{API_BASE_URL}</Mono>
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/30 px-5 py-3.5">
+              <div className="flex items-center gap-2">
+                {canFillSample && (
+                  <button
+                    onClick={fillSample}
+                    className="inline-flex items-center gap-1.5 rounded-md border bg-surface px-2.5 py-1.5 text-[11.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    Use sample
+                  </button>
+                )}
+                <CopyButton value={curl} label="Copy cURL" showLabel />
+              </div>
               <button
                 onClick={run}
                 disabled={pending !== null || isLoading}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                  "inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:shadow disabled:cursor-not-allowed disabled:opacity-60",
                   scenario.danger
                     ? "bg-destructive hover:bg-destructive/90"
                     : "bg-foreground hover:bg-foreground/90",
@@ -568,40 +633,41 @@ function Playground() {
           </div>
 
           {/* cURL preview */}
-          <div className="overflow-hidden rounded-lg border bg-surface shadow-sm">
-            <div className="flex items-center justify-between border-b px-4 py-2.5">
-              <div className="flex items-center gap-2">
-                <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
+          <div className="overflow-hidden rounded-xl border border-foreground/10 bg-foreground shadow-sm">
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
+              <div className="flex items-center gap-2 text-white/80">
+                <Terminal className="h-3.5 w-3.5" />
                 <span className="text-xs font-semibold">Equivalent request</span>
+                <span className="rounded bg-white/10 px-1.5 py-0.5 text-[9.5px] font-medium uppercase tracking-wide text-white/70">
+                  cURL
+                </span>
               </div>
-              <CopyButton value={curl} label="Copy cURL" showLabel />
+              <button
+                onClick={() => navigator.clipboard.writeText(curl).then(() => toast.success("Copied"))}
+                className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium text-white/70 hover:bg-white/10 hover:text-white"
+              >
+                <Copy className="h-3 w-3" /> Copy
+              </button>
             </div>
-            <ScrollArea className="max-h-[180px]">
-              <pre className="whitespace-pre-wrap break-all p-4 font-mono text-[11.5px] leading-relaxed text-foreground/80">
+            <ScrollArea className="max-h-[200px]">
+              <pre className="whitespace-pre-wrap break-all p-4 font-mono text-[11.5px] leading-relaxed text-white/85">
                 {curl}
               </pre>
             </ScrollArea>
-          </div>
-
-          {/* Quick stats */}
-          <div className="grid grid-cols-3 gap-2">
-            <StatCard icon={<Zap className="h-3.5 w-3.5" />} label="Agents" value={agents.length} />
-            <StatCard icon={<Webhook className="h-3.5 w-3.5" />} label="Webhooks" value={webhooks.length} />
-            <StatCard icon={<FlaskConical className="h-3.5 w-3.5" />} label="Runs" value={log.filter((e) => e.scenario !== "system").length} />
           </div>
         </section>
 
         {/* Live log */}
         <section className="min-w-0">
-          <div className="sticky top-4 flex h-[calc(100vh-7rem)] min-w-0 flex-col overflow-hidden rounded-lg border bg-surface shadow-sm">
-            <div className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
+          <div className="sticky top-4 flex h-[calc(100vh-6rem)] min-w-0 flex-col overflow-hidden rounded-xl border bg-surface shadow-sm">
+            <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
                 </span>
-                <span className="text-xs font-semibold">Live event log</span>
-                <Badge variant="secondary" className="text-[10px]">{log.length}</Badge>
+                <span className="text-[13px] font-semibold">Live event log</span>
+                <Badge variant="secondary" className="h-5 text-[10px]">{log.length}</Badge>
               </div>
               <button
                 onClick={() => setLog([])}
@@ -612,22 +678,22 @@ function Playground() {
               </button>
             </div>
 
-            <div className="flex items-center gap-2 border-b bg-muted/20 px-3 py-2">
+            <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2.5">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={logSearch}
                   onChange={(e) => setLogSearch(e.target.value)}
                   placeholder="Filter events…"
-                  className="h-7 pl-7 text-[12px]"
+                  className="h-8 pl-7 text-[12px]"
                 />
               </div>
               <Select value={logFilter} onValueChange={(v) => setLogFilter(v as typeof logFilter)}>
-                <SelectTrigger className="h-7 w-[110px] text-[12px]">
+                <SelectTrigger className="h-8 w-[120px] text-[12px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="all">All events</SelectItem>
                   <SelectItem value="success">Success</SelectItem>
                   <SelectItem value="error">Errors</SelectItem>
                   <SelectItem value="info">Info</SelectItem>
@@ -637,13 +703,13 @@ function Playground() {
 
             <ScrollArea className="flex-1">
               {filteredLog.length === 0 ? (
-                <div className="flex h-full min-h-[300px] flex-col items-center justify-center px-6 py-12 text-center">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                    <FlaskConical className="h-4 w-4 text-muted-foreground" />
+                <div className="flex h-full min-h-[320px] flex-col items-center justify-center px-6 py-16 text-center">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent ring-1 ring-accent/20">
+                    <FlaskConical className="h-5 w-5" />
                   </div>
-                  <div className="text-sm font-medium">No events yet</div>
-                  <div className="mt-1 max-w-[240px] text-[12px] text-muted-foreground">
-                    Run a scenario to see live API responses appear here.
+                  <div className="text-sm font-semibold">No events yet</div>
+                  <div className="mt-1.5 max-w-[260px] text-[12px] leading-relaxed text-muted-foreground">
+                    Pick a scenario, fill the inputs, and run it. Every API call streams in here with full payloads.
                   </div>
                 </div>
               ) : (
