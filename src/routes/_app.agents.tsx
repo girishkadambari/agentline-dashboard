@@ -352,11 +352,7 @@ function AgentDrawer({
           <SheetDescription>{descriptionText}</SheetDescription>
         </SheetHeader>
         <form className="space-y-4" onSubmit={submit}>
-          {error && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-              {error}
-            </div>
-          )}
+          {error && <Banner variant="error" message={error} />}
           <Field label="Name" value={name} onChange={setName} />
           <Field label="Description" value={description} onChange={setDescription} />
           <div className="grid gap-3 sm:grid-cols-2">

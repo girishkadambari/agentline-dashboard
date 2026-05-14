@@ -149,11 +149,7 @@ function Inbox() {
         }
       />
 
-      {error && (
-        <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {error && <Banner variant="error" message={error} className="mb-3" />}
 
       {isLoading ? (
         <div className="rounded-xl border border-border/80 bg-surface p-4">
@@ -362,11 +358,7 @@ function ThreadPanel({
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto bg-[oklch(0.98_0.003_90)] px-4 py-5">
-        {error && (
-          <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-            {error}
-          </div>
-        )}
+        {error && <Banner variant="error" message={error} />}
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, index) => (

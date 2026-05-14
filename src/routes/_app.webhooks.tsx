@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { CopyButton } from "@/components/agentline/CopyButton";
+import { Banner } from "@/components/agentline/Banner";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import {
   createBackendWebhook,
@@ -225,11 +226,7 @@ function Webhooks() {
         }
       />
 
-      {error && (
-        <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {error && <Banner variant="error" message={error} className="mb-3" />}
 
       {isLoading ? (
         <div className="rounded-lg border bg-surface p-4">
@@ -280,11 +277,7 @@ function Webhooks() {
             Refresh
           </button>
         </div>
-        {deliveryError && (
-          <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-            {deliveryError}
-          </div>
-        )}
+        {deliveryError && <Banner variant="error" message={deliveryError} className="mb-3" />}
         {isDeliveriesLoading ? (
           <div className="rounded-lg border bg-surface p-4">
             <div className="space-y-3">
@@ -666,11 +659,7 @@ function WebhookDrawer({
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
         <form className="mt-6 space-y-4" onSubmit={submit}>
-          {error && (
-            <div className="whitespace-pre-line rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-              {error}
-            </div>
-          )}
+          {error && <Banner variant="error" message={error} />}
           {secret && (
             <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-sm">
               <div className="flex items-center justify-between gap-3">
