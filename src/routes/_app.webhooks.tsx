@@ -11,12 +11,14 @@ import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import {
   createBackendWebhook,
   disableBackendWebhook,
+  listBackendWebhookEvents,
   listBackendWebhookDeliveries,
   listBackendWebhooks,
   retryBackendWebhookDelivery,
   testBackendWebhook,
   updateBackendWebhook,
   type WebhookDeliveryListItem,
+  type WebhookEventCatalogGroup,
   type WebhookEndpointListItem,
   type WebhookEndpointStatus,
 } from "@/lib/api/webhooks";
@@ -30,11 +32,69 @@ import {
 } from "@/components/ui/sheet";
 
 const DEFAULT_EVENTS = [
+  "agent.*",
+  "agent.message.*",
+  "agent.call.*",
+  "agent.number.*",
   "agent.message.received",
   "agent.message.sent",
+  "agent.message.delivery_updated",
+  "agent.call.started",
+  "agent.call.status_updated",
+  "agent.call.transcript_updated",
   "agent.call.completed",
+  "agent.call.failed",
   "agent.call.ended",
+  "agent.call.transferred",
+  "agent.number.provisioned",
+  "agent.number.imported",
+  "agent.number.attached",
+  "agent.number.detached",
+  "agent.number.released",
+  "agent.number.failed",
+  "agent.conversation.created",
+  "agent.conversation.updated",
+  "agent.contact.created",
+  "agent.contact.updated",
+  "agent.created",
+  "agent.updated",
+  "agent.disabled",
   "webhook.test",
+];
+const DEFAULT_SELECTED_EVENTS = ["agent.message.*", "agent.call.*"];
+
+const FALLBACK_EVENT_CATALOG: WebhookEventCatalogGroup[] = [
+  {
+    group: "Recommended",
+    events: [
+      { name: "agent.message.*", description: "All SMS/message events." },
+      { name: "agent.call.*", description: "All call lifecycle and transcript events." },
+      { name: "agent.number.*", description: "All phone number lifecycle events." },
+      { name: "agent.*", description: "All agent-scoped events." },
+      { name: "*", description: "Every AgentLine event." },
+    ],
+  },
+  {
+    group: "Messages",
+    events: DEFAULT_EVENTS.filter((event) => event.startsWith("agent.message.")).map((name) => ({
+      name,
+      description: "",
+    })),
+  },
+  {
+    group: "Calls",
+    events: DEFAULT_EVENTS.filter((event) => event.startsWith("agent.call.")).map((name) => ({
+      name,
+      description: "",
+    })),
+  },
+  {
+    group: "Numbers",
+    events: DEFAULT_EVENTS.filter((event) => event.startsWith("agent.number.")).map((name) => ({
+      name,
+      description: "",
+    })),
+  },
 ];
 
 export const Route = createFileRoute("/_app/webhooks")({
@@ -51,6 +111,8 @@ function Webhooks() {
   const [isDeliveriesLoading, setIsDeliveriesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const [eventCatalog, setEventCatalog] =
+    useState<WebhookEventCatalogGroup[]>(FALLBACK_EVENT_CATALOG);
 
   async function loadEndpoints() {
     setIsLoading(true);
@@ -59,7 +121,9 @@ function Webhooks() {
       const response = await listBackendWebhooks();
       setEndpoints(response.data);
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load webhooks.");
+      setError(
+        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load webhooks.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +136,11 @@ function Webhooks() {
       const response = await listBackendWebhookDeliveries({ endpointId });
       setDeliveries(response.data);
     } catch (caught) {
-      setDeliveryError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load webhook deliveries.");
+      setDeliveryError(
+        caught instanceof AgentLineApiError
+          ? formatApiError(caught)
+          : "Could not load webhook deliveries.",
+      );
     } finally {
       setIsDeliveriesLoading(false);
     }
@@ -81,6 +149,13 @@ function Webhooks() {
   useEffect(() => {
     void loadEndpoints();
     void loadDeliveries();
+    void listBackendWebhookEvents()
+      .then((catalog) => {
+        if (catalog.length > 0) {
+          setEventCatalog(catalog);
+        }
+      })
+      .catch(() => undefined);
   }, []);
 
   const deliveriesByEndpointId = useMemo(() => {
@@ -91,7 +166,10 @@ function Webhooks() {
     return map;
   }, [deliveries]);
 
-  function openDrawer(mode: "create" | "view" | "update" | "test", endpoint?: WebhookEndpointListItem) {
+  function openDrawer(
+    mode: "create" | "view" | "update" | "test",
+    endpoint?: WebhookEndpointListItem,
+  ) {
     setSelectedEndpoint(endpoint ?? null);
     setDrawerMode(mode);
   }
@@ -108,18 +186,26 @@ function Webhooks() {
 
     try {
       const response = await disableBackendWebhook(endpoint.id);
-      setEndpoints((current) => current.map((item) => (item.id === endpoint.id ? response.data : item)));
+      setEndpoints((current) =>
+        current.map((item) => (item.id === endpoint.id ? response.data : item)),
+      );
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not disable webhook.");
+      setError(
+        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not disable webhook.",
+      );
     }
   }
 
   async function retryDelivery(delivery: WebhookDeliveryListItem) {
     try {
       const response = await retryBackendWebhookDelivery(delivery.id, { outcome: "succeeded" });
-      setDeliveries((current) => current.map((item) => (item.id === delivery.id ? response.data : item)));
+      setDeliveries((current) =>
+        current.map((item) => (item.id === delivery.id ? response.data : item)),
+      );
     } catch (caught) {
-      setDeliveryError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not retry delivery.");
+      setDeliveryError(
+        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not retry delivery.",
+      );
     }
   }
 
@@ -133,23 +219,39 @@ function Webhooks() {
             onClick={() => openDrawer("create")}
             className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90"
           >
-            <Plus className="h-3.5 w-3.5" />Create endpoint
+            <Plus className="h-3.5 w-3.5" />
+            Create endpoint
           </button>
         }
       />
 
-      {error && <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
+      {error && (
+        <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="rounded-lg border bg-surface p-4">
-          <div className="space-y-3">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-9 animate-pulse rounded-md bg-muted" />)}</div>
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-9 animate-pulse rounded-md bg-muted" />
+            ))}
+          </div>
         </div>
       ) : endpoints.length === 0 ? (
         <EmptyState
           icon={<WebhookIcon className="h-5 w-5" />}
           title="No webhook endpoints"
           description="Create an endpoint to receive signed AgentLine events from messages, calls, and tests."
-          action={<button onClick={() => openDrawer("create")} className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background">Create endpoint</button>}
+          action={
+            <button
+              onClick={() => openDrawer("create")}
+              className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background"
+            >
+              Create endpoint
+            </button>
+          }
         />
       ) : (
         <WebhookTable
@@ -166,19 +268,36 @@ function Webhooks() {
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold">Recent deliveries</h2>
-            <p className="text-xs text-muted-foreground">Latest webhook delivery attempts across endpoints.</p>
+            <p className="text-xs text-muted-foreground">
+              Latest webhook delivery attempts across endpoints.
+            </p>
           </div>
-          <button onClick={() => loadDeliveries()} className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted">
-            <RefreshCcw className="h-3.5 w-3.5" />Refresh
+          <button
+            onClick={() => loadDeliveries()}
+            className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"
+          >
+            <RefreshCcw className="h-3.5 w-3.5" />
+            Refresh
           </button>
         </div>
-        {deliveryError && <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{deliveryError}</div>}
+        {deliveryError && (
+          <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            {deliveryError}
+          </div>
+        )}
         {isDeliveriesLoading ? (
           <div className="rounded-lg border bg-surface p-4">
-            <div className="space-y-3">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-8 animate-pulse rounded-md bg-muted" />)}</div>
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="h-8 animate-pulse rounded-md bg-muted" />
+              ))}
+            </div>
           </div>
         ) : deliveries.length === 0 ? (
-          <EmptyState title="No webhook deliveries" description="Test an endpoint or trigger an AgentLine event to create delivery records." />
+          <EmptyState
+            title="No webhook deliveries"
+            description="Test an endpoint or trigger an AgentLine event to create delivery records."
+          />
         ) : (
           <DeliveriesTable deliveries={deliveries} onRetry={retryDelivery} />
         )}
@@ -187,7 +306,7 @@ function Webhooks() {
       <WebhookDrawer
         mode={drawerMode}
         endpoint={selectedEndpoint}
-        deliveries={selectedEndpoint ? deliveriesByEndpointId.get(selectedEndpoint.id) ?? [] : []}
+        deliveries={selectedEndpoint ? (deliveriesByEndpointId.get(selectedEndpoint.id) ?? []) : []}
         onOpenChange={(open) => {
           if (!open) {
             closeDrawer();
@@ -197,7 +316,9 @@ function Webhooks() {
           setEndpoints((current) => [endpoint, ...current]);
         }}
         onUpdated={(endpoint) => {
-          setEndpoints((current) => current.map((item) => (item.id === endpoint.id ? endpoint : item)));
+          setEndpoints((current) =>
+            current.map((item) => (item.id === endpoint.id ? endpoint : item)),
+          );
           closeDrawer();
         }}
         onTested={(delivery) => {
@@ -205,6 +326,7 @@ function Webhooks() {
         }}
         onSwitchToUpdate={() => setDrawerMode("update")}
         onSwitchToTest={() => setDrawerMode("test")}
+        eventCatalog={eventCatalog}
       />
     </div>
   );
@@ -227,61 +349,112 @@ function WebhookTable({
 }) {
   return (
     <DataTable minWidth={960}>
-        <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
-          <tr>
-            <th className="w-[360px] px-4 py-3 text-left font-medium">URL</th>
-            <th className="px-4 py-3 text-left font-medium">Events</th>
-            <th className="w-[130px] px-4 py-3 text-left font-medium">Status</th>
-            <th className="w-[150px] px-4 py-3 text-left font-medium">Last delivery</th>
-            <th className="w-[100px] px-4 py-3 text-right font-medium">Failures</th>
-            <th className="w-[340px] px-4 py-3 text-right font-medium">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {endpoints.map((endpoint) => {
-            const endpointDeliveries = deliveriesByEndpointId.get(endpoint.id) ?? [];
-            const lastDelivery = endpointDeliveries[0];
-            const failureCount = endpointDeliveries.filter((delivery) => ["failed", "retrying", "exhausted"].includes(delivery.status)).length;
+      <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
+        <tr>
+          <th className="w-[360px] px-4 py-3 text-left font-medium">URL</th>
+          <th className="px-4 py-3 text-left font-medium">Events</th>
+          <th className="w-[130px] px-4 py-3 text-left font-medium">Status</th>
+          <th className="w-[150px] px-4 py-3 text-left font-medium">Last delivery</th>
+          <th className="w-[100px] px-4 py-3 text-right font-medium">Failures</th>
+          <th className="w-[340px] px-4 py-3 text-right font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {endpoints.map((endpoint) => {
+          const endpointDeliveries = deliveriesByEndpointId.get(endpoint.id) ?? [];
+          const lastDelivery = endpointDeliveries[0];
+          const failureCount = endpointDeliveries.filter((delivery) =>
+            ["failed", "retrying", "exhausted"].includes(delivery.status),
+          ).length;
 
-            return (
-              <tr
-                key={endpoint.id}
-                onClick={() => onView(endpoint)}
-                className="group cursor-pointer border-b last:border-b-0 transition-colors hover:bg-muted/35"
-              >
-                <td className="px-4 py-3">
-                  <div className="flex max-w-full items-center gap-2">
-                    <button onClick={() => onView(endpoint)} className="min-w-0 hover:underline">
-                      <Mono className="block truncate">{endpoint.url}</Mono>
-                    </button>
-                    <CopyButton value={endpoint.url} label="Copy URL" className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
-                  </div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Mono className="text-[11px] text-muted-foreground">{endpoint.id}</Mono>
-                    <CopyButton value={endpoint.id} label="Copy ID" className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex max-h-16 flex-wrap gap-1 overflow-hidden">
-                    {endpoint.events.map((event) => <Mono key={event} className="rounded border px-1.5 py-0.5 text-[11px]">{event}</Mono>)}
-                  </div>
-                </td>
-                <td className="px-4 py-3"><StatusBadge status={endpoint.status} /></td>
-                <td className="px-4 py-3 text-muted-foreground">{lastDelivery?.createdLabel ?? "Never"}</td>
-                <td className="px-4 py-3 text-right tabular-nums">{failureCount}</td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-1.5">
-                    <button onClick={(event) => { event.stopPropagation(); onView(endpoint); }} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Eye className="h-3 w-3" /> View</button>
-                    <button onClick={(event) => { event.stopPropagation(); onUpdate(endpoint); }} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Pencil className="h-3 w-3" /> Update</button>
-                    <button onClick={(event) => { event.stopPropagation(); onTest(endpoint); }} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Send className="h-3 w-3" /> Test</button>
-                    <button onClick={(event) => { event.stopPropagation(); onDisable(endpoint); }} disabled={endpoint.status === "disabled"} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 className="h-3 w-3" /> Disable</button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </DataTable>
+          return (
+            <tr
+              key={endpoint.id}
+              onClick={() => onView(endpoint)}
+              className="group cursor-pointer border-b last:border-b-0 transition-colors hover:bg-muted/35"
+            >
+              <td className="px-4 py-3">
+                <div className="flex max-w-full items-center gap-2">
+                  <button onClick={() => onView(endpoint)} className="min-w-0 hover:underline">
+                    <Mono className="block truncate">{endpoint.url}</Mono>
+                  </button>
+                  <CopyButton
+                    value={endpoint.url}
+                    label="Copy URL"
+                    className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                  />
+                </div>
+                <div className="mt-1 flex items-center gap-2">
+                  <Mono className="text-[11px] text-muted-foreground">{endpoint.id}</Mono>
+                  <CopyButton
+                    value={endpoint.id}
+                    label="Copy ID"
+                    className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                  />
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                <div className="flex max-h-16 flex-wrap gap-1 overflow-hidden">
+                  {endpoint.events.map((event) => (
+                    <Mono key={event} className="rounded border px-1.5 py-0.5 text-[11px]">
+                      {event}
+                    </Mono>
+                  ))}
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                <StatusBadge status={endpoint.status} />
+              </td>
+              <td className="px-4 py-3 text-muted-foreground">
+                {lastDelivery?.createdLabel ?? "Never"}
+              </td>
+              <td className="px-4 py-3 text-right tabular-nums">{failureCount}</td>
+              <td className="px-4 py-3">
+                <div className="flex justify-end gap-1.5">
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onView(endpoint);
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
+                  >
+                    <Eye className="h-3 w-3" /> View
+                  </button>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onUpdate(endpoint);
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
+                  >
+                    <Pencil className="h-3 w-3" /> Update
+                  </button>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onTest(endpoint);
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
+                  >
+                    <Send className="h-3 w-3" /> Test
+                  </button>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDisable(endpoint);
+                    }}
+                    disabled={endpoint.status === "disabled"}
+                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3 w-3" /> Disable
+                  </button>
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </DataTable>
   );
 }
 
@@ -294,40 +467,52 @@ function DeliveriesTable({
 }) {
   return (
     <DataTable minWidth={960}>
-        <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
-          <tr>
-            <th className="px-4 py-3 text-left font-medium">Event</th>
-            <th className="w-[260px] px-4 py-3 text-left font-medium">Endpoint</th>
-            <th className="w-[130px] px-4 py-3 text-left font-medium">Status</th>
-            <th className="w-[100px] px-4 py-3 text-right font-medium">Attempts</th>
-            <th className="w-[80px] px-4 py-3 text-right font-medium">Code</th>
-            <th className="w-[150px] px-4 py-3 text-left font-medium">Created</th>
-            <th className="w-[110px] px-4 py-3 text-right font-medium">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {deliveries.map((delivery) => {
-            const canRetry = ["failed", "retrying", "pending"].includes(delivery.status);
-            return (
-              <tr key={delivery.id} className="border-b last:border-b-0 hover:bg-muted/35">
-                <td className="px-4 py-3"><Mono className="block truncate">{delivery.eventType}</Mono></td>
-                <td className="px-4 py-3"><Mono className="block truncate text-muted-foreground">{delivery.endpointId}</Mono></td>
-                <td className="px-4 py-3"><StatusBadge status={delivery.status} /></td>
-                <td className="px-4 py-3 text-right tabular-nums">{delivery.attemptCount}</td>
-                <td className="px-4 py-3 text-right tabular-nums">{delivery.lastStatusCode ?? "-"}</td>
-                <td className="px-4 py-3 text-muted-foreground">{delivery.createdLabel}</td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end">
-                    <button onClick={() => onRetry(delivery)} disabled={!canRetry} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50">
-                      <RefreshCcw className="h-3 w-3" /> Retry
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </DataTable>
+      <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
+        <tr>
+          <th className="px-4 py-3 text-left font-medium">Event</th>
+          <th className="w-[260px] px-4 py-3 text-left font-medium">Endpoint</th>
+          <th className="w-[130px] px-4 py-3 text-left font-medium">Status</th>
+          <th className="w-[100px] px-4 py-3 text-right font-medium">Attempts</th>
+          <th className="w-[80px] px-4 py-3 text-right font-medium">Code</th>
+          <th className="w-[150px] px-4 py-3 text-left font-medium">Created</th>
+          <th className="w-[110px] px-4 py-3 text-right font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {deliveries.map((delivery) => {
+          const canRetry = ["failed", "retrying", "pending"].includes(delivery.status);
+          return (
+            <tr key={delivery.id} className="border-b last:border-b-0 hover:bg-muted/35">
+              <td className="px-4 py-3">
+                <Mono className="block truncate">{delivery.eventType}</Mono>
+              </td>
+              <td className="px-4 py-3">
+                <Mono className="block truncate text-muted-foreground">{delivery.endpointId}</Mono>
+              </td>
+              <td className="px-4 py-3">
+                <StatusBadge status={delivery.status} />
+              </td>
+              <td className="px-4 py-3 text-right tabular-nums">{delivery.attemptCount}</td>
+              <td className="px-4 py-3 text-right tabular-nums">
+                {delivery.lastStatusCode ?? "-"}
+              </td>
+              <td className="px-4 py-3 text-muted-foreground">{delivery.createdLabel}</td>
+              <td className="px-4 py-3">
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => onRetry(delivery)}
+                    disabled={!canRetry}
+                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <RefreshCcw className="h-3 w-3" /> Retry
+                  </button>
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </DataTable>
   );
 }
 
@@ -341,6 +526,7 @@ function WebhookDrawer({
   onTested,
   onSwitchToUpdate,
   onSwitchToTest,
+  eventCatalog,
 }: {
   mode: "create" | "view" | "update" | "test" | null;
   endpoint: WebhookEndpointListItem | null;
@@ -351,13 +537,14 @@ function WebhookDrawer({
   onTested: (delivery: WebhookDeliveryListItem) => void;
   onSwitchToUpdate: () => void;
   onSwitchToTest: () => void;
+  eventCatalog: WebhookEventCatalogGroup[];
 }) {
   const isCreate = mode === "create";
   const isView = mode === "view";
   const isUpdate = mode === "update";
   const isTest = mode === "test";
   const [url, setUrl] = useState("");
-  const [selectedEvents, setSelectedEvents] = useState<string[]>(DEFAULT_EVENTS.slice(0, 2));
+  const [selectedEvents, setSelectedEvents] = useState<string[]>(DEFAULT_SELECTED_EVENTS);
   const [customEvent, setCustomEvent] = useState("");
   const [status, setStatus] = useState<WebhookEndpointStatus>("active");
   const [simulateFailure, setSimulateFailure] = useState(false);
@@ -373,7 +560,7 @@ function WebhookDrawer({
     setSimulateFailure(false);
     if (isCreate) {
       setUrl("https://example.com/agentline/webhook");
-      setSelectedEvents(DEFAULT_EVENTS.slice(0, 2));
+      setSelectedEvents(DEFAULT_SELECTED_EVENTS);
       setCustomEvent("");
       setStatus("active");
     } else if (endpoint) {
@@ -414,7 +601,9 @@ function WebhookDrawer({
         setTestHeaders(response.data.headers);
         onTested(response.data.delivery);
       } catch (caught) {
-        setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not test webhook.");
+        setError(
+          caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not test webhook.",
+        );
       } finally {
         setIsSaving(false);
       }
@@ -446,13 +635,21 @@ function WebhookDrawer({
         onUpdated(response.data);
       }
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not save webhook.");
+      setError(
+        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not save webhook.",
+      );
     } finally {
       setIsSaving(false);
     }
   }
 
-  const title = isCreate ? "Create webhook endpoint" : isUpdate ? "Update webhook endpoint" : isTest ? "Test webhook endpoint" : "Webhook endpoint";
+  const title = isCreate
+    ? "Create webhook endpoint"
+    : isUpdate
+      ? "Update webhook endpoint"
+      : isTest
+        ? "Test webhook endpoint"
+        : "Webhook endpoint";
   const description = isCreate
     ? "Create a signed endpoint for AgentLine events."
     : isUpdate
@@ -469,7 +666,11 @@ function WebhookDrawer({
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
         <form className="mt-6 space-y-4" onSubmit={submit}>
-          {error && <div className="whitespace-pre-line rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
+          {error && (
+            <div className="whitespace-pre-line rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          )}
           {secret && (
             <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-sm">
               <div className="flex items-center justify-between gap-3">
@@ -477,7 +678,9 @@ function WebhookDrawer({
                 <CopyButton value={secret} label="Copy secret" />
               </div>
               <Mono className="mt-1 block break-all text-xs">{secret}</Mono>
-              <div className="mt-1 text-xs text-muted-foreground">This secret is only returned immediately after creation.</div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                This secret is only returned immediately after creation.
+              </div>
             </div>
           )}
 
@@ -487,12 +690,18 @@ function WebhookDrawer({
             <>
               <ReadOnlyField label="Endpoint" value={endpoint.url} mono copyable />
               <label className="flex items-center gap-2 text-sm font-medium">
-                <input type="checkbox" checked={simulateFailure} onChange={(event) => setSimulateFailure(event.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={simulateFailure}
+                  onChange={(event) => setSimulateFailure(event.target.checked)}
+                />
                 Simulate failed delivery
               </label>
               {testHeaders && (
                 <div className="rounded-md border bg-muted/30 p-3">
-                  <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Signed headers</div>
+                  <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Signed headers
+                  </div>
                   {Object.entries(testHeaders).map(([key, value]) => (
                     <div key={key} className="mt-2">
                       <div className="flex items-center justify-between gap-3">
@@ -505,8 +714,18 @@ function WebhookDrawer({
                 </div>
               )}
               <SheetFooter>
-                <button type="button" onClick={() => onOpenChange(false)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">Close</button>
-                <button type="submit" disabled={isSaving} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
+                <button
+                  type="button"
+                  onClick={() => onOpenChange(false)}
+                  className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
                   {isSaving ? "Testing..." : "Send test"}
                 </button>
               </SheetFooter>
@@ -515,7 +734,11 @@ function WebhookDrawer({
             <>
               <label className="block text-sm font-medium">
                 Endpoint URL
-                <input value={url} onChange={(event) => setUrl(event.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm font-mono" />
+                <input
+                  value={url}
+                  onChange={(event) => setUrl(event.target.value)}
+                  className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm font-mono"
+                />
               </label>
               <EventSelector
                 selectedEvents={selectedEvents}
@@ -523,12 +746,19 @@ function WebhookDrawer({
                 onCustomEventChange={setCustomEvent}
                 onToggleEvent={toggleEvent}
                 onAddCustomEvent={addCustomEvent}
-                onRemoveEvent={(event) => setSelectedEvents((current) => current.filter((item) => item !== event))}
+                onRemoveEvent={(event) =>
+                  setSelectedEvents((current) => current.filter((item) => item !== event))
+                }
+                eventCatalog={eventCatalog}
               />
               {isUpdate && (
                 <label className="block text-sm font-medium">
                   Status
-                  <select value={status} onChange={(event) => setStatus(event.target.value as WebhookEndpointStatus)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm">
+                  <select
+                    value={status}
+                    onChange={(event) => setStatus(event.target.value as WebhookEndpointStatus)}
+                    className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm"
+                  >
                     <option value="active">Active</option>
                     <option value="paused">Paused</option>
                     <option value="disabled">Disabled</option>
@@ -536,8 +766,18 @@ function WebhookDrawer({
                 </label>
               )}
               <SheetFooter>
-                <button type="button" onClick={() => onOpenChange(false)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">Cancel</button>
-                <button type="submit" disabled={isSaving} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
+                <button
+                  type="button"
+                  onClick={() => onOpenChange(false)}
+                  className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
                   {isSaving ? "Saving..." : isCreate ? "Create endpoint" : "Save changes"}
                 </button>
               </SheetFooter>
@@ -546,8 +786,20 @@ function WebhookDrawer({
 
           {isView && endpoint && (
             <SheetFooter>
-              <button type="button" onClick={onSwitchToTest} className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">Test</button>
-              <button type="button" onClick={onSwitchToUpdate} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90">Update</button>
+              <button
+                type="button"
+                onClick={onSwitchToTest}
+                className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+              >
+                Test
+              </button>
+              <button
+                type="button"
+                onClick={onSwitchToUpdate}
+                className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90"
+              >
+                Update
+              </button>
             </SheetFooter>
           )}
         </form>
@@ -571,13 +823,21 @@ function WebhookDetails({
       <ReadOnlyField label="Created" value={endpoint.createdLabel} />
       <ReadOnlyField label="Updated" value={endpoint.updatedLabel} />
       <div>
-        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Events</div>
+        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Events
+        </div>
         <div className="mt-2 flex flex-wrap gap-1">
-          {endpoint.events.map((event) => <Mono key={event} className="rounded border px-1.5 py-0.5 text-[11px]">{event}</Mono>)}
+          {endpoint.events.map((event) => (
+            <Mono key={event} className="rounded border px-1.5 py-0.5 text-[11px]">
+              {event}
+            </Mono>
+          ))}
         </div>
       </div>
       <div>
-        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Recent deliveries</div>
+        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Recent deliveries
+        </div>
         {deliveries.length === 0 ? (
           <div className="mt-2 text-sm text-muted-foreground">No deliveries yet.</div>
         ) : (
@@ -589,9 +849,12 @@ function WebhookDetails({
                   <StatusBadge status={delivery.status} />
                 </div>
                 <div className="mt-1 text-muted-foreground">
-                  {delivery.createdLabel} · attempts {delivery.attemptCount} · code {delivery.lastStatusCode ?? "-"}
+                  {delivery.createdLabel} · attempts {delivery.attemptCount} · code{" "}
+                  {delivery.lastStatusCode ?? "-"}
                 </div>
-                {delivery.lastError && <div className="mt-1 text-destructive">{delivery.lastError}</div>}
+                {delivery.lastError && (
+                  <div className="mt-1 text-destructive">{delivery.lastError}</div>
+                )}
               </div>
             ))}
           </div>
@@ -608,6 +871,7 @@ function EventSelector({
   onToggleEvent,
   onAddCustomEvent,
   onRemoveEvent,
+  eventCatalog,
 }: {
   selectedEvents: string[];
   customEvent: string;
@@ -615,24 +879,49 @@ function EventSelector({
   onToggleEvent: (event: string) => void;
   onAddCustomEvent: () => void;
   onRemoveEvent: (event: string) => void;
+  eventCatalog: WebhookEventCatalogGroup[];
 }) {
   return (
     <div>
       <div className="text-sm font-medium">Event capabilities</div>
-      <div className="mt-1 text-xs text-muted-foreground">Choose the AgentLine events this endpoint should receive.</div>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        {DEFAULT_EVENTS.map((event) => {
-          const checked = selectedEvents.includes(event);
-          return (
-            <label
-              key={event}
-              className={`flex cursor-pointer items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm transition-colors ${checked ? "border-foreground bg-muted/60" : "hover:bg-muted/40"}`}
-            >
-              <span className="min-w-0 truncate font-mono text-xs">{event}</span>
-              <input type="checkbox" checked={checked} onChange={() => onToggleEvent(event)} />
-            </label>
-          );
-        })}
+      <div className="mt-1 text-xs text-muted-foreground">
+        Choose exact events or wildcard families like agent.call.*.
+      </div>
+      <div className="mt-3 space-y-4">
+        {eventCatalog.map((group) => (
+          <div key={group.group}>
+            <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {group.group}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {group.events.map((event) => {
+                const checked = selectedEvents.includes(event.name);
+                return (
+                  <label
+                    key={event.name}
+                    className={`flex cursor-pointer items-start justify-between gap-3 rounded-md border px-3 py-2 text-sm transition-colors ${checked ? "border-foreground bg-muted/60" : "hover:bg-muted/40"}`}
+                    title={event.description}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate font-mono text-xs">{event.name}</span>
+                      {event.description && (
+                        <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
+                          {event.description}
+                        </span>
+                      )}
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => onToggleEvent(event.name)}
+                      className="mt-0.5"
+                    />
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
       <div className="mt-3 flex gap-2">
         <input
@@ -641,7 +930,13 @@ function EventSelector({
           placeholder="custom.event.name"
           className="min-w-0 flex-1 rounded-md border bg-surface px-3 py-2 text-sm font-mono"
         />
-        <button type="button" onClick={onAddCustomEvent} className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">Add</button>
+        <button
+          type="button"
+          onClick={onAddCustomEvent}
+          className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
+        >
+          Add
+        </button>
       </div>
       {selectedEvents.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -662,14 +957,30 @@ function EventSelector({
   );
 }
 
-function ReadOnlyField({ label, value, mono = false, copyable = false }: { label: string; value: string; mono?: boolean; copyable?: boolean }) {
+function ReadOnlyField({
+  label,
+  value,
+  mono = false,
+  copyable = false,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  copyable?: boolean;
+}) {
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </div>
         {copyable && <CopyButton value={value} label="Copy" />}
       </div>
-      {mono ? <Mono className="mt-1 block break-all text-xs">{value}</Mono> : <div className="mt-1 text-sm font-medium">{value}</div>}
+      {mono ? (
+        <Mono className="mt-1 block break-all text-xs">{value}</Mono>
+      ) : (
+        <div className="mt-1 text-sm font-medium">{value}</div>
+      )}
     </div>
   );
 }

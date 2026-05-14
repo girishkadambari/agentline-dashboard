@@ -773,3 +773,19 @@ Exit Criteria:
 
 - Every frontend screen either has a backend API, a tracked backend gap, or is
   removed from the MVP navigation until it is real.
+
+## Phase F5A: Webhook Event Catalog
+
+Status: implemented.
+
+Implemented:
+
+- Webhook event options are loaded from the backend catalog.
+- Create/update drawer shows grouped wildcard, agent, number, message, call,
+  conversation, contact, and test events.
+- New endpoints default to `agent.message.*` and `agent.call.*`.
+
+Remaining:
+
+- Add search/filter inside the event selector if the catalog grows beyond the
+  current MVP set.

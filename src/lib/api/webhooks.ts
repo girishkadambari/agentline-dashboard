@@ -32,6 +32,14 @@ export interface BackendWebhookDelivery {
   updatedAt: string;
 }
 
+export interface WebhookEventCatalogGroup {
+  group: string;
+  events: Array<{
+    name: string;
+    description: string;
+  }>;
+}
+
 export interface WebhookEndpointListItem {
   id: string;
   url: string;
@@ -99,7 +107,9 @@ function formatDateTime(value: string | null) {
   });
 }
 
-export function mapBackendWebhookEndpoint(endpoint: BackendWebhookEndpoint): WebhookEndpointListItem {
+export function mapBackendWebhookEndpoint(
+  endpoint: BackendWebhookEndpoint,
+): WebhookEndpointListItem {
   return {
     id: endpoint.id,
     url: endpoint.url,
@@ -113,7 +123,9 @@ export function mapBackendWebhookEndpoint(endpoint: BackendWebhookEndpoint): Web
   };
 }
 
-export function mapBackendWebhookDelivery(delivery: BackendWebhookDelivery): WebhookDeliveryListItem {
+export function mapBackendWebhookDelivery(
+  delivery: BackendWebhookDelivery,
+): WebhookDeliveryListItem {
   return {
     id: delivery.id,
     endpointId: delivery.endpointId,
@@ -133,12 +145,21 @@ export function mapBackendWebhookDelivery(delivery: BackendWebhookDelivery): Web
 }
 
 export async function listBackendWebhooks() {
-  const response = await apiRequest<{ data: BackendWebhookEndpoint[]; pagination: { limit: number; nextCursor: string | null } }>("/webhooks");
+  const response = await apiRequest<{
+    data: BackendWebhookEndpoint[];
+    pagination: { limit: number; nextCursor: string | null };
+  }>("/webhooks");
 
   return {
     data: response.data.map(mapBackendWebhookEndpoint),
     pagination: response.pagination,
   };
+}
+
+export async function listBackendWebhookEvents() {
+  const response = await apiRequest<{ data: WebhookEventCatalogGroup[] }>("/webhooks/events");
+
+  return response.data;
 }
 
 export async function createBackendWebhook(input: CreateWebhookInput) {
@@ -168,7 +189,9 @@ export async function disableBackendWebhook(id: string) {
 }
 
 export async function testBackendWebhook(id: string, input: TestWebhookInput = {}) {
-  const response = await apiRequest<{ data: { delivery: BackendWebhookDelivery; headers: Record<string, string> } }>(`/webhooks/${id}/test`, {
+  const response = await apiRequest<{
+    data: { delivery: BackendWebhookDelivery; headers: Record<string, string> };
+  }>(`/webhooks/${id}/test`, {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -181,8 +204,13 @@ export async function testBackendWebhook(id: string, input: TestWebhookInput = {
   };
 }
 
-export async function listBackendWebhookDeliveries(query: { endpointId?: string; eventId?: string; status?: WebhookDeliveryStatus } = {}) {
-  const response = await apiRequest<{ data: BackendWebhookDelivery[]; pagination: { limit: number; nextCursor: string | null } }>("/webhooks/deliveries", {
+export async function listBackendWebhookDeliveries(
+  query: { endpointId?: string; eventId?: string; status?: WebhookDeliveryStatus } = {},
+) {
+  const response = await apiRequest<{
+    data: BackendWebhookDelivery[];
+    pagination: { limit: number; nextCursor: string | null };
+  }>("/webhooks/deliveries", {
     query,
   });
 
@@ -192,11 +220,17 @@ export async function listBackendWebhookDeliveries(query: { endpointId?: string;
   };
 }
 
-export async function retryBackendWebhookDelivery(id: string, input: RetryWebhookDeliveryInput = {}) {
-  const response = await apiRequest<{ data: BackendWebhookDelivery }>(`/webhooks/deliveries/${id}/retry`, {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+export async function retryBackendWebhookDelivery(
+  id: string,
+  input: RetryWebhookDeliveryInput = {},
+) {
+  const response = await apiRequest<{ data: BackendWebhookDelivery }>(
+    `/webhooks/deliveries/${id}/retry`,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
 
   return { data: mapBackendWebhookDelivery(response.data) };
 }

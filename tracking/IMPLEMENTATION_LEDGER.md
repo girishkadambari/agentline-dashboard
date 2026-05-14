@@ -924,3 +924,33 @@ Follow-ups:
 
 - Run a live browser smoke test with backend Google OAuth configured.
 - Clean up Settings auth copy to show real session status.
+
+## 2026-05-13 - Webhook Event Catalog UI
+
+Status: implemented
+
+Implemented:
+
+- Added `GET /webhooks/events` client support.
+- Updated the Webhooks create/update drawer to load event groups from the
+  backend event catalog.
+- Expanded selectable events beyond the old five hardcoded options:
+  - wildcard families
+  - agent lifecycle
+  - number lifecycle
+  - message lifecycle
+  - call lifecycle
+  - conversation lifecycle
+  - contact lifecycle
+  - test events
+- Default new endpoint selection is now `agent.message.*` and `agent.call.*`
+  so live SMS/call testing receives all core communication events.
+- Kept custom event input for forward compatibility.
+
+Verification:
+
+- targeted `eslint` passed for `src/routes/_app.webhooks.tsx` and
+  `src/lib/api/webhooks.ts`.
+- `npm run build` completed; Wrangler still logs a sandbox warning while trying
+  to write under the user preferences directory, but Vite client/server bundles
+  were generated.
