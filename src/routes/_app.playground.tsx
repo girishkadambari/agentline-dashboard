@@ -545,12 +545,10 @@ function Playground() {
 
               {scenario.needsDestination && (
                 <Field label={scenario.destinationLabel ?? "Destination"} hint="E.164 format recommended (e.g. +15551234567)">
-                  <Input
+                  <PhoneInput
                     value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
+                    onChange={setDestination}
                     placeholder={scenario.destinationPlaceholder}
-                    inputMode="tel"
-                    className="h-10"
                   />
                 </Field>
               )}
