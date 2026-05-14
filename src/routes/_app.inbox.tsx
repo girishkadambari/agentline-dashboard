@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Inbox as InboxIcon, Send } from "lucide-react";
+import { Inbox as InboxIcon, MessageSquare, Search, Send, User } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
+import { CopyButton } from "@/components/agentline/CopyButton";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import {
@@ -39,6 +40,7 @@ function Inbox() {
   const [error, setError] = useState<string | null>(null);
   const [threadError, setThreadError] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const threadRequestId = useRef(0);
 
   async function loadInbox(preferredConversationId = activeConversationId) {
@@ -110,6 +112,19 @@ function Inbox() {
     return latest;
   }, [messages]);
 
+  const filteredConversations = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return conversations;
+    return conversations.filter((conversation) => {
+      const agent = agentsById.get(conversation.agentId);
+      return (
+        conversation.contactId.toLowerCase().includes(query) ||
+        (agent?.name.toLowerCase().includes(query) ?? false) ||
+        conversation.id.toLowerCase().includes(query)
+      );
+    });
+  }, [conversations, search, agentsById]);
+
   async function handleMessageCreated(message: MessageListItem) {
     await loadInbox(message.conversationId);
     await loadThread(message.conversationId);
@@ -119,22 +134,27 @@ function Inbox() {
   return (
     <div>
       <PageHeader
+        eyebrow="Operate"
         title="Inbox"
-        description="SMS conversations created by real outbound sends and Twilio inbound webhooks."
+        description="A live communication console for every SMS thread your agents and numbers are part of."
         actions={
           <button
             onClick={() => setDrawerOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90"
+            className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-2 text-xs font-medium text-background shadow-sm transition-opacity hover:opacity-90"
           >
-            <Send className="h-3.5 w-3.5" />Send SMS
+            <Send className="h-3.5 w-3.5" /> Send SMS
           </button>
         }
       />
 
-      {error && <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
+      {error && (
+        <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {isLoading ? (
-        <div className="rounded-lg border bg-surface p-4">
+        <div className="rounded-xl border border-border/80 bg-surface p-4">
           <div className="grid gap-3 md:grid-cols-[280px_1fr_280px]">
             {Array.from({ length: 3 }).map((_, index) => (
               <div key={index} className="h-80 animate-pulse rounded-md bg-muted" />
@@ -145,15 +165,23 @@ function Inbox() {
         <EmptyState
           icon={<InboxIcon className="h-5 w-5" />}
           title="No conversations yet"
-          description="Send an SMS from AgentLine or text your Twilio number from your verified phone."
+          description="Send your first SMS from any agent, or text one of your provisioned numbers to open a thread."
           action={
-            <button onClick={() => setDrawerOpen(true)} className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background">Send SMS</button>
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-2 text-xs font-medium text-background shadow-sm hover:opacity-90"
+            >
+              <Send className="h-3.5 w-3.5" /> Send SMS
+            </button>
           }
         />
       ) : (
-        <div className="grid h-[calc(100vh-220px)] grid-cols-1 overflow-hidden rounded-lg border bg-surface md:grid-cols-[300px_1fr_300px]">
+        <div className="grid h-[calc(100vh-220px)] grid-cols-1 overflow-hidden rounded-xl border border-border/80 bg-surface shadow-[0_1px_0_rgba(15,23,42,0.02)] md:grid-cols-[320px_1fr_320px]">
           <ConversationList
-            conversations={conversations}
+            conversations={filteredConversations}
+            totalCount={conversations.length}
+            search={search}
+            onSearchChange={setSearch}
             activeConversationId={activeConversationId}
             agentsById={agentsById}
             latestMessageByConversationId={latestMessageByConversationId}
@@ -187,43 +215,97 @@ function Inbox() {
 
 function ConversationList({
   conversations,
+  totalCount,
+  search,
+  onSearchChange,
   activeConversationId,
   agentsById,
   latestMessageByConversationId,
   onSelect,
 }: {
   conversations: ConversationListItem[];
+  totalCount: number;
+  search: string;
+  onSearchChange: (value: string) => void;
   activeConversationId: string | null;
   agentsById: Map<string, AgentListItem>;
   latestMessageByConversationId: Map<string, MessageListItem>;
   onSelect: (id: string) => void;
 }) {
   return (
-    <div className="overflow-y-auto border-r">
-      {conversations.map((conversation) => {
-        const latest = latestMessageByConversationId.get(conversation.id);
-        const agent = agentsById.get(conversation.agentId);
-
-        return (
-          <button
-            key={conversation.id}
-            onClick={() => onSelect(conversation.id)}
-            className={cn(
-              "flex w-full flex-col gap-1 border-b px-3 py-3 text-left hover:bg-muted/40",
-              activeConversationId === conversation.id && "bg-muted/60",
-            )}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="min-w-0 truncate text-sm font-medium">{agent?.name ?? "Unknown agent"}</span>
-              <span className="shrink-0 text-[11px] text-muted-foreground">{conversation.lastActivity}</span>
-            </div>
-            <Mono className="truncate text-[11px] text-muted-foreground">{conversation.contactId}</Mono>
-            <span className="truncate text-xs text-muted-foreground">
-              {latest?.body ?? `${conversation.channel.toUpperCase()} conversation`}
-            </span>
-          </button>
-        );
-      })}
+    <div className="flex min-h-0 flex-col border-r border-border/70">
+      <div className="border-b border-border/70 bg-muted/30 px-3 py-2.5">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/70" />
+          <input
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="Search agent, contact, or ID"
+            className="w-full rounded-md border border-border/80 bg-surface py-1.5 pl-8 pr-2 text-[12.5px] outline-none ring-ring placeholder:text-muted-foreground/70 focus:ring-2"
+          />
+        </div>
+        <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+          <span>
+            {conversations.length} {conversations.length === 1 ? "thread" : "threads"}
+          </span>
+          {search && conversations.length !== totalCount && (
+            <button
+              type="button"
+              onClick={() => onSearchChange("")}
+              className="rounded px-1.5 py-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {conversations.length === 0 ? (
+          <div className="px-4 py-10 text-center text-xs text-muted-foreground">
+            No threads match your search.
+          </div>
+        ) : (
+          conversations.map((conversation) => {
+            const latest = latestMessageByConversationId.get(conversation.id);
+            const agent = agentsById.get(conversation.agentId);
+            const active = activeConversationId === conversation.id;
+            const initial = (agent?.name ?? "?").charAt(0).toUpperCase();
+            return (
+              <button
+                key={conversation.id}
+                onClick={() => onSelect(conversation.id)}
+                className={cn(
+                  "relative flex w-full items-start gap-2.5 border-b border-border/60 px-3 py-3 text-left transition-colors",
+                  active ? "bg-accent/5" : "hover:bg-muted/40",
+                )}
+              >
+                {active && (
+                  <span className="absolute inset-y-2 left-0 w-[2px] rounded-r-full bg-accent" />
+                )}
+                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-muted to-muted/60 text-[11px] font-semibold text-foreground/80 ring-1 ring-inset ring-border/70">
+                  {initial}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate text-[13px] font-medium text-foreground">
+                      {agent?.name ?? "Unknown agent"}
+                    </span>
+                    <span className="shrink-0 text-[10.5px] text-muted-foreground">
+                      {conversation.lastActivity}
+                    </span>
+                  </div>
+                  <Mono className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                    {conversation.contactId}
+                  </Mono>
+                  <span className="mt-1 line-clamp-1 text-[12px] text-muted-foreground">
+                    {latest?.body ?? `${conversation.channel.toUpperCase()} conversation`}
+                  </span>
+                </div>
+              </button>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }
@@ -244,53 +326,117 @@ function ThreadPanel({
   onSend: () => void;
 }) {
   if (!conversation) {
-    return <div className="flex min-w-0 items-center justify-center p-6 text-sm text-muted-foreground">Select a conversation.</div>;
+    return (
+      <div className="flex min-w-0 flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
+        <MessageSquare className="h-5 w-5 opacity-50" />
+        Select a conversation to open the thread.
+      </div>
+    );
   }
+
+  const groups = groupMessagesByDay(messages);
 
   return (
     <div className="flex min-w-0 flex-col">
-      <div className="border-b px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold">{agent?.name ?? "Unknown agent"}</div>
-            <Mono className="truncate text-xs text-muted-foreground">{conversation.contactId}</Mono>
+      <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-surface px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-muted to-muted/60 text-[12px] font-semibold text-foreground/80 ring-1 ring-inset ring-border/70">
+            {(agent?.name ?? "?").charAt(0).toUpperCase()}
           </div>
+          <div className="min-w-0">
+            <div className="truncate text-[13.5px] font-semibold">{agent?.name ?? "Unknown agent"}</div>
+            <div className="flex items-center gap-1.5">
+              <Mono className="truncate text-[11px] text-muted-foreground">{conversation.contactId}</Mono>
+              <CopyButton value={conversation.contactId} label="Copy contact ID" />
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="hidden rounded-full bg-muted px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground sm:inline-flex">
+            {conversation.channel}
+          </span>
           <StatusBadge status={conversation.status} />
         </div>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-        {error && <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
+      <div className="flex-1 space-y-4 overflow-y-auto bg-[oklch(0.98_0.003_90)] px-4 py-5">
+        {error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            {error}
+          </div>
+        )}
         {isLoading ? (
           <div className="space-y-3">
-            {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-14 animate-pulse rounded-md bg-muted" />)}
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-14 animate-pulse rounded-md bg-muted" />
+            ))}
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No messages in this conversation yet.</div>
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            No messages in this conversation yet.
+          </div>
         ) : (
-          messages.map((message) => (
-            <div key={message.id} className={cn("flex", message.direction === "outbound" ? "justify-end" : "justify-start")}>
-              <div className={cn("max-w-[75%] rounded-lg border px-3 py-2 text-sm", message.direction === "outbound" ? "bg-muted" : "bg-surface")}>
-                <div className="whitespace-pre-wrap">{message.body}</div>
-                <div className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  {message.status} · {message.timestamp}
-                </div>
+          groups.map((group) => (
+            <div key={group.label}>
+              <div className="mb-3 flex items-center gap-3">
+                <div className="h-px flex-1 bg-border/60" />
+                <span className="text-[10.5px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                  {group.label}
+                </span>
+                <div className="h-px flex-1 bg-border/60" />
+              </div>
+              <div className="space-y-2.5">
+                {group.messages.map((message, index) => {
+                  const previous = group.messages[index - 1];
+                  const continued = previous?.direction === message.direction;
+                  const outbound = message.direction === "outbound";
+                  return (
+                    <div
+                      key={message.id}
+                      className={cn("flex", outbound ? "justify-end" : "justify-start")}
+                    >
+                      <div
+                        className={cn(
+                          "max-w-[78%] rounded-2xl px-3.5 py-2 text-[13px] leading-relaxed shadow-[0_1px_0_rgba(15,23,42,0.03)]",
+                          outbound
+                            ? "rounded-br-md bg-foreground text-background"
+                            : "rounded-bl-md border border-border/70 bg-surface text-foreground",
+                          continued && (outbound ? "rounded-tr-md" : "rounded-tl-md"),
+                        )}
+                      >
+                        <div className="whitespace-pre-wrap">{message.body}</div>
+                        <div
+                          className={cn(
+                            "mt-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide",
+                            outbound ? "text-background/60" : "text-muted-foreground",
+                          )}
+                        >
+                          <span>{message.timestamp}</span>
+                          <span>·</span>
+                          <span>{message.status}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))
         )}
       </div>
 
-      <div className="border-t p-3">
+      <div className="border-t border-border/70 bg-surface p-3">
         <button
           onClick={onSend}
-          className="flex w-full items-center justify-between rounded-md border bg-surface px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted/40"
+          className="group flex w-full items-center justify-between gap-3 rounded-lg border border-border/80 bg-background px-3 py-2.5 text-left text-[13px] text-muted-foreground transition-colors hover:border-border hover:bg-muted/40"
         >
-          <span>Send SMS from any backend agent...</span>
-          <Send className="h-3.5 w-3.5" />
+          <span>Reply from any agent…</span>
+          <span className="inline-flex h-7 items-center gap-1.5 rounded-md bg-foreground px-2.5 text-[11.5px] font-medium text-background opacity-90 group-hover:opacity-100">
+            <Send className="h-3 w-3" /> Send
+          </span>
         </button>
-        <div className="mt-2 text-[11px] text-muted-foreground">
-          Backend requires a recipient phone number, so sending opens a validated drawer.
+        <div className="mt-1.5 px-1 text-[11px] text-muted-foreground">
+          Validated drawer ensures a recipient number and an SMS-capable agent.
         </div>
       </div>
     </div>
@@ -305,18 +451,27 @@ function DetailsPanel({
   agent?: AgentListItem;
 }) {
   return (
-    <div className="hidden border-l p-4 text-sm md:block">
+    <div className="hidden min-h-0 flex-col border-l border-border/70 bg-surface md:flex">
       {conversation ? (
-        <>
-          <Detail label="Conversation ID" value={conversation.id} mono />
-          <Detail label="Contact ID" value={conversation.contactId} mono />
-          <Detail label="Agent" value={agent?.name ?? conversation.agentId} />
-          <Detail label="Channel" value={conversation.channel.toUpperCase()} />
-          <Detail label="Status" value={conversation.status} />
-          <Detail label="Last activity" value={conversation.lastActivity} />
-        </>
+        <div className="flex-1 overflow-y-auto p-5 text-sm">
+          <div className="mb-5">
+            <div className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+              Status
+            </div>
+            <div className="mt-2"><StatusBadge status={conversation.status} /></div>
+          </div>
+          <div className="mb-5 space-y-3">
+            <DetailRow label="Conversation ID" value={conversation.id} mono copyable />
+            <DetailRow label="Contact ID" value={conversation.contactId} mono copyable />
+          </div>
+          <div className="mb-5 space-y-3 border-t border-border/60 pt-5">
+            <DetailRow label="Agent" value={agent?.name ?? conversation.agentId} icon={<User className="h-3 w-3" />} />
+            <DetailRow label="Channel" value={conversation.channel.toUpperCase()} />
+            <DetailRow label="Last activity" value={conversation.lastActivity} />
+          </div>
+        </div>
       ) : (
-        <div className="text-muted-foreground">No conversation selected.</div>
+        <div className="p-5 text-sm text-muted-foreground">No conversation selected.</div>
       )}
     </div>
   );
@@ -414,11 +569,60 @@ function MessageDrawer({
   );
 }
 
-function Detail({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+function DetailRow({
+  label,
+  value,
+  mono = false,
+  copyable = false,
+  icon,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  copyable?: boolean;
+  icon?: React.ReactNode;
+}) {
   return (
-    <div className="mb-4">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
-      {mono ? <Mono className="mt-1 block break-all text-xs text-muted-foreground">{value}</Mono> : <div className="mt-1 font-medium">{value}</div>}
+    <div>
+      <div className="text-[10.5px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1 flex items-start gap-1.5">
+        {icon && <span className="mt-1 text-muted-foreground">{icon}</span>}
+        {mono ? (
+          <Mono className="block break-all text-[12px] text-foreground/80">{value}</Mono>
+        ) : (
+          <div className="text-[13px] font-medium text-foreground">{value}</div>
+        )}
+        {copyable && <CopyButton value={value} label={`Copy ${label.toLowerCase()}`} />}
+      </div>
     </div>
   );
+}
+
+type MessageGroup = { label: string; messages: MessageListItem[] };
+function groupMessagesByDay(messages: MessageListItem[]): MessageGroup[] {
+  const groups: MessageGroup[] = [];
+  for (const message of messages) {
+    const label = formatDayLabel(message.timestamp);
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) {
+      last.messages.push(message);
+    } else {
+      groups.push({ label, messages: [message] });
+    }
+  }
+  return groups;
+}
+
+function formatDayLabel(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const today = new Date();
+  const sameDay = date.toDateString() === today.toDateString();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (sameDay) return "Today";
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 }
