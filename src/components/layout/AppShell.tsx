@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, Bot, Phone, Inbox, PhoneCall, Users, Webhook, BarChart3,
   CreditCard, KeyRound, FlaskConical, Settings, Activity,
-  LogOut, Menu, X, Check, Circle, ChevronUp, UserRound, ChevronLeft, ChevronRight,
+  LogOut, Menu, X, Check, Circle, ChevronUp, ChevronDown, UserRound, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { Logo } from "@/components/agentline/Logo";
 import {
@@ -183,73 +183,85 @@ function WorkspaceSwitcher({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
         className={cn(
-          "flex w-full items-center rounded-lg border border-sidebar-border/80 bg-sidebar-accent/30 text-left text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent",
-          collapsed ? "justify-center p-1.5" : "gap-2 px-2 py-1.5"
+          "group flex w-full items-center rounded-xl border text-left text-[13px] text-sidebar-foreground transition-all",
+          open
+            ? "border-[oklch(0.55_0.18_255/0.6)] bg-sidebar-accent shadow-[0_0_0_1px_oklch(0.55_0.18_255/0.25),0_8px_24px_-12px_rgba(0,0,0,0.6)]"
+            : "border-sidebar-border/70 bg-sidebar-accent/40 hover:border-sidebar-border hover:bg-sidebar-accent/70",
+          collapsed ? "justify-center p-1.5" : "gap-2.5 px-2.5 py-2"
         )}
       >
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-white/95 to-white/70 text-[11px] font-semibold text-sidebar shadow-[0_1px_0_rgba(255,255,255,0.4)_inset]">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[oklch(0.72_0.18_255)] to-[oklch(0.55_0.18_265)] text-[12px] font-semibold text-white shadow-[0_2px_6px_-1px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.25)]">
           {initial}
         </div>
         {!collapsed && (
           <>
             <div className="min-w-0 flex-1 leading-tight">
-              <div className="truncate text-[12.5px] font-medium text-sidebar-accent-foreground">{name}</div>
+              <div className="flex items-center gap-1.5">
+                <span className="truncate text-[12.5px] font-semibold text-sidebar-accent-foreground">{name}</span>
+                <span className={cn("flex h-1.5 w-1.5 shrink-0 rounded-full", env === "Live" ? "bg-success shadow-[0_0_0_2px_oklch(0.7_0.2_145/0.2)]" : "bg-sidebar-muted")} />
+              </div>
               <div className="truncate text-[10.5px] text-sidebar-muted">
-                {user?.activeProject.name ?? "Workspace"}
+                {user?.activeProject.name ?? "Workspace"} · {env}
               </div>
             </div>
-            <span className={cn("flex items-center gap-1 rounded-full bg-black/20 px-1.5 py-0.5 text-[9.5px] font-medium uppercase tracking-wide", envColor)}>
-              <Circle className="h-1.5 w-1.5 fill-current" />
-              {env}
-            </span>
+            <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-sidebar-muted transition-transform", open && "rotate-180 text-sidebar-accent-foreground")} />
           </>
         )}
       </button>
       </CollapsedTooltip>
       {open && (
         <div className={cn(
-          "absolute top-full z-50 mt-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg",
-          collapsed ? "left-2 w-60" : "left-3 right-3"
+          "absolute top-full z-50 mt-2 overflow-hidden rounded-xl border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7)] ring-1 ring-white/5",
+          collapsed ? "left-2 w-64" : "left-3 right-3"
         )}>
-          <div className="px-2 py-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">Current workspace</div>
-          <div className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm">
-            <Check className="h-3.5 w-3.5 text-success" />
-            <div className="min-w-0 flex-1">
-              <div className="truncate font-medium">{name}</div>
-              <div className="text-[11px] text-muted-foreground">
-                {workspaceError ? "Backend unreachable" : user?.activeProject.name ?? "Active project"}
-              </div>
-            </div>
+          <div className="px-3 pb-1.5 pt-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted">
+            Workspaces
           </div>
-          {user?.workspaces.map((workspace) => {
-            const isActive = workspace.id === user.activeWorkspaceId;
-            return (
-              <button
-                key={workspace.id}
-                type="button"
-                disabled={isActive || isSwitching}
-                onClick={() => void switchWorkspace(workspace)}
-                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:cursor-default disabled:opacity-60"
-              >
-                <span className="flex h-5 w-5 items-center justify-center rounded bg-muted text-[10px] font-semibold">
-                  {workspace.name.charAt(0).toUpperCase()}
-                </span>
-                <span className="min-w-0 flex-1 truncate">{workspace.name}</span>
-                {isActive && <Check className="h-3.5 w-3.5 text-success" />}
-              </button>
-            );
-          })}
-          <div className="my-1 border-t" />
-          <Link
-            to="/settings"
-            onClick={() => setOpen(false)}
-            className="block rounded-sm px-2 py-1.5 text-sm hover:bg-muted"
-          >
-            Workspace settings
-          </Link>
-          <div className="px-2 pb-1.5 pt-1 text-[11px] text-muted-foreground">
-            Workspace changes update your backend session.
+          <div className="px-1.5 pb-1.5">
+            {user?.workspaces.map((workspace) => {
+              const isActive = workspace.id === user.activeWorkspaceId;
+              return (
+                <button
+                  key={workspace.id}
+                  type="button"
+                  disabled={isActive || isSwitching}
+                  onClick={() => void switchWorkspace(workspace)}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-[13px] transition-colors",
+                    isActive
+                      ? "bg-sidebar-accent/70 text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/50",
+                    isSwitching && !isActive && "opacity-60"
+                  )}
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-[oklch(0.72_0.18_255)] to-[oklch(0.55_0.18_265)] text-[10.5px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                    {workspace.name.charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{workspace.name}</div>
+                    {isActive && (
+                      <div className="truncate text-[10.5px] text-sidebar-muted">
+                        {workspaceError ? "Backend unreachable" : user?.activeProject.name ?? "Active project"}
+                      </div>
+                    )}
+                  </div>
+                  {isActive && <Check className="h-3.5 w-3.5 shrink-0 text-success" />}
+                </button>
+              );
+            })}
+          </div>
+          <div className="border-t border-sidebar-border/70" />
+          <div className="px-1.5 py-1.5">
+            <Link
+              to="/settings"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent/50"
+            >
+              <Settings className="h-3.5 w-3.5 text-sidebar-muted" />
+              Workspace settings
+            </Link>
           </div>
         </div>
       )}
@@ -279,7 +291,7 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className={cn(
-        "flex items-center pb-4 pt-5",
+        "flex items-center pb-3 pt-5",
         collapsed ? "justify-center px-2" : "justify-between px-4"
       )}>
         {collapsed ? (
