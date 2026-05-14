@@ -107,7 +107,7 @@ function NumberDetail() {
 
   return (
     <div>
-      <Link to="/numbers" className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><ArrowLeft className="h-3 w-3" /> Numbers</Link>
+      <BackLink to="/numbers" label="Numbers" />
       <PageHeader
         title={number.number}
         description={`${number.country}${number.areaCode ? ` · ${number.areaCode}` : ""}`}
@@ -118,7 +118,7 @@ function NumberDetail() {
           </>
         }
       />
-      {error && <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
+      {error && <Banner variant="error" message={error} className="mb-4" />}
       <div className="mb-6 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         <Mono>{number.id}</Mono><span>·</span>
         <span className="capitalize">Provider: {number.provider}</span><span>·</span>
