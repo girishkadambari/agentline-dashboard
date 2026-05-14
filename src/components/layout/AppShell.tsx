@@ -388,10 +388,10 @@ function ProfileSection({
 
   return (
     <div ref={ref} className={cn("relative border-t border-sidebar-border/80", collapsed ? "p-1.5" : "p-2")}>
+      <CollapsedTooltip enabled={collapsed} label={displayName} hint={email ?? subtitle}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        title={collapsed ? `${displayName}${email ? ` · ${email}` : ""}` : undefined}
         className={cn(
           "flex w-full items-center rounded-lg text-left transition-colors hover:bg-sidebar-accent/70",
           collapsed ? "justify-center p-1.5" : "gap-2.5 px-2 py-2"
@@ -413,6 +413,7 @@ function ProfileSection({
           </>
         )}
       </button>
+      </CollapsedTooltip>
       {open && (
         <div className={cn(
           "absolute bottom-full z-50 mb-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg",
