@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/agentline/PageHeader";
 import { DataTable } from "@/components/agentline/DataTable";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
+import { cn } from "@/lib/utils";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import {
