@@ -37,7 +37,7 @@ export function StatusBadge({ status }: { status: string }) {
       "inline-flex items-center gap-1.5 rounded-full px-2 py-[3px] text-[11px] font-medium capitalize ring-1 ring-inset",
       cls,
     )}>
-      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
       {label}
     </span>
   );
