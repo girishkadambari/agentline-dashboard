@@ -1,8 +1,8 @@
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Eye, PhoneOutgoing } from "lucide-react";
+import { ArrowRight, Eye, PhoneOutgoing } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable } from "@/components/agentline/DataTable";
+import { DataTable, DataTableBody, DataTableHead } from "@/components/agentline/DataTable";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
@@ -118,53 +118,109 @@ function CallsTable({
   const navigate = useNavigate();
 
   return (
-    <DataTable minWidth={960}>
-        <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
-          <tr>
-            <th className="w-[260px] px-4 py-3 text-left font-medium">ID</th>
-            <th className="w-[110px] px-4 py-3 text-left font-medium">Direction</th>
-            <th className="w-[150px] px-4 py-3 text-left font-medium">From</th>
-            <th className="w-[150px] px-4 py-3 text-left font-medium">To</th>
-            <th className="w-[170px] px-4 py-3 text-left font-medium">Agent</th>
-            <th className="w-[130px] px-4 py-3 text-left font-medium">Status</th>
-            <th className="w-[100px] px-4 py-3 text-right font-medium">Duration</th>
-            <th className="w-[130px] px-4 py-3 text-left font-medium">Outcome</th>
-            <th className="w-[130px] px-4 py-3 text-left font-medium">Started</th>
-            <th className="w-[90px] px-4 py-3 text-right font-medium">Cost</th>
-            <th className="w-[110px] px-4 py-3 text-right font-medium">Actions</th>
+    <DataTable minWidth={1080}>
+      <DataTableHead>
+        <tr>
+          <th style={{ width: 220 }}>Call</th>
+          <th style={{ width: 240 }}>Route</th>
+          <th style={{ width: 160 }}>Agent</th>
+          <th style={{ width: 120 }}>Status</th>
+          <th style={{ width: 140 }}>Outcome</th>
+          <th style={{ width: 80 }} className="!text-right">Duration</th>
+          <th style={{ width: 80 }} className="!text-right">Cost</th>
+          <th style={{ width: 130 }}>Started</th>
+          <th style={{ width: 90 }} className="!text-right">Actions</th>
+        </tr>
+      </DataTableHead>
+      <DataTableBody>
+        {calls.map((call) => (
+          <tr
+            key={call.id}
+            onClick={() => navigate({ to: "/calls/$callId", params: { callId: call.id } })}
+            className="group cursor-pointer"
+          >
+            <td>
+              <div className="flex items-center gap-1.5">
+                <Link
+                  to="/calls/$callId"
+                  params={{ callId: call.id }}
+                  className="min-w-0 truncate hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Mono className="block truncate text-[12px]">{shortenId(call.id)}</Mono>
+                </Link>
+                <CopyButton value={call.id} label="Copy call ID" className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                <span className="ml-1 inline-flex items-center rounded-sm bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {call.direction === "outbound" ? "Out" : "In"}
+                </span>
+              </div>
+            </td>
+            <td>
+              <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                <Mono className="truncate">{call.from}</Mono>
+                <ArrowRight className="h-3 w-3 shrink-0 opacity-50" />
+                <Mono className="truncate">{call.to}</Mono>
+              </div>
+            </td>
+            <td><span className="block truncate">{agentsById.get(call.agentId)?.name ?? call.agentId}</span></td>
+            <td><StatusBadge status={call.status} /></td>
+            <td className="text-muted-foreground">{formatOutcome(call.outcome)}</td>
+            <td className="text-right tabular-nums">{formatDuration(call.duration)}</td>
+            <td className="text-right tabular-nums">${call.cost.toFixed(2)}</td>
+            <td className="text-muted-foreground whitespace-nowrap">{call.startedAt}</td>
+            <td>
+              <div className="flex justify-end">
+                <Link
+                  to="/calls/$callId"
+                  params={{ callId: call.id }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
+                >
+                  <Eye className="h-3 w-3" /> View
+                </Link>
+              </div>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {calls.map((call) => (
-            <tr
-              key={call.id}
-              onClick={() => navigate({ to: "/calls/$callId", params: { callId: call.id } })}
-              className="group cursor-pointer border-b last:border-b-0 transition-colors hover:bg-muted/35"
-            >
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <Link to="/calls/$callId" params={{ callId: call.id }} className="min-w-0 truncate hover:underline"><Mono className="block truncate">{call.id}</Mono></Link>
-                  <CopyButton value={call.id} label="Copy call ID" className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
-                </div>
-              </td>
-              <td className="px-4 py-3 capitalize">{call.direction}</td>
-              <td className="px-4 py-3"><Mono className="block truncate text-muted-foreground">{call.from}</Mono></td>
-              <td className="px-4 py-3"><Mono className="block truncate text-muted-foreground">{call.to}</Mono></td>
-              <td className="px-4 py-3"><span className="block truncate">{agentsById.get(call.agentId)?.name ?? call.agentId}</span></td>
-              <td className="px-4 py-3"><StatusBadge status={call.status} /></td>
-              <td className="px-4 py-3 text-right tabular-nums">{call.duration}s</td>
-              <td className="px-4 py-3 text-muted-foreground">{call.outcome}</td>
-              <td className="px-4 py-3 text-muted-foreground">{call.startedAt}</td>
-              <td className="px-4 py-3 text-right tabular-nums">${call.cost.toFixed(2)}</td>
-              <td className="px-4 py-3">
-                <div className="flex justify-end">
-                  <Link to="/calls/$callId" params={{ callId: call.id }} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"><Eye className="h-3 w-3" /> View</Link>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </DataTable>
+        ))}
+      </DataTableBody>
+    </DataTable>
+  );
+}
+
+function shortenId(id: string): string {
+  if (id.length <= 18) return id;
+  return `${id.slice(0, 10)}…${id.slice(-4)}`;
+}
+
+function formatDuration(seconds: number): string {
+  if (!seconds) return "—";
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s ? `${m}m ${s}s` : `${m}m`;
+}
+
+const OUTCOME_LABELS: Record<string, string> = {
+  completed: "Completed",
+  no_answer: "No answer",
+  failed: "Failed",
+  busy: "Busy",
+  canceled: "Canceled",
+  cancelled: "Canceled",
+  voicemail: "Voicemail",
+  transferred: "Transferred",
+  in_progress: "In progress",
+  ringing: "Ringing",
+  queued: "Queued",
+};
+
+function formatOutcome(outcome: string | null | undefined): string {
+  if (!outcome) return "—";
+  return (
+    OUTCOME_LABELS[outcome] ??
+    outcome
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase())
   );
 }
 
