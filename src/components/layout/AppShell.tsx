@@ -321,11 +321,10 @@ function SidebarContent({
               const active = isItemActive(pathname, item.to);
               const Icon = item.icon;
               return (
+                <CollapsedTooltip key={item.to} enabled={collapsed} label={item.label} hint={group.label}>
                 <Link
-                  key={item.to}
                   to={item.to}
                   onClick={onNav}
-                  title={item.label}
                   className={cn(
                     "group relative flex items-center rounded-md text-[13px] font-medium transition-colors",
                     collapsed ? "justify-center p-2" : "gap-2.5 px-2.5 py-[7px]",
@@ -340,6 +339,7 @@ function SidebarContent({
                   <Icon className={cn("h-4 w-4 shrink-0", active ? "text-sidebar-active-foreground" : "text-sidebar-muted")} />
                   {!collapsed && <span className="truncate">{item.label}</span>}
                 </Link>
+                </CollapsedTooltip>
               );
             })}
           </div>
