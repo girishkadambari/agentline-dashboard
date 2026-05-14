@@ -6,6 +6,7 @@ import { DataTable } from "@/components/agentline/DataTable";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { CopyButton } from "@/components/agentline/CopyButton";
+import { Banner } from "@/components/agentline/Banner";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import {
   listBackendContacts,
@@ -69,7 +70,7 @@ function Contacts() {
     <div>
       <PageHeader title="Contacts" description="People your agents have interacted with." />
 
-      {error && <div className="mb-3 whitespace-pre-line rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
+      {error && <Banner variant="error" message={error} className="mb-3" />}
 
       {isLoading ? (
         <div className="rounded-lg border bg-surface p-4">
