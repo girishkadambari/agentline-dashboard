@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/agentline/Logo";
+import { Banner } from "@/components/agentline/Banner";
 import { Check } from "lucide-react";
 import { createBackendAgent } from "@/lib/api/agents";
 import { getCurrentUser } from "@/lib/api/auth";
@@ -114,11 +115,7 @@ function Onboarding() {
         </div>
 
         <div className="rounded-xl border bg-surface p-7">
-          {error && (
-            <div className="mb-5 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-              {error}
-            </div>
-          )}
+          {error && <Banner variant="error" message={error} className="mb-5" />}
           {step === 0 && (
             <div>
               <h2 className="text-xl font-semibold tracking-tight">Set up your AgentLine workspace</h2>

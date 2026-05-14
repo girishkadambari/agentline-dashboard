@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Logo } from "@/components/agentline/Logo";
+import { Banner } from "@/components/agentline/Banner";
 import { startGoogleLogin } from "@/lib/api/auth";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { getCurrentWorkspace } from "@/lib/api/workspace";
@@ -80,11 +81,7 @@ function Login() {
                   autoComplete="off"
                 />
               </div>
-              {error && (
-                <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-                  {error}
-                </div>
-              )}
+              {error && <Banner variant="error" message={error} />}
               <button
                 type="submit"
                 disabled={isSubmitting}
