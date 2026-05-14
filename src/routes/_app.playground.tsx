@@ -741,14 +741,40 @@ function Field({ label, hint, children }: { label: string; hint?: ReactNode; chi
   );
 }
 
-function StatCard({ icon, label, value }: { icon: ReactNode; label: string; value: number }) {
+function StatCard({
+  icon,
+  label,
+  value,
+  hint,
+  tone,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: number;
+  hint?: string;
+  tone?: "ok" | "warn";
+}) {
   return (
-    <div className="rounded-lg border bg-surface px-3 py-2.5 shadow-sm">
-      <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-        {icon}
-        {label}
+    <div className="rounded-xl border bg-surface px-4 py-3 shadow-sm transition-colors hover:bg-muted/30">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span
+            className={cn(
+              "flex h-5 w-5 items-center justify-center rounded-md",
+              tone === "warn"
+                ? "bg-warning/15 text-[oklch(0.45_0.14_75)]"
+                : "bg-accent/10 text-accent",
+            )}
+          >
+            {icon}
+          </span>
+          {label}
+        </div>
       </div>
-      <div className="mt-1 text-lg font-semibold tabular-nums">{value}</div>
+      <div className="mt-1.5 flex items-baseline gap-2">
+        <span className="text-2xl font-semibold leading-none tracking-tight tabular-nums">{value}</span>
+        {hint && <span className="text-[11px] text-muted-foreground">{hint}</span>}
+      </div>
     </div>
   );
 }
