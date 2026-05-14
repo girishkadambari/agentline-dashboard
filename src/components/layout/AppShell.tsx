@@ -324,11 +324,13 @@ function ProfileSection({
   workspaceError,
   onNav,
   onSignOut,
+  collapsed,
 }: {
   user: CurrentUser | null;
   workspaceError: string | null;
   onNav?: () => void;
   onSignOut: () => void;
+  collapsed?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -354,26 +356,37 @@ function ProfileSection({
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
-    <div ref={ref} className="relative border-t border-sidebar-border/80 p-2">
+    <div ref={ref} className={cn("relative border-t border-sidebar-border/80", collapsed ? "p-1.5" : "p-2")}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-sidebar-accent/70"
+        title={collapsed ? `${displayName}${email ? ` · ${email}` : ""}` : undefined}
+        className={cn(
+          "flex w-full items-center rounded-lg text-left transition-colors hover:bg-sidebar-accent/70",
+          collapsed ? "justify-center p-1.5" : "gap-2.5 px-2 py-2"
+        )}
       >
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sidebar-accent to-sidebar-active text-[11px] font-semibold text-sidebar-accent-foreground ring-1 ring-inset ring-white/5">
           {initials}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-medium text-sidebar-accent-foreground">{displayName}</div>
-          <div className="flex items-center gap-1 truncate text-[11px] text-sidebar-muted">
-            <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", workspaceError ? "bg-destructive" : "bg-success")} />
-            <span className="truncate">{subtitle}</span>
-          </div>
-        </div>
-        <ChevronUp className={cn("h-3.5 w-3.5 shrink-0 text-sidebar-muted transition-transform", !open && "rotate-180")} />
+        {!collapsed && (
+          <>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] font-medium text-sidebar-accent-foreground">{displayName}</div>
+              <div className="flex items-center gap-1 truncate text-[11px] text-sidebar-muted">
+                <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", workspaceError ? "bg-destructive" : "bg-success")} />
+                <span className="truncate">{subtitle}</span>
+              </div>
+            </div>
+            <ChevronUp className={cn("h-3.5 w-3.5 shrink-0 text-sidebar-muted transition-transform", !open && "rotate-180")} />
+          </>
+        )}
       </button>
       {open && (
-        <div className="absolute bottom-full left-2 right-2 z-50 mb-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg">
+        <div className={cn(
+          "absolute bottom-full z-50 mb-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg",
+          collapsed ? "left-2 w-56" : "left-2 right-2"
+        )}>
           <div className="px-2 py-2 text-xs">
             <div className="truncate font-medium">{displayName}</div>
             {email && <div className="truncate text-muted-foreground">{email}</div>}
