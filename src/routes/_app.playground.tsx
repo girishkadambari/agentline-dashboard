@@ -5,7 +5,6 @@ import {
   AlertCircle,
   CheckCircle2,
   ChevronRight,
-  Copy,
   FlaskConical,
   Globe,
   Info,
@@ -721,5 +720,3 @@ function buildCurl(
   }
 }
 
-// keep import of icons satisfied
-void Copy;
