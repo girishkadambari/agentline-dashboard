@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { CopyButton } from "@/components/agentline/CopyButton";
+import { PhoneInput } from "@/components/agentline/PhoneInput";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import {
@@ -287,7 +288,9 @@ function StartCallDrawer({
           </label>
           <label className="block text-sm font-medium">
             Destination number
-            <input value={to} onChange={(event) => setTo(event.target.value)} placeholder="+19015550123" className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm font-mono" />
+            <div className="mt-1.5">
+              <PhoneInput value={to} onChange={setTo} placeholder="+19015550123" />
+            </div>
           </label>
           <SheetFooter>
             <button type="button" onClick={() => onOpenChange(false)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">Cancel</button>
