@@ -15,13 +15,20 @@ export function DataTable({
   minWidth = 960,
   className,
   tableClassName,
+  rowCount,
+  footer,
 }: {
   children: ReactNode;
   minWidth?: number;
   className?: string;
   tableClassName?: string;
+  /** When provided, renders a "Showing N results" footer below the table. */
+  rowCount?: number;
+  /** Optional custom footer content (overrides the rowCount text). */
+  footer?: ReactNode;
 }) {
   return (
+    <div className="min-w-0 max-w-full">
     <div
       className={cn(
         "data-table-scroll min-w-0 max-w-full rounded-xl border border-border/80 bg-surface shadow-[0_1px_0_rgba(15,23,42,0.02)] scrollbar-thin",
@@ -34,6 +41,16 @@ export function DataTable({
       >
         {children}
       </table>
+    </div>
+      {(footer || typeof rowCount === "number") && (
+        <div className="mt-2 flex items-center justify-between px-1 type-caption-12-400 text-muted-foreground">
+          {footer ?? (
+            <span>
+              Showing {rowCount} {rowCount === 1 ? "result" : "results"}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

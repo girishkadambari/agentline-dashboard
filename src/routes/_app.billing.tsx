@@ -6,6 +6,7 @@ import { DataTable } from "@/components/agentline/DataTable";
 import { Stat } from "@/components/agentline/Stat";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { Mono } from "@/components/agentline/Mono";
+import { Banner } from "@/components/agentline/Banner";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import {
   createBackendCheckoutSession,
@@ -114,17 +115,35 @@ function Billing() {
         }
       />
 
-      <div className={`mb-4 rounded-md border px-3 py-2 text-xs ${stripeStatus && isStripeReady(stripeStatus) ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-warning/30 bg-warning/10 text-warning-foreground"}`}>
-        {stripeStatus ? (
-          <span>
-            Stripe is in <strong>{stripeStatus.mode}</strong> mode. Secret key {stripeStatus.secretKeyConfigured ? "configured" : "missing"}, mode match {stripeStatus.secretKeyMatchesMode ? "ok" : "failed"}, webhook secret {stripeStatus.webhookSecretConfigured ? "configured" : "missing"}.
-          </span>
-        ) : (
-          "Stripe sessions depend on backend Stripe configuration. Configure Stripe before collecting real top-ups."
-        )}
-      </div>
+      {stripeStatus && !isStripeReady(stripeStatus) && (
+        <Banner
+          variant="warning"
+          className="mb-4"
+          title={<>Stripe needs configuration</>}
+          message={
+            <>
+              Mode <strong>{stripeStatus.mode}</strong>. Secret key {stripeStatus.secretKeyConfigured ? "configured" : "missing"}, mode match {stripeStatus.secretKeyMatchesMode ? "ok" : "failed"}, webhook secret {stripeStatus.webhookSecretConfigured ? "configured" : "missing"}.
+            </>
+          }
+        />
+      )}
+      {!stripeStatus && (
+        <Banner
+          variant="info"
+          className="mb-4"
+          message="Stripe sessions depend on backend Stripe configuration. Configure Stripe before collecting real top-ups."
+        />
+      )}
 
-      {error && <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
+      {error && (
+        <Banner
+          variant="error"
+          className="mb-3"
+          message={error}
+          action={{ label: "Retry", onClick: () => void loadData() }}
+          onDismiss={() => setError(null)}
+        />
+      )}
 
       {isLoading ? (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
