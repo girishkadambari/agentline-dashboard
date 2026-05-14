@@ -478,6 +478,20 @@ export function AppShell() {
     });
   }
 
+  // Keyboard shortcut: ⌘[ / Ctrl+[ toggles the sidebar (Stripe/Linear standard).
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+      if ((event.metaKey || event.ctrlKey) && event.key === "[") {
+        event.preventDefault();
+        toggleCollapsed();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     getCurrentUser()
@@ -607,6 +621,14 @@ export function AppShell() {
           </button>
           <Logo />
         </header>
+        <div className="sticky top-0 z-20 hidden h-11 items-center gap-3 border-b bg-background/90 px-6 backdrop-blur md:flex md:px-10">
+          <Breadcrumbs />
+          <span className="ml-auto inline-flex items-center gap-1 rounded-md border bg-surface px-1.5 py-0.5 type-caption-12-400 text-muted-foreground">
+            <kbd className="font-mono">⌘</kbd>
+            <kbd className="font-mono">[</kbd>
+            <span className="ml-1">toggle sidebar</span>
+          </span>
+        </div>
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-7 md:px-10 md:py-9">
           <Outlet />
         </main>
