@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { CopyButton } from "@/components/agentline/CopyButton";
+import { Banner } from "@/components/agentline/Banner";
 import {
   AgentLineApiError,
   formatApiError,
@@ -127,9 +128,7 @@ function Agents() {
       </div>
 
       {error && (
-        <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
+        <Banner variant="error" className="mb-3" message={error} onDismiss={() => setError(null)} />
       )}
 
       {isLoading ? (
