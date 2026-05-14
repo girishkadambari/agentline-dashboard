@@ -539,7 +539,7 @@ function PlanGrid({
                 <Feature>{plan.trialDays}-day free trial</Feature>
               </ul>
               <button
-                onClick={() => onChoosePlan(plan.key)}
+                onClick={() => onChoosePlan(plan.key as Exclude<BillingPlanKey, "free">)}
                 disabled={isCurrent || !plan.stripePriceConfigured || isActionLoading !== null}
                 className={cn(
                   "mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
