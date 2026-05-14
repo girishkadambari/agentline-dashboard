@@ -106,7 +106,9 @@ function ServiceHealth() {
         }
       />
 
-      {error && <div className="mb-3 whitespace-pre-line rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
+      {error && (
+        <Banner variant="error" className="mb-3" message={error} onDismiss={() => setError(null)} />
+      )}
 
       <div className="mb-4 rounded-lg border bg-surface p-4 text-sm shadow-sm">
         <div className="grid gap-3 md:grid-cols-3">
