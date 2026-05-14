@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import {
   Activity,
   AlertTriangle,
-  ArrowLeft,
   Bot,
   Clock,
   Phone,
@@ -19,6 +18,8 @@ import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { CopyButton } from "@/components/agentline/CopyButton";
+import { Banner } from "@/components/agentline/Banner";
+import { BackLink } from "@/components/agentline/BackLink";
 import { cn } from "@/lib/utils";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { getBackendAgent, type AgentListItem } from "@/lib/api/agents";
@@ -165,12 +166,7 @@ function CallDetail() {
 
   return (
     <div>
-      <Link
-        to="/calls"
-        className="mb-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-3 w-3" /> Calls
-      </Link>
+      <BackLink to="/calls" label="Calls" />
 
       <PageHeader
         eyebrow={`${call.direction === "inbound" ? "Inbound" : "Outbound"} call`}
@@ -209,11 +205,7 @@ function CallDetail() {
         }
       />
 
-      {error && (
-        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {error && <Banner variant="error" message={error} className="mb-4" />}
 
       {/* Live status / summary strip */}
       <div className="mb-6 overflow-hidden rounded-xl border border-border/80 bg-surface">

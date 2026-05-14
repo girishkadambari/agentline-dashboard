@@ -1,13 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Pencil, Power, Save } from "lucide-react";
+import { Pencil, Power, Save } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { Stat } from "@/components/agentline/Stat";
 import { InlineTabs } from "@/components/agentline/Tabs";
 import { EmptyState } from "@/components/agentline/EmptyState";
+import { Banner } from "@/components/agentline/Banner";
+import { BackLink } from "@/components/agentline/BackLink";
 import { DataTable as StandardDataTable } from "@/components/agentline/DataTable";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import type { CallListItem } from "@/lib/api/calls";
@@ -181,12 +183,7 @@ function AgentDetail() {
 
   return (
     <div>
-      <Link
-        to="/agents"
-        className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-3 w-3" /> Agents
-      </Link>
+      <BackLink to="/agents" label="Agents" />
       <PageHeader
         title={agent.name}
         description={agent.description || "No description"}
@@ -208,16 +205,8 @@ function AgentDetail() {
           </>
         }
       />
-      {error && (
-        <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
-      )}
-      {relatedError && (
-        <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {relatedError}
-        </div>
-      )}
+      {error && <Banner variant="error" message={error} className="mb-4" />}
+      {relatedError && <Banner variant="error" message={relatedError} className="mb-4" />}
       <div className="mb-6 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         <Mono>{agent.id}</Mono>
         <span>·</span>

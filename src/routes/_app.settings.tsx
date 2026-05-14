@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertCircle, MailPlus, RefreshCw, Save, Trash2 } from "lucide-react";
+import { MailPlus, RefreshCw, Save, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/agentline/EmptyState";
 import { Mono } from "@/components/agentline/Mono";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
+import { Banner } from "@/components/agentline/Banner";
 import { getCurrentUser, type CurrentUser } from "@/lib/api/auth";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import {
@@ -107,12 +108,7 @@ function Settings() {
         </div>
       </div>
 
-      {error && (
-        <div className="mt-5 flex items-start gap-2 rounded-md border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span className="whitespace-pre-line">{error}</span>
-        </div>
-      )}
+      {error && <Banner variant="error" message={error} className="mt-5" />}
 
       <div className="mt-6">
         {tab === "Workspace" && (
@@ -606,12 +602,7 @@ function PanelShell({ title, children }: { title: string; children: ReactNode })
 }
 
 function InlineError({ error }: { error: string }) {
-  return (
-    <div className="flex items-start gap-2 rounded-md border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-      <span className="whitespace-pre-line">{error}</span>
-    </div>
-  );
+  return <Banner variant="error" message={error} />;
 }
 
 function SkeletonRows() {

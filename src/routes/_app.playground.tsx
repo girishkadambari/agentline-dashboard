@@ -27,6 +27,7 @@ import { Mono } from "@/components/agentline/Mono";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { CopyButton } from "@/components/agentline/CopyButton";
 import { PhoneInput } from "@/components/agentline/PhoneInput";
+import { Banner } from "@/components/agentline/Banner";
 import {
   Select,
   SelectContent,
@@ -585,12 +586,7 @@ function Playground() {
                 </div>
               )}
 
-              {error && (
-                <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[12.5px] text-destructive">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span className="whitespace-pre-line">{error}</span>
-                </div>
-              )}
+              {error && <Banner variant="error" message={error} />}
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/30 px-5 py-3.5">

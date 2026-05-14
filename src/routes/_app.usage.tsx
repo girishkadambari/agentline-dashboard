@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/agentline/PageHeader";
 import { DataTable } from "@/components/agentline/DataTable";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
+import { Banner } from "@/components/agentline/Banner";
 import { cn } from "@/lib/utils";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
@@ -123,11 +124,7 @@ function Usage() {
         </select>
       </div>
 
-      {error && (
-        <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {error && <Banner variant="error" message={error} className="mb-3" />}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <MetricCard
