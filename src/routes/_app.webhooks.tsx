@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Pencil, Plus, RefreshCcw, Send, Trash2, Webhook as WebhookIcon } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable } from "@/components/agentline/DataTable";
+import { DataTable, type Column } from "@/components/agentline/DataTable";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
@@ -340,114 +340,163 @@ function WebhookTable({
   onTest: (endpoint: WebhookEndpointListItem) => void;
   onDisable: (endpoint: WebhookEndpointListItem) => void;
 }) {
-  return (
-    <DataTable minWidth={960}>
-      <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
-        <tr>
-          <th className="w-[360px] px-4 py-3 text-left font-medium">URL</th>
-          <th className="px-4 py-3 text-left font-medium">Events</th>
-          <th className="w-[130px] px-4 py-3 text-left font-medium">Status</th>
-          <th className="w-[150px] px-4 py-3 text-left font-medium">Last delivery</th>
-          <th className="w-[100px] px-4 py-3 text-right font-medium">Failures</th>
-          <th className="w-[340px] px-4 py-3 text-right font-medium">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {endpoints.map((endpoint) => {
-          const endpointDeliveries = deliveriesByEndpointId.get(endpoint.id) ?? [];
-          const lastDelivery = endpointDeliveries[0];
-          const failureCount = endpointDeliveries.filter((delivery) =>
-            ["failed", "retrying", "exhausted"].includes(delivery.status),
-          ).length;
+  type Row = WebhookEndpointListItem & {
+    _lastDeliveryAt: number;
+    _failureCount: number;
+    _lastDeliveryLabel: string;
+  };
 
-          return (
-            <tr
-              key={endpoint.id}
-              onClick={() => onView(endpoint)}
-              className="group cursor-pointer border-b last:border-b-0 transition-colors hover:bg-muted/35"
+  const rows: Row[] = endpoints.map((endpoint) => {
+    const endpointDeliveries = deliveriesByEndpointId.get(endpoint.id) ?? [];
+    const lastDelivery = endpointDeliveries[0];
+    const failureCount = endpointDeliveries.filter((delivery) =>
+      ["failed", "retrying", "exhausted"].includes(delivery.status),
+    ).length;
+    return {
+      ...endpoint,
+      _lastDeliveryAt: lastDelivery ? new Date(lastDelivery.createdAt).getTime() : 0,
+      _lastDeliveryLabel: lastDelivery?.createdLabel ?? "Never",
+      _failureCount: failureCount,
+    };
+  });
+
+  const columns: Column<Row>[] = [
+    {
+      key: "url",
+      label: "URL",
+      width: 360,
+      sortable: true,
+      sortAccessor: (r) => r.url,
+      render: (endpoint) => (
+        <div className="group/url">
+          <div className="flex max-w-full items-center gap-2">
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                onView(endpoint);
+              }}
+              className="min-w-0 hover:underline"
             >
-              <td className="px-4 py-3">
-                <div className="flex max-w-full items-center gap-2">
-                  <button onClick={() => onView(endpoint)} className="min-w-0 hover:underline">
-                    <Mono className="block truncate">{endpoint.url}</Mono>
-                  </button>
-                  <CopyButton
-                    value={endpoint.url}
-                    label="Copy URL"
-                    className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                  />
-                </div>
-                <div className="mt-1 flex items-center gap-2">
-                  <Mono className="text-[11px] text-muted-foreground">{endpoint.id}</Mono>
-                  <CopyButton
-                    value={endpoint.id}
-                    label="Copy ID"
-                    className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                  />
-                </div>
-              </td>
-              <td className="px-4 py-3">
-                <div className="flex max-h-16 flex-wrap gap-1 overflow-hidden">
-                  {endpoint.events.map((event) => (
-                    <Mono key={event} className="rounded border px-1.5 py-0.5 text-[11px]">
-                      {event}
-                    </Mono>
-                  ))}
-                </div>
-              </td>
-              <td className="px-4 py-3">
-                <StatusBadge status={endpoint.status} />
-              </td>
-              <td className="px-4 py-3 text-muted-foreground">
-                {lastDelivery?.createdLabel ?? "Never"}
-              </td>
-              <td className="px-4 py-3 text-right tabular-nums">{failureCount}</td>
-              <td className="px-4 py-3">
-                <div className="flex justify-end gap-1.5">
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onView(endpoint);
-                    }}
-                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
-                  >
-                    <Eye className="h-3 w-3" /> View
-                  </button>
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onUpdate(endpoint);
-                    }}
-                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
-                  >
-                    <Pencil className="h-3 w-3" /> Update
-                  </button>
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onTest(endpoint);
-                    }}
-                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
-                  >
-                    <Send className="h-3 w-3" /> Test
-                  </button>
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onDisable(endpoint);
-                    }}
-                    disabled={endpoint.status === "disabled"}
-                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Trash2 className="h-3 w-3" /> Disable
-                  </button>
-                </div>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </DataTable>
+              <Mono className="block truncate">{endpoint.url}</Mono>
+            </button>
+            <CopyButton
+              value={endpoint.url}
+              label="Copy URL"
+              className="shrink-0 opacity-0 transition-opacity group-hover/url:opacity-100"
+            />
+          </div>
+          <div className="mt-1 flex items-center gap-2">
+            <Mono className="text-[11px] text-muted-foreground">{endpoint.id}</Mono>
+            <CopyButton
+              value={endpoint.id}
+              label="Copy ID"
+              className="shrink-0 opacity-0 transition-opacity group-hover/url:opacity-100"
+            />
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "events",
+      label: "Events",
+      render: (endpoint) => (
+        <div className="flex max-h-16 flex-wrap gap-1 overflow-hidden">
+          {endpoint.events.map((event) => (
+            <Mono key={event} className="rounded border px-1.5 py-0.5 text-[11px]">
+              {event}
+            </Mono>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 130,
+      sortable: true,
+      sortAccessor: (r) => r.status,
+      render: (endpoint) => <StatusBadge status={endpoint.status} />,
+    },
+    {
+      key: "_lastDeliveryAt",
+      label: "Last delivery",
+      width: 150,
+      sortable: true,
+      sortAccessor: (r) => r._lastDeliveryAt,
+      render: (endpoint) => (
+        <span className="text-muted-foreground">{endpoint._lastDeliveryLabel}</span>
+      ),
+    },
+    {
+      key: "_failureCount",
+      label: "Failures",
+      width: 100,
+      align: "right",
+      sortable: true,
+      sortAccessor: (r) => r._failureCount,
+      cellClassName: "tabular-nums",
+      render: (endpoint) => endpoint._failureCount,
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      width: 340,
+      align: "right",
+      render: (endpoint) => (
+        <div className="flex justify-end gap-1.5">
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              onView(endpoint);
+            }}
+            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
+          >
+            <Eye className="h-3 w-3" /> View
+          </button>
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              onUpdate(endpoint);
+            }}
+            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
+          >
+            <Pencil className="h-3 w-3" /> Update
+          </button>
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              onTest(endpoint);
+            }}
+            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
+          >
+            <Send className="h-3 w-3" /> Test
+          </button>
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              onDisable(endpoint);
+            }}
+            disabled={endpoint.status === "disabled"}
+            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Trash2 className="h-3 w-3" /> Disable
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <DataTable<Row>
+      columns={columns}
+      data={rows}
+      getRowKey={(r) => r.id}
+      onRowClick={(r) => onView(r)}
+      stickyHeader
+      maxBodyHeight={560}
+      pageSize={10}
+      defaultSort={{ key: "_lastDeliveryAt", dir: "desc" }}
+    />
   );
 }
 
@@ -458,54 +507,97 @@ function DeliveriesTable({
   deliveries: WebhookDeliveryListItem[];
   onRetry: (delivery: WebhookDeliveryListItem) => void;
 }) {
+  const columns: Column<WebhookDeliveryListItem>[] = [
+    {
+      key: "eventType",
+      label: "Event",
+      sortable: true,
+      sortAccessor: (d) => d.eventType,
+      render: (delivery) => <Mono className="block truncate">{delivery.eventType}</Mono>,
+    },
+    {
+      key: "endpointId",
+      label: "Endpoint",
+      width: 260,
+      sortable: true,
+      sortAccessor: (d) => d.endpointId,
+      render: (delivery) => (
+        <Mono className="block truncate text-muted-foreground">{delivery.endpointId}</Mono>
+      ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 130,
+      sortable: true,
+      sortAccessor: (d) => d.status,
+      render: (delivery) => <StatusBadge status={delivery.status} />,
+    },
+    {
+      key: "attemptCount",
+      label: "Attempts",
+      width: 100,
+      align: "right",
+      sortable: true,
+      sortAccessor: (d) => d.attemptCount,
+      cellClassName: "tabular-nums",
+      render: (delivery) => delivery.attemptCount,
+    },
+    {
+      key: "lastStatusCode",
+      label: "Code",
+      width: 80,
+      align: "right",
+      sortable: true,
+      sortAccessor: (d) => d.lastStatusCode ?? -1,
+      cellClassName: "tabular-nums",
+      render: (delivery) => delivery.lastStatusCode ?? "-",
+    },
+    {
+      key: "createdAt",
+      label: "Created",
+      width: 150,
+      sortable: true,
+      sortAccessor: (d) => new Date(d.createdAt).getTime(),
+      render: (delivery) => (
+        <span className="text-muted-foreground">{delivery.createdLabel}</span>
+      ),
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      width: 110,
+      align: "right",
+      render: (delivery) => {
+        const canRetry = ["failed", "retrying", "pending"].includes(delivery.status);
+        return (
+          <div className="flex justify-end">
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                onRetry(delivery);
+              }}
+              disabled={!canRetry}
+              className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RefreshCcw className="h-3 w-3" /> Retry
+            </button>
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
-    <DataTable minWidth={960}>
-      <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
-        <tr>
-          <th className="px-4 py-3 text-left font-medium">Event</th>
-          <th className="w-[260px] px-4 py-3 text-left font-medium">Endpoint</th>
-          <th className="w-[130px] px-4 py-3 text-left font-medium">Status</th>
-          <th className="w-[100px] px-4 py-3 text-right font-medium">Attempts</th>
-          <th className="w-[80px] px-4 py-3 text-right font-medium">Code</th>
-          <th className="w-[150px] px-4 py-3 text-left font-medium">Created</th>
-          <th className="w-[110px] px-4 py-3 text-right font-medium">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {deliveries.map((delivery) => {
-          const canRetry = ["failed", "retrying", "pending"].includes(delivery.status);
-          return (
-            <tr key={delivery.id} className="border-b last:border-b-0 hover:bg-muted/35">
-              <td className="px-4 py-3">
-                <Mono className="block truncate">{delivery.eventType}</Mono>
-              </td>
-              <td className="px-4 py-3">
-                <Mono className="block truncate text-muted-foreground">{delivery.endpointId}</Mono>
-              </td>
-              <td className="px-4 py-3">
-                <StatusBadge status={delivery.status} />
-              </td>
-              <td className="px-4 py-3 text-right tabular-nums">{delivery.attemptCount}</td>
-              <td className="px-4 py-3 text-right tabular-nums">
-                {delivery.lastStatusCode ?? "-"}
-              </td>
-              <td className="px-4 py-3 text-muted-foreground">{delivery.createdLabel}</td>
-              <td className="px-4 py-3">
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => onRetry(delivery)}
-                    disabled={!canRetry}
-                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <RefreshCcw className="h-3 w-3" /> Retry
-                  </button>
-                </div>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </DataTable>
+    <DataTable<WebhookDeliveryListItem>
+      columns={columns}
+      data={deliveries}
+      getRowKey={(d) => d.id}
+      stickyHeader
+      maxBodyHeight={560}
+      pageSize={25}
+      defaultSort={{ key: "createdAt", dir: "desc" }}
+    />
   );
 }
 
