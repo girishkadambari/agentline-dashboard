@@ -548,6 +548,7 @@ export function AppShell() {
   }
 
   return (
+    <TooltipProvider delayDuration={80}>
     <div className="flex h-svh max-w-full overflow-hidden bg-background">
       <Toaster position="bottom-right" />
       <aside
@@ -599,5 +600,6 @@ export function AppShell() {
         </main>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
