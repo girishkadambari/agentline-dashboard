@@ -18,6 +18,34 @@ import { getCurrentWorkspace, type Workspace } from "@/lib/api/workspace";
 import { clearStoredApiKey, getStoredApiKey } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+function CollapsedTooltip({
+  label,
+  hint,
+  children,
+  enabled,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+  enabled?: boolean;
+}) {
+  if (!enabled) return <>{children}</>;
+  return (
+    <Tooltip delayDuration={80}>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent
+        side="right"
+        sideOffset={10}
+        className="border-sidebar-border bg-sidebar px-2.5 py-1.5 text-sidebar-accent-foreground shadow-lg"
+      >
+        <div className="text-[12px] font-medium leading-tight">{label}</div>
+        {hint && <div className="mt-0.5 text-[10.5px] text-sidebar-muted">{hint}</div>}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard };
 type NavGroup = { label: string; items: NavItem[] };
