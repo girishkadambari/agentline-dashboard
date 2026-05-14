@@ -475,9 +475,9 @@ export function DataTableHead({ children }: { children: ReactNode }) {
   return (
     <thead
       className={cn(
-        "bg-muted/40 text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground",
-        "[&_th]:h-9 [&_th]:border-b [&_th]:border-border/70 [&_th]:bg-muted/40 [&_th]:px-3 [&_th]:text-left [&_th:first-child]:pl-4 [&_th:last-child]:pr-4",
-        sticky && "[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:shadow-[inset_0_-1px_0_rgba(15,23,42,0.06)]",
+        "text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground",
+        "[&_th]:h-10 [&_th]:border-b [&_th]:border-border [&_th]:bg-muted [&_th]:px-3 [&_th]:text-left [&_th:first-child]:pl-4 [&_th:last-child]:pr-4",
+        sticky && "[&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:shadow-[inset_0_-1px_0_var(--border)]",
       )}
     >
       {children}
