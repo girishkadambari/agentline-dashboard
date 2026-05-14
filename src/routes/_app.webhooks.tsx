@@ -8,7 +8,6 @@ import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { CopyButton } from "@/components/agentline/CopyButton";
 import { Banner } from "@/components/agentline/Banner";
-import { type Column } from "@/components/agentline/DataTable";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import {
   createBackendWebhook,
