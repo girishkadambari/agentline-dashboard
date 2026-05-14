@@ -235,6 +235,8 @@ function SidebarContent({
   onWorkspaceChanged,
   onNav,
   onSignOut,
+  collapsed,
+  onToggleCollapse,
 }: {
   pathname: string;
   user: CurrentUser | null;
@@ -242,19 +244,48 @@ function SidebarContent({
   onWorkspaceChanged: (user: CurrentUser) => void;
   onNav?: () => void;
   onSignOut: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center justify-between px-4 pb-4 pt-5">
-        <Logo />
+      <div className={cn(
+        "flex items-center pb-4 pt-5",
+        collapsed ? "justify-center px-2" : "justify-between px-4"
+      )}>
+        {collapsed ? (
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-white/95 to-white/70 text-[13px] font-bold text-sidebar shadow-[0_1px_0_rgba(255,255,255,0.4)_inset]">
+            A
+          </div>
+        ) : (
+          <Logo />
+        )}
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand" : "Collapse"}
+            className={cn(
+              "hidden h-6 w-6 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:inline-flex",
+              collapsed && "absolute right-[-12px] top-5 z-10 border border-sidebar-border bg-sidebar shadow"
+            )}
+          >
+            {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+          </button>
+        )}
       </div>
-      <WorkspaceSwitcher user={user} workspaceError={workspaceError} onWorkspaceChanged={onWorkspaceChanged} />
-      <nav className="flex-1 overflow-y-auto px-2 pb-4 pt-1">
+      <WorkspaceSwitcher user={user} workspaceError={workspaceError} onWorkspaceChanged={onWorkspaceChanged} collapsed={collapsed} />
+      <nav className={cn("flex-1 overflow-y-auto pb-4 pt-1", collapsed ? "px-1.5" : "px-2")}>
         {navGroups.map((group) => (
           <div key={group.label} className="mb-4">
-            <div className="px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted">
-              {group.label}
-            </div>
+            {collapsed ? (
+              <div className="mx-2 mb-1 mt-2 h-px bg-sidebar-border/60" aria-hidden />
+            ) : (
+              <div className="px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted">
+                {group.label}
+              </div>
+            )}
             {group.items.map((item) => {
               const active = isItemActive(pathname, item.to);
               const Icon = item.icon;
@@ -265,24 +296,25 @@ function SidebarContent({
                   onClick={onNav}
                   title={item.label}
                   className={cn(
-                    "group relative flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] font-medium transition-colors",
+                    "group relative flex items-center rounded-md text-[13px] font-medium transition-colors",
+                    collapsed ? "justify-center p-2" : "gap-2.5 px-2.5 py-[7px]",
                     active
                       ? "bg-sidebar-active text-sidebar-active-foreground shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]"
                       : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"
                   )}
                 >
-                  {active && (
+                  {active && !collapsed && (
                     <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-[oklch(0.7_0.18_255)]" />
                   )}
                   <Icon className={cn("h-4 w-4 shrink-0", active ? "text-sidebar-active-foreground" : "text-sidebar-muted")} />
-                  <span className="truncate">{item.label}</span>
+                  {!collapsed && <span className="truncate">{item.label}</span>}
                 </Link>
               );
             })}
           </div>
         ))}
       </nav>
-      <ProfileSection user={user} workspaceError={workspaceError} onNav={onNav} onSignOut={onSignOut} />
+      <ProfileSection user={user} workspaceError={workspaceError} onNav={onNav} onSignOut={onSignOut} collapsed={collapsed} />
     </div>
   );
 }
