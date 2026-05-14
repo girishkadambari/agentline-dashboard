@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, Bot, Phone, Inbox, PhoneCall, Users, Webhook, BarChart3,
   CreditCard, KeyRound, FlaskConical, Settings, Activity,
-  LogOut, Menu, X, Check, Circle, ChevronUp, UserRound,
+  LogOut, Menu, X, Check, Circle, ChevronUp, UserRound, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { Logo } from "@/components/agentline/Logo";
 import {
@@ -99,10 +99,12 @@ function WorkspaceSwitcher({
   user,
   workspaceError,
   onWorkspaceChanged,
+  collapsed,
 }: {
   user: CurrentUser | null;
   workspaceError: string | null;
   onWorkspaceChanged: (user: CurrentUser) => void;
+  collapsed?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
@@ -148,28 +150,39 @@ function WorkspaceSwitcher({
   }
 
   return (
-    <div ref={ref} className="relative px-3 pb-3">
+    <div ref={ref} className={cn("relative pb-3", collapsed ? "px-2" : "px-3")}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 rounded-lg border border-sidebar-border/80 bg-sidebar-accent/30 px-2 py-1.5 text-left text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+        title={collapsed ? `${name} · ${env}` : undefined}
+        className={cn(
+          "flex w-full items-center rounded-lg border border-sidebar-border/80 bg-sidebar-accent/30 text-left text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent",
+          collapsed ? "justify-center p-1.5" : "gap-2 px-2 py-1.5"
+        )}
       >
         <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-white/95 to-white/70 text-[11px] font-semibold text-sidebar shadow-[0_1px_0_rgba(255,255,255,0.4)_inset]">
           {initial}
         </div>
-        <div className="min-w-0 flex-1 leading-tight">
-          <div className="truncate text-[12.5px] font-medium text-sidebar-accent-foreground">{name}</div>
-          <div className="truncate text-[10.5px] text-sidebar-muted">
-            {user?.activeProject.name ?? "Workspace"}
-          </div>
-        </div>
-        <span className={cn("flex items-center gap-1 rounded-full bg-black/20 px-1.5 py-0.5 text-[9.5px] font-medium uppercase tracking-wide", envColor)}>
-          <Circle className="h-1.5 w-1.5 fill-current" />
-          {env}
-        </span>
+        {!collapsed && (
+          <>
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="truncate text-[12.5px] font-medium text-sidebar-accent-foreground">{name}</div>
+              <div className="truncate text-[10.5px] text-sidebar-muted">
+                {user?.activeProject.name ?? "Workspace"}
+              </div>
+            </div>
+            <span className={cn("flex items-center gap-1 rounded-full bg-black/20 px-1.5 py-0.5 text-[9.5px] font-medium uppercase tracking-wide", envColor)}>
+              <Circle className="h-1.5 w-1.5 fill-current" />
+              {env}
+            </span>
+          </>
+        )}
       </button>
       {open && (
-        <div className="absolute left-3 right-3 top-full z-50 mt-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg">
+        <div className={cn(
+          "absolute top-full z-50 mt-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg",
+          collapsed ? "left-2 w-60" : "left-3 right-3"
+        )}>
           <div className="px-2 py-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">Current workspace</div>
           <div className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm">
             <Check className="h-3.5 w-3.5 text-success" />
@@ -222,6 +235,8 @@ function SidebarContent({
   onWorkspaceChanged,
   onNav,
   onSignOut,
+  collapsed,
+  onToggleCollapse,
 }: {
   pathname: string;
   user: CurrentUser | null;
@@ -229,19 +244,48 @@ function SidebarContent({
   onWorkspaceChanged: (user: CurrentUser) => void;
   onNav?: () => void;
   onSignOut: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center justify-between px-4 pb-4 pt-5">
-        <Logo />
+      <div className={cn(
+        "flex items-center pb-4 pt-5",
+        collapsed ? "justify-center px-2" : "justify-between px-4"
+      )}>
+        {collapsed ? (
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-white/95 to-white/70 text-[13px] font-bold text-sidebar shadow-[0_1px_0_rgba(255,255,255,0.4)_inset]">
+            A
+          </div>
+        ) : (
+          <Logo />
+        )}
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand" : "Collapse"}
+            className={cn(
+              "hidden h-6 w-6 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:inline-flex",
+              collapsed && "absolute right-[-12px] top-5 z-10 border border-sidebar-border bg-sidebar shadow"
+            )}
+          >
+            {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+          </button>
+        )}
       </div>
-      <WorkspaceSwitcher user={user} workspaceError={workspaceError} onWorkspaceChanged={onWorkspaceChanged} />
-      <nav className="flex-1 overflow-y-auto px-2 pb-4 pt-1">
+      <WorkspaceSwitcher user={user} workspaceError={workspaceError} onWorkspaceChanged={onWorkspaceChanged} collapsed={collapsed} />
+      <nav className={cn("flex-1 overflow-y-auto pb-4 pt-1", collapsed ? "px-1.5" : "px-2")}>
         {navGroups.map((group) => (
           <div key={group.label} className="mb-4">
-            <div className="px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted">
-              {group.label}
-            </div>
+            {collapsed ? (
+              <div className="mx-2 mb-1 mt-2 h-px bg-sidebar-border/60" aria-hidden />
+            ) : (
+              <div className="px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted">
+                {group.label}
+              </div>
+            )}
             {group.items.map((item) => {
               const active = isItemActive(pathname, item.to);
               const Icon = item.icon;
@@ -252,24 +296,25 @@ function SidebarContent({
                   onClick={onNav}
                   title={item.label}
                   className={cn(
-                    "group relative flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] font-medium transition-colors",
+                    "group relative flex items-center rounded-md text-[13px] font-medium transition-colors",
+                    collapsed ? "justify-center p-2" : "gap-2.5 px-2.5 py-[7px]",
                     active
                       ? "bg-sidebar-active text-sidebar-active-foreground shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]"
                       : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"
                   )}
                 >
-                  {active && (
+                  {active && !collapsed && (
                     <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-[oklch(0.7_0.18_255)]" />
                   )}
                   <Icon className={cn("h-4 w-4 shrink-0", active ? "text-sidebar-active-foreground" : "text-sidebar-muted")} />
-                  <span className="truncate">{item.label}</span>
+                  {!collapsed && <span className="truncate">{item.label}</span>}
                 </Link>
               );
             })}
           </div>
         ))}
       </nav>
-      <ProfileSection user={user} workspaceError={workspaceError} onNav={onNav} onSignOut={onSignOut} />
+      <ProfileSection user={user} workspaceError={workspaceError} onNav={onNav} onSignOut={onSignOut} collapsed={collapsed} />
     </div>
   );
 }
@@ -279,11 +324,13 @@ function ProfileSection({
   workspaceError,
   onNav,
   onSignOut,
+  collapsed,
 }: {
   user: CurrentUser | null;
   workspaceError: string | null;
   onNav?: () => void;
   onSignOut: () => void;
+  collapsed?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -309,26 +356,37 @@ function ProfileSection({
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
-    <div ref={ref} className="relative border-t border-sidebar-border/80 p-2">
+    <div ref={ref} className={cn("relative border-t border-sidebar-border/80", collapsed ? "p-1.5" : "p-2")}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-sidebar-accent/70"
+        title={collapsed ? `${displayName}${email ? ` · ${email}` : ""}` : undefined}
+        className={cn(
+          "flex w-full items-center rounded-lg text-left transition-colors hover:bg-sidebar-accent/70",
+          collapsed ? "justify-center p-1.5" : "gap-2.5 px-2 py-2"
+        )}
       >
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sidebar-accent to-sidebar-active text-[11px] font-semibold text-sidebar-accent-foreground ring-1 ring-inset ring-white/5">
           {initials}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-medium text-sidebar-accent-foreground">{displayName}</div>
-          <div className="flex items-center gap-1 truncate text-[11px] text-sidebar-muted">
-            <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", workspaceError ? "bg-destructive" : "bg-success")} />
-            <span className="truncate">{subtitle}</span>
-          </div>
-        </div>
-        <ChevronUp className={cn("h-3.5 w-3.5 shrink-0 text-sidebar-muted transition-transform", !open && "rotate-180")} />
+        {!collapsed && (
+          <>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] font-medium text-sidebar-accent-foreground">{displayName}</div>
+              <div className="flex items-center gap-1 truncate text-[11px] text-sidebar-muted">
+                <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", workspaceError ? "bg-destructive" : "bg-success")} />
+                <span className="truncate">{subtitle}</span>
+              </div>
+            </div>
+            <ChevronUp className={cn("h-3.5 w-3.5 shrink-0 text-sidebar-muted transition-transform", !open && "rotate-180")} />
+          </>
+        )}
       </button>
       {open && (
-        <div className="absolute bottom-full left-2 right-2 z-50 mb-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg">
+        <div className={cn(
+          "absolute bottom-full z-50 mb-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg",
+          collapsed ? "left-2 w-56" : "left-2 right-2"
+        )}>
           <div className="px-2 py-2 text-xs">
             <div className="truncate font-medium">{displayName}</div>
             {email && <div className="truncate text-muted-foreground">{email}</div>}
@@ -359,10 +417,22 @@ function ProfileSection({
 export function AppShell() {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("agentline:sidebar:collapsed") === "1";
+  });
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try { window.localStorage.setItem("agentline:sidebar:collapsed", next ? "1" : "0"); } catch {}
+      return next;
+    });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -448,13 +518,20 @@ export function AppShell() {
   return (
     <div className="flex h-svh max-w-full overflow-hidden bg-background">
       <Toaster position="bottom-right" />
-      <aside className="hidden h-svh w-60 shrink-0 overflow-hidden bg-sidebar md:flex md:flex-col">
+      <aside
+        className={cn(
+          "relative hidden h-svh shrink-0 bg-sidebar transition-[width] duration-200 ease-out md:flex md:flex-col",
+          collapsed ? "w-14" : "w-60"
+        )}
+      >
         <SidebarContent
           pathname={pathname}
           user={user}
           workspaceError={workspaceError}
           onWorkspaceChanged={setUser}
           onSignOut={signOut}
+          collapsed={collapsed}
+          onToggleCollapse={toggleCollapsed}
         />
       </aside>
 
