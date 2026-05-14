@@ -182,7 +182,6 @@ function WorkspaceSwitcher({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        title={collapsed ? `${name} · ${env}` : undefined}
         className={cn(
           "flex w-full items-center rounded-lg border border-sidebar-border/80 bg-sidebar-accent/30 text-left text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent",
           collapsed ? "justify-center p-1.5" : "gap-2 px-2 py-1.5"
