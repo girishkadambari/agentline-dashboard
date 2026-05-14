@@ -492,7 +492,7 @@ export function DataTableBody({
   onKeyDown,
 }: {
   children: ReactNode;
-  refProp?: RefObject<HTMLTableSectionElement>;
+  refProp?: RefObject<HTMLTableSectionElement | null>;
   onKeyDown?: (event: KeyboardEvent<HTMLTableSectionElement>) => void;
 }) {
   return (
