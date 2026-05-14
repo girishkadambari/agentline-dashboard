@@ -291,7 +291,7 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className={cn(
-        "flex items-center pb-4 pt-5",
+        "flex items-center pb-3 pt-5",
         collapsed ? "justify-center px-2" : "justify-between px-4"
       )}>
         {collapsed ? (
