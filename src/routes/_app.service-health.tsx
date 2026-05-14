@@ -4,6 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
+import { Banner } from "@/components/agentline/Banner";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { getBackendStripeStatus, type StripeStatusView } from "@/lib/api/billing";
 import { getBackendBaseUrl, getBackendHealth, type BackendHealth } from "@/lib/api/health";
