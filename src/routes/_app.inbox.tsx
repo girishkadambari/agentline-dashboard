@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/agentline/EmptyState";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { CopyButton } from "@/components/agentline/CopyButton";
 import { PhoneInput } from "@/components/agentline/PhoneInput";
+import { Banner } from "@/components/agentline/Banner";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import {
@@ -494,6 +495,11 @@ function MessageDrawer({
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [touched, setTouched] = useState(false);
+
+  const phoneError = touched && !/^\+?[0-9\s\-()]{6,}$/.test(phone.trim()) ? "Enter a valid phone number." : null;
+  const agentError = touched && !agentId ? "Choose an agent." : null;
+  const bodyError = touched && !body.trim() ? "Message body is required." : null;
 
   useEffect(() => {
     if (open) {
@@ -506,22 +512,10 @@ function MessageDrawer({
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setTouched(true);
     setError(null);
 
-    if (!agentId) {
-      setError("Choose an agent.");
-      return;
-    }
-
-    if (!phone.trim()) {
-      setError("Recipient number is required.");
-      return;
-    }
-
-    if (!body.trim()) {
-      setError("Message body is required.");
-      return;
-    }
+    if (!agentId || phoneError || !body.trim()) return;
 
     setIsSaving(true);
     try {
@@ -542,23 +536,26 @@ function MessageDrawer({
           <SheetDescription>Send a real provider-backed SMS through an agent with an active SMS-capable number.</SheetDescription>
         </SheetHeader>
         <form className="mt-6 space-y-4" onSubmit={submit}>
-          {error && <div className="whitespace-pre-line rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
-          <label className="block text-sm font-medium">
-            Agent
-            <select value={agentId} onChange={(event) => setAgentId(event.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm">
+          {error && <Banner variant="error" message={error} onDismiss={() => setError(null)} />}
+          <label htmlFor="sms-agent" className="block text-sm font-medium">
+            Agent <span aria-hidden="true" className="text-destructive">*</span>
+            <select id="sms-agent" aria-required="true" aria-invalid={!!agentError} value={agentId} onChange={(event) => setAgentId(event.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm">
               <option value="">Choose agent</option>
               {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
             </select>
+            {agentError && <p className="type-caption-12-400 mt-1 text-destructive">{agentError}</p>}
           </label>
-          <label className="block text-sm font-medium">
-            Recipient number
+          <label htmlFor="sms-to" className="block text-sm font-medium">
+            Recipient number <span aria-hidden="true" className="text-destructive">*</span>
             <div className="mt-1.5">
-              <PhoneInput value={phone} onChange={setPhone} placeholder="+19015550123" />
+              <PhoneInput id="sms-to" value={phone} onChange={setPhone} placeholder="+19015550123" />
             </div>
+            {phoneError && <p className="type-caption-12-400 mt-1 text-destructive">{phoneError}</p>}
           </label>
-          <label className="block text-sm font-medium">
-            Message
-            <textarea value={body} onChange={(event) => setBody(event.target.value)} rows={5} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm" />
+          <label htmlFor="sms-body" className="block text-sm font-medium">
+            Message <span aria-hidden="true" className="text-destructive">*</span>
+            <textarea id="sms-body" aria-required="true" aria-invalid={!!bodyError} value={body} onChange={(event) => setBody(event.target.value)} rows={5} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm" />
+            {bodyError && <p className="type-caption-12-400 mt-1 text-destructive">{bodyError}</p>}
           </label>
           <SheetFooter>
             <button type="button" onClick={() => onOpenChange(false)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">Cancel</button>
