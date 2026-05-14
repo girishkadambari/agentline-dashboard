@@ -33,14 +33,14 @@ export function CopyButton({
       type="button"
       onClick={copy}
       className={cn(
-        "inline-flex h-7 w-7 items-center justify-center rounded-md border text-muted-foreground hover:bg-muted hover:text-foreground",
-        showLabel && "w-auto gap-1.5 px-2 text-xs font-medium",
+        "inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground",
+        showLabel && "h-7 w-auto gap-1.5 px-2 text-xs font-medium",
         className,
       )}
       title={copied ? "Copied" : label}
       aria-label={label}
     >
-      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+      {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
       {showLabel && <span>{copied ? "Copied" : label}</span>}
     </button>
   );
