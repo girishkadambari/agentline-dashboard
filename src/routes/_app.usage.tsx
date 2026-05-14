@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import { BarChart3, DollarSign, MessageSquare, PhoneCall, Sigma } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable } from "@/components/agentline/DataTable";
+import { DataTable, type Column } from "@/components/agentline/DataTable";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { Banner } from "@/components/agentline/Banner";
@@ -408,44 +408,24 @@ function UsageEventsTable({
           {events.length} {events.length === 1 ? "event" : "events"}
         </span>
       </div>
-      <DataTable minWidth={960}>
-        <thead className="border-b border-border/70 bg-muted/40 text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-          <tr>
-            <th className="w-[150px] px-4 py-2.5 text-left">Time</th>
-            <th className="w-[180px] px-3 py-2.5 text-left">Agent</th>
-            <th className="px-3 py-2.5 text-left">Resource</th>
-            <th className="w-[110px] px-3 py-2.5 text-left">Channel</th>
-            <th className="w-[80px] px-3 py-2.5 text-right">Qty</th>
-            <th className="w-[100px] px-3 py-2.5 text-left">Unit</th>
-            <th className="w-[110px] px-3 py-2.5 text-right">Unit $</th>
-            <th className="w-[110px] px-4 py-2.5 text-right">Total $</th>
-          </tr>
-        </thead>
-        <tbody className="[&>tr]:border-b [&>tr]:border-border/60 [&>tr:last-child]:border-b-0 [&>tr]:transition-colors [&>tr]:hover:bg-muted/40">
-          {events.map((event) => (
-            <tr key={event.id}>
-              <td className="px-4 py-2.5 text-muted-foreground">{event.occurredLabel}</td>
-              <td className="px-3 py-2.5">
-                <span className="block truncate font-medium">
-                  {agentsById.get(event.agentId)?.name ?? event.agentId}
-                </span>
-              </td>
-              <td className="px-3 py-2.5">
-                <span className="capitalize">{event.resourceType}</span>
-                <span className="text-muted-foreground"> · </span>
-                <Mono className="text-muted-foreground">{event.resourceId}</Mono>
-              </td>
-              <td className="px-3 py-2.5 capitalize text-muted-foreground">{event.channel}</td>
-              <td className="px-3 py-2.5 text-right tabular-nums">{event.quantity}</td>
-              <td className="px-3 py-2.5 text-muted-foreground">{event.unit}</td>
-              <td className="px-3 py-2.5 text-right tabular-nums">{formatUsd(event.unitCost, 4)}</td>
-              <td className="px-4 py-2.5 text-right tabular-nums font-semibold text-foreground">
-                {formatUsd(event.totalCost, 4)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </DataTable>
+      <DataTable<UsageEventListItem>
+        minWidth={1000}
+        data={events}
+        stickyHeader
+        maxBodyHeight={560}
+        pageSize={25}
+        defaultSort={{ key: "time", dir: "desc" }}
+        columns={[
+          { key: "time", label: "Time", width: 160, sortable: true, sortAccessor: (e) => e.occurredLabel, render: (e) => <span className="text-muted-foreground">{e.occurredLabel}</span> },
+          { key: "agent", label: "Agent", width: 180, sortable: true, sortAccessor: (e) => agentsById.get(e.agentId)?.name ?? e.agentId, render: (e) => <span className="block truncate font-medium">{agentsById.get(e.agentId)?.name ?? e.agentId}</span> },
+          { key: "resource", label: "Resource", render: (e) => (<><span className="capitalize">{e.resourceType}</span><span className="text-muted-foreground"> · </span><Mono className="text-muted-foreground">{e.resourceId}</Mono></>) },
+          { key: "channel", label: "Channel", width: 110, sortable: true, sortAccessor: (e) => e.channel, cellClassName: "capitalize text-muted-foreground", render: (e) => e.channel },
+          { key: "qty", label: "Qty", width: 80, align: "right", sortable: true, sortAccessor: (e) => e.quantity, cellClassName: "tabular-nums", render: (e) => e.quantity },
+          { key: "unit", label: "Unit", width: 100, render: (e) => <span className="text-muted-foreground">{e.unit}</span> },
+          { key: "unitCost", label: "Unit $", width: 110, align: "right", sortable: true, sortAccessor: (e) => e.unitCost, cellClassName: "tabular-nums", render: (e) => formatUsd(e.unitCost, 4) },
+          { key: "totalCost", label: "Total $", width: 110, align: "right", sortable: true, sortAccessor: (e) => e.totalCost, cellClassName: "tabular-nums font-semibold text-foreground", render: (e) => formatUsd(e.totalCost, 4) },
+        ] satisfies Column<UsageEventListItem>[]}
+      />
     </div>
   );
 }

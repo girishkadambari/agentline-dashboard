@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable } from "@/components/agentline/DataTable";
+import { DataTable, type Column } from "@/components/agentline/DataTable";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
@@ -131,18 +131,19 @@ function Agents() {
         <Banner variant="error" className="mb-3" message={error} onDismiss={() => setError(null)} />
       )}
 
-      {isLoading ? (
-        <AgentTableSkeleton />
-      ) : agents.length === 0 ? (
-        <EmptyState
-          icon={<Bot className="h-5 w-5" />}
-          title="No agents yet"
-          description="Create an agent to start testing SMS, calls, webhooks, and outcomes."
-          action={<button onClick={openCreateDrawer} className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background">Create agent</button>}
-        />
-      ) : (
-        <AgentTable rows={rows} onUpdate={(agent) => openAgentDrawer("update", agent)} />
-      )}
+      <AgentTable
+        rows={rows}
+        isLoading={isLoading}
+        emptyState={
+          <EmptyState
+            icon={<Bot className="h-5 w-5" />}
+            title="No agents yet"
+            description="Create an agent to start testing SMS, calls, webhooks, and outcomes."
+            action={<button onClick={openCreateDrawer} className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background">Create agent</button>}
+          />
+        }
+        onUpdate={(agent) => openAgentDrawer("update", agent)}
+      />
 
       <AgentDrawer
         mode={drawerMode}
@@ -167,90 +168,96 @@ function Agents() {
 
 function AgentTable({
   rows,
+  isLoading,
+  emptyState,
   onUpdate,
 }: {
   rows: AgentListItem[];
+  isLoading: boolean;
+  emptyState: React.ReactNode;
   onUpdate: (agent: AgentListItem) => void;
 }) {
   const navigate = useNavigate();
+  const columns: Column<AgentListItem>[] = [
+    {
+      key: "name",
+      label: "Name",
+      width: 260,
+      sortable: true,
+      sortAccessor: (a) => a.name,
+      render: (agent) => (
+        <>
+          <Link
+            to="/agents/$agentId"
+            params={{ agentId: agent.id }}
+            onClick={(e) => e.stopPropagation()}
+            className="block truncate font-medium hover:underline"
+          >
+            {agent.name}
+          </Link>
+          <div className="truncate text-xs text-muted-foreground">{agent.description || "No description"}</div>
+        </>
+      ),
+    },
+    {
+      key: "id",
+      label: "ID",
+      width: 240,
+      render: (agent) => (
+        <div className="flex items-center gap-2">
+          <Mono className="block truncate text-muted-foreground">{agent.id}</Mono>
+          <CopyButton value={agent.id} label="Copy agent ID" className="shrink-0" />
+        </div>
+      ),
+    },
+    { key: "mode", label: "Mode", width: 110, sortable: true, sortAccessor: (a) => a.mode, render: (a) => <span className="rounded border px-1.5 py-0.5 text-xs font-medium capitalize">{a.mode}</span> },
+    { key: "numbers", label: "Numbers", width: 90, align: "right", sortable: true, sortAccessor: (a) => a.numbers, cellClassName: "tabular-nums", render: (a) => a.numbers },
+    { key: "calls", label: "Calls", width: 80, align: "right", sortable: true, sortAccessor: (a) => a.calls, cellClassName: "tabular-nums", render: (a) => a.calls },
+    { key: "messages", label: "Messages", width: 100, align: "right", sortable: true, sortAccessor: (a) => a.messages, cellClassName: "tabular-nums", render: (a) => a.messages },
+    { key: "lastActivity", label: "Last activity", width: 150, sortable: true, sortAccessor: (a) => a.lastActivity, render: (a) => <span className="text-muted-foreground">{a.lastActivity}</span> },
+    { key: "status", label: "Status", width: 110, sortable: true, sortAccessor: (a) => a.status, render: (a) => <StatusBadge status={a.status} /> },
+    {
+      key: "actions",
+      label: "",
+      width: 170,
+      align: "right",
+      render: (agent) => (
+        <div className="flex justify-end gap-1.5">
+          <Link
+            to="/agents/$agentId"
+            params={{ agentId: agent.id }}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
+          >
+            <Eye className="h-3 w-3" /> View
+          </Link>
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              onUpdate(agent);
+            }}
+            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
+          >
+            <Pencil className="h-3 w-3" /> Update
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <DataTable minWidth={1100}>
-          <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="w-[260px] px-4 py-3 text-left font-medium">Name</th>
-              <th className="w-[260px] px-4 py-3 text-left font-medium">ID</th>
-              <th className="w-[110px] px-4 py-3 text-left font-medium">Mode</th>
-              <th className="w-[90px] px-4 py-3 text-right font-medium">Numbers</th>
-              <th className="w-[80px] px-4 py-3 text-right font-medium">Calls</th>
-              <th className="w-[100px] px-4 py-3 text-right font-medium">Messages</th>
-              <th className="w-[140px] px-4 py-3 text-left font-medium">Last activity</th>
-              <th className="w-[110px] px-4 py-3 text-left font-medium">Status</th>
-              <th className="w-[170px] px-4 py-3 text-right font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && (
-              <tr><td colSpan={9} className="px-4 py-10 text-center text-sm text-muted-foreground">No agents match.</td></tr>
-            )}
-            {rows.map((agent) => (
-              <tr
-                key={agent.id}
-                onClick={() => navigate({ to: "/agents/$agentId", params: { agentId: agent.id } })}
-                className="group cursor-pointer border-b last:border-b-0 transition-colors hover:bg-muted/35"
-              >
-                <td className="px-4 py-3">
-                  <Link to="/agents/$agentId" params={{ agentId: agent.id }} className="block truncate font-medium hover:underline">{agent.name}</Link>
-                  <div className="truncate text-xs text-muted-foreground">{agent.description || "No description"}</div>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Mono className="block truncate text-muted-foreground">{agent.id}</Mono>
-                    <CopyButton value={agent.id} label="Copy agent ID" className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
-                  </div>
-                </td>
-                <td className="px-4 py-3"><span className="rounded border px-1.5 py-0.5 text-xs font-medium capitalize">{agent.mode}</span></td>
-                <td className="px-4 py-3 text-right tabular-nums">{agent.numbers}</td>
-                <td className="px-4 py-3 text-right tabular-nums">{agent.calls}</td>
-                <td className="px-4 py-3 text-right tabular-nums">{agent.messages}</td>
-                <td className="px-4 py-3 text-muted-foreground">{agent.lastActivity}</td>
-                <td className="px-4 py-3"><StatusBadge status={agent.status} /></td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-1.5">
-                    <Link
-                      to="/agents/$agentId"
-                      params={{ agentId: agent.id }}
-                      className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
-                    >
-                      <Eye className="h-3 w-3" /> View
-                    </Link>
-                    <button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onUpdate(agent);
-                      }}
-                      className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
-                    >
-                      <Pencil className="h-3 w-3" /> Update
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </DataTable>
-  );
-}
-
-function AgentTableSkeleton() {
-  return (
-    <div className="rounded-lg border bg-surface p-4">
-      <div className="space-y-3">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <div key={index} className="h-9 animate-pulse rounded-md bg-muted" />
-        ))}
-      </div>
-    </div>
+    <DataTable<AgentListItem>
+      minWidth={1180}
+      data={rows}
+      columns={columns}
+      isLoading={isLoading}
+      emptyState={emptyState}
+      stickyHeader
+      maxBodyHeight={620}
+      pageSize={25}
+      defaultSort={{ key: "lastActivity", dir: "desc" }}
+      onRowClick={(agent) => navigate({ to: "/agents/$agentId", params: { agentId: agent.id } })}
+    />
   );
 }
 

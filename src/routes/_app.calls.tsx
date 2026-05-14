@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tansta
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Eye, PhoneOutgoing } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable, DataTableBody, DataTableHead } from "@/components/agentline/DataTable";
+import { DataTable, type Column } from "@/components/agentline/DataTable";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
@@ -119,73 +119,84 @@ function CallsTable({
 }) {
   const navigate = useNavigate();
 
-  return (
-    <DataTable minWidth={1080}>
-      <DataTableHead>
-        <tr>
-          <th style={{ width: 220 }}>Call</th>
-          <th style={{ width: 240 }}>Route</th>
-          <th style={{ width: 160 }}>Agent</th>
-          <th style={{ width: 120 }}>Status</th>
-          <th style={{ width: 140 }}>Outcome</th>
-          <th style={{ width: 80 }} className="!text-right">Duration</th>
-          <th style={{ width: 80 }} className="!text-right">Cost</th>
-          <th style={{ width: 130 }}>Started</th>
-          <th style={{ width: 90 }} className="!text-right">Actions</th>
-        </tr>
-      </DataTableHead>
-      <DataTableBody>
-        {calls.map((call) => (
-          <tr
-            key={call.id}
-            onClick={() => navigate({ to: "/calls/$callId", params: { callId: call.id } })}
-            className="group cursor-pointer"
+  const columns: Column<CallListItem>[] = [
+    {
+      key: "id",
+      label: "Call",
+      width: 220,
+      sortable: true,
+      sortAccessor: (c) => c.id,
+      render: (call) => (
+        <div className="flex items-center gap-1.5">
+          <Link
+            to="/calls/$callId"
+            params={{ callId: call.id }}
+            className="min-w-0 truncate hover:underline"
+            onClick={(e) => e.stopPropagation()}
           >
-            <td>
-              <div className="flex items-center gap-1.5">
-                <Link
-                  to="/calls/$callId"
-                  params={{ callId: call.id }}
-                  className="min-w-0 truncate hover:underline"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Mono className="block truncate text-[12px]">{shortenId(call.id)}</Mono>
-                </Link>
-                <CopyButton value={call.id} label="Copy call ID" className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
-                <span className="ml-1 inline-flex items-center rounded-sm bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {call.direction === "outbound" ? "Out" : "In"}
-                </span>
-              </div>
-            </td>
-            <td>
-              <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
-                <Mono className="truncate">{call.from}</Mono>
-                <ArrowRight className="h-3 w-3 shrink-0 opacity-50" />
-                <Mono className="truncate">{call.to}</Mono>
-              </div>
-            </td>
-            <td><span className="block truncate">{agentsById.get(call.agentId)?.name ?? call.agentId}</span></td>
-            <td><StatusBadge status={call.status} /></td>
-            <td className="text-muted-foreground">{formatOutcome(call.outcome)}</td>
-            <td className="text-right tabular-nums">{formatDuration(call.duration)}</td>
-            <td className="text-right tabular-nums">${call.cost.toFixed(2)}</td>
-            <td className="text-muted-foreground whitespace-nowrap">{call.startedAt}</td>
-            <td>
-              <div className="flex justify-end">
-                <Link
-                  to="/calls/$callId"
-                  params={{ callId: call.id }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
-                >
-                  <Eye className="h-3 w-3" /> View
-                </Link>
-              </div>
-            </td>
-          </tr>
-        ))}
-      </DataTableBody>
-    </DataTable>
+            <Mono className="block truncate text-[12px]">{shortenId(call.id)}</Mono>
+          </Link>
+          <CopyButton value={call.id} label="Copy call ID" className="shrink-0" />
+          <span className="ml-1 inline-flex items-center rounded-sm bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            {call.direction === "outbound" ? "Out" : "In"}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "route",
+      label: "Route",
+      width: 240,
+      render: (call) => (
+        <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+          <Mono className="truncate">{call.from}</Mono>
+          <ArrowRight className="h-3 w-3 shrink-0 opacity-50" />
+          <Mono className="truncate">{call.to}</Mono>
+        </div>
+      ),
+    },
+    {
+      key: "agent",
+      label: "Agent",
+      width: 160,
+      sortable: true,
+      sortAccessor: (c) => agentsById.get(c.agentId)?.name ?? c.agentId,
+      render: (call) => <span className="block truncate">{agentsById.get(call.agentId)?.name ?? call.agentId}</span>,
+    },
+    { key: "status", label: "Status", width: 120, sortable: true, sortAccessor: (c) => c.status, render: (c) => <StatusBadge status={c.status} /> },
+    { key: "outcome", label: "Outcome", width: 140, sortable: true, sortAccessor: (c) => c.outcome ?? "", render: (c) => <span className="text-muted-foreground">{formatOutcome(c.outcome)}</span> },
+    { key: "duration", label: "Duration", width: 90, align: "right", sortable: true, sortAccessor: (c) => c.duration, cellClassName: "tabular-nums", render: (c) => formatDuration(c.duration) },
+    { key: "cost", label: "Cost", width: 90, align: "right", sortable: true, sortAccessor: (c) => c.cost, cellClassName: "tabular-nums", render: (c) => `$${c.cost.toFixed(2)}` },
+    { key: "startedAt", label: "Started", width: 140, sortable: true, sortAccessor: (c) => c.startedAt, render: (c) => <span className="whitespace-nowrap text-muted-foreground">{c.startedAt}</span> },
+    {
+      key: "actions",
+      label: "",
+      width: 90,
+      align: "right",
+      render: (call) => (
+        <Link
+          to="/calls/$callId"
+          params={{ callId: call.id }}
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted"
+        >
+          <Eye className="h-3 w-3" /> View
+        </Link>
+      ),
+    },
+  ];
+
+  return (
+    <DataTable<CallListItem>
+      minWidth={1180}
+      data={calls}
+      columns={columns}
+      stickyHeader
+      maxBodyHeight={620}
+      pageSize={25}
+      defaultSort={{ key: "startedAt", dir: "desc" }}
+      onRowClick={(call) => navigate({ to: "/calls/$callId", params: { callId: call.id } })}
+    />
   );
 }
 
