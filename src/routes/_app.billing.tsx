@@ -1,13 +1,35 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { CreditCard, ExternalLink, Gauge, ShieldCheck, Sparkles, Wallet } from "lucide-react";
+import {
+  ArrowUpRight,
+  Check,
+  CreditCard,
+  ExternalLink,
+  Gauge,
+  Plus,
+  Receipt,
+  Settings2,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
+  Wallet,
+  Zap,
+} from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable } from "@/components/agentline/DataTable";
-import { Stat } from "@/components/agentline/Stat";
+import { DataTable, type Column } from "@/components/agentline/DataTable";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { Mono } from "@/components/agentline/Mono";
 import { Banner } from "@/components/agentline/Banner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { cn } from "@/lib/utils";
 import {
   createBackendCheckoutSession,
   createBackendPortalSession,
@@ -21,7 +43,6 @@ import {
   type BillingPlanKey,
   type BillingPlanView,
   type BillingSubscriptionStateView,
-  type BillingSubscriptionView,
   type BillingTransactionListItem,
   type StripeStatusView,
 } from "@/lib/api/billing";
@@ -29,10 +50,12 @@ import { listBackendUsageEvents } from "@/lib/api/usage";
 
 export const Route = createFileRoute("/_app/billing")({
   component: Billing,
-  head: () => ({ meta: [{ title: "Billing - AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Billing — AgentLine" }] }),
 });
 
 type BillingAction = "checkout" | "portal" | `plan:${string}`;
+
+const PRESET_AMOUNTS = [10, 25, 50, 100, 250] as const;
 
 function Billing() {
   const [balance, setBalance] = useState<BillingBalanceView | null>(null);
@@ -43,6 +66,7 @@ function Billing() {
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState<BillingAction | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [topUpOpen, setTopUpOpen] = useState(false);
 
   async function loadData() {
     setIsLoading(true);
@@ -51,13 +75,7 @@ function Billing() {
       const monthStart = new Date();
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
-      const [
-        balanceResponse,
-        subscriptionResponse,
-        transactionResponse,
-        usageResponse,
-        stripeStatusResponse,
-      ] = await Promise.all([
+      const [balanceRes, subRes, txRes, usageRes, stripeRes] = await Promise.all([
         getBackendBillingBalance(),
         getBackendBillingSubscription(),
         listBackendBillingTransactions(),
@@ -68,11 +86,11 @@ function Billing() {
         }),
         getBackendStripeStatus(),
       ]);
-      setBalance(balanceResponse.data);
-      setBillingState(subscriptionResponse.data);
-      setTransactions(transactionResponse.data);
-      setStripeStatus(stripeStatusResponse.data);
-      setMtdSpend(usageResponse.data.reduce((sum, event) => sum + event.totalCost, 0));
+      setBalance(balanceRes.data);
+      setBillingState(subRes.data);
+      setTransactions(txRes.data);
+      setStripeStatus(stripeRes.data);
+      setMtdSpend(usageRes.data.reduce((sum, e) => sum + e.totalCost, 0));
     } catch (caught) {
       setError(
         caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load billing.",
@@ -89,30 +107,30 @@ function Billing() {
   const successfulCredits = useMemo(
     () =>
       transactions
-        .filter((transaction) => transaction.amountCents > 0 && transaction.status === "succeeded")
-        .reduce((sum, transaction) => sum + transaction.amount, 0),
+        .filter((t) => t.amountCents > 0 && t.status === "succeeded")
+        .reduce((sum, t) => sum + t.amount, 0),
     [transactions],
   );
   const activeAllowance = useMemo(
     () =>
-      billingState?.allowanceGrants.find(
-        (grant) => grant.remainingCents > 0 && isGrantActive(grant),
-      ) ?? null,
+      billingState?.allowanceGrants.find((g) => g.remainingCents > 0 && isGrantActive(g)) ?? null,
     [billingState],
   );
   const planForSubscription = useMemo(
     () =>
-      billingState?.plans.find((plan) => plan.key === billingState.subscription?.planKey) ?? null,
+      billingState?.plans.find((p) => p.key === billingState.subscription?.planKey) ?? null,
     [billingState],
   );
 
-  async function openCheckout() {
+  const totalAvailable = (balance?.balance ?? 0) + (activeAllowance?.remaining ?? 0);
+
+  async function openCheckout(amountUsd: number) {
     setIsActionLoading("checkout");
     setError(null);
     try {
       const origin = window.location.origin;
       const response = await createBackendCheckoutSession({
-        amountCents: 2500,
+        amountCents: Math.round(amountUsd * 100),
         successUrl: `${origin}/billing?checkout=success`,
         cancelUrl: `${origin}/billing?checkout=cancelled`,
       });
@@ -121,7 +139,6 @@ function Billing() {
       setError(
         caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not start checkout.",
       );
-    } finally {
       setIsActionLoading(null);
     }
   }
@@ -143,7 +160,6 @@ function Billing() {
           ? formatApiError(caught)
           : "Could not start subscription checkout.",
       );
-    } finally {
       setIsActionLoading(null);
     }
   }
@@ -160,7 +176,6 @@ function Billing() {
           ? formatApiError(caught)
           : "Could not open billing portal.",
       );
-    } finally {
       setIsActionLoading(null);
     }
   }
@@ -169,7 +184,7 @@ function Billing() {
     <div>
       <PageHeader
         title="Billing"
-        description="Plans, trial credits, prepaid balance, Stripe sessions, and usage settlement."
+        description="Manage your subscription, top up credits, and review every transaction."
         actions={
           <div className="flex items-center gap-2">
             <button
@@ -177,16 +192,16 @@ function Billing() {
               disabled={isActionLoading !== null}
               className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <ExternalLink className="h-3.5 w-3.5" />
-              {isActionLoading === "portal" ? "Opening..." : "Billing portal"}
+              <Settings2 className="h-3.5 w-3.5" />
+              {isActionLoading === "portal" ? "Opening…" : "Manage in Stripe"}
             </button>
             <button
-              onClick={openCheckout}
+              onClick={() => setTopUpOpen(true)}
               disabled={isActionLoading !== null}
               className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <CreditCard className="h-3.5 w-3.5" />
-              {isActionLoading === "checkout" ? "Starting..." : "Add $25"}
+              <Plus className="h-3.5 w-3.5" />
+              Add credits
             </button>
           </div>
         }
@@ -225,133 +240,239 @@ function Billing() {
         />
       )}
 
+      {/* HERO — primary balance + plan summary */}
       {isLoading ? (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className="h-24 animate-pulse rounded-lg bg-muted" />
-          ))}
-        </div>
+        <div className="h-44 animate-pulse rounded-xl bg-muted" />
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-          <Stat
-            label="Plan"
-            value={planForSubscription?.name ?? "Free trial"}
-            hint={billingState?.subscription?.status ?? "Allowance first"}
+        <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+          <BalanceHero
+            balance={balance?.balance ?? 0}
+            allowance={activeAllowance?.remaining ?? 0}
+            currency={balance?.currency ?? "USD"}
+            mtdSpend={mtdSpend}
+            totalAvailable={totalAvailable}
+            onTopUp={() => setTopUpOpen(true)}
           />
-          <Stat
-            label="Allowance left"
-            value={formatUsd(activeAllowance?.remaining ?? 0)}
-            hint={
-              activeAllowance ? labelAllowanceSource(activeAllowance.source) : "No active allowance"
-            }
-          />
-          <Stat
-            label="Balance"
-            value={formatUsd(balance?.balance ?? 0)}
-            hint={balance?.currency ?? "USD"}
-          />
-          <Stat label="MTD spend" value={formatUsd(mtdSpend)} hint="From usage events" />
-          <Stat
-            label="Stripe"
-            value={stripeStatus?.mode ?? "Unknown"}
-            hint={stripeStatus && isStripeReady(stripeStatus) ? "Ready" : "Needs config"}
+          <PlanSummaryCard
+            plan={planForSubscription}
+            subscription={billingState?.subscription ?? null}
+            onManage={openPortal}
+            isLoading={isActionLoading === "portal"}
           />
         </div>
       )}
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_420px]">
+      <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_380px]">
         <div className="space-y-4">
-          <SubscriptionCard
-            billingState={billingState}
-            activePlan={planForSubscription}
-            onOpenPortal={openPortal}
-            isPortalLoading={isActionLoading === "portal"}
-          />
           <PlanGrid
             plans={billingState?.plans ?? []}
             currentPlanKey={billingState?.subscription?.planKey ?? "free"}
             isActionLoading={isActionLoading}
             onChoosePlan={startPlanCheckout}
           />
-          {transactions.length === 0 ? (
-            <EmptyState
-              icon={<Wallet className="h-5 w-5" />}
-              title="No billing transactions"
-              description="Top-ups, subscription checkouts, invoices, and Stripe webhook credits will appear here."
-            />
-          ) : (
-            <BillingTransactionsTable transactions={transactions} />
-          )}
+
+          <section className="rounded-xl border bg-surface shadow-sm">
+            <div className="flex items-center justify-between border-b px-5 py-3.5">
+              <div className="flex items-center gap-2">
+                <Receipt className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold">Transaction history</h2>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {transactions.length} {transactions.length === 1 ? "entry" : "entries"}
+              </span>
+            </div>
+            {transactions.length === 0 ? (
+              <div className="p-6">
+                <EmptyState
+                  icon={<Wallet className="h-5 w-5" />}
+                  title="No billing transactions"
+                  description="Top-ups, subscription checkouts, invoices, and Stripe webhook credits will appear here."
+                />
+              </div>
+            ) : (
+              <BillingTransactionsTable transactions={transactions} />
+            )}
+          </section>
         </div>
 
         <div className="space-y-4">
           <AllowanceCard grants={billingState?.allowanceGrants ?? []} />
-          <div className="rounded-lg border bg-surface p-4 shadow-sm">
-            <h2 className="text-sm font-semibold">Billing account</h2>
-            <div className="mt-4 space-y-4 text-sm">
-              <Detail
-                label="Stripe customer"
-                value={billingState?.billingAccount.providerCustomerId ?? "Unknown"}
-                mono
-              />
-              <Detail label="Balance ID" value={balance?.id ?? "Unknown"} mono />
-              <Detail label="Workspace" value={balance?.workspaceId ?? "Unknown"} mono />
-              <Detail label="Updated" value={balance?.updatedLabel ?? "Unknown"} />
-              <Detail label="Credits purchased" value={formatUsd(successfulCredits)} />
-            </div>
-          </div>
+          <AccountCard
+            balance={balance}
+            billingState={billingState}
+            successfulCredits={successfulCredits}
+            stripeStatus={stripeStatus}
+          />
         </div>
       </div>
+
+      <TopUpDialog
+        open={topUpOpen}
+        onOpenChange={setTopUpOpen}
+        onConfirm={(amount) => {
+          setTopUpOpen(false);
+          void openCheckout(amount);
+        }}
+        isLoading={isActionLoading === "checkout"}
+      />
     </div>
   );
 }
 
-function SubscriptionCard({
-  billingState,
-  activePlan,
-  onOpenPortal,
-  isPortalLoading,
+/* ---------- Hero ---------- */
+
+function BalanceHero({
+  balance,
+  allowance,
+  currency,
+  mtdSpend,
+  totalAvailable,
+  onTopUp,
 }: {
-  billingState: BillingSubscriptionStateView | null;
-  activePlan: BillingPlanView | null;
-  onOpenPortal: () => void;
-  isPortalLoading: boolean;
+  balance: number;
+  allowance: number;
+  currency: string;
+  mtdSpend: number;
+  totalAvailable: number;
+  onTopUp: () => void;
 }) {
-  const subscription = billingState?.subscription ?? null;
   return (
-    <section className="rounded-lg border bg-surface p-4 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-success" />
-            <h2 className="text-sm font-semibold">Subscription status</h2>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Stripe is the billing source of truth. AgentLine keeps usage evidence and allowance
-            settlement.
-          </p>
+    <section className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-foreground to-foreground/85 p-6 text-background shadow-sm">
+      <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-background/5 blur-3xl" />
+      <div className="relative">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-background/60">
+          <Wallet className="h-3.5 w-3.5" />
+          Available balance
         </div>
-        <button
-          onClick={onOpenPortal}
-          disabled={isPortalLoading}
-          className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          {isPortalLoading ? "Opening..." : "Manage in Stripe"}
-        </button>
-      </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-4">
-        <MiniMetric label="Current plan" value={activePlan?.name ?? "Free trial"} />
-        <MiniMetric label="Status" value={subscription?.status ?? "trial allowance"} />
-        <MiniMetric
-          label="Billing period"
-          value={subscription?.currentPeriodLabel ?? "Not subscribed"}
-        />
-        <MiniMetric label="Trial ends" value={subscription?.trialEndsLabel ?? "Not active"} />
+        <div className="mt-2 flex items-end gap-3">
+          <div className="text-4xl font-semibold tracking-tight tabular-nums">
+            {formatUsd(totalAvailable)}
+          </div>
+          <div className="pb-1 text-xs text-background/60">{currency}</div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-3 gap-4 text-sm">
+          <HeroStat label="Prepaid" value={formatUsd(balance)} icon={<CreditCard className="h-3.5 w-3.5" />} />
+          <HeroStat label="Allowance" value={formatUsd(allowance)} icon={<Sparkles className="h-3.5 w-3.5" />} />
+          <HeroStat label="MTD spend" value={formatUsd(mtdSpend)} icon={<TrendingUp className="h-3.5 w-3.5" />} />
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <button
+            onClick={onTopUp}
+            className="inline-flex items-center gap-1.5 rounded-md bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-background/90"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add credits
+          </button>
+          <span className="text-[11px] text-background/55">
+            Powered by Stripe • Instant credit
+          </span>
+        </div>
       </div>
     </section>
   );
 }
+
+function HeroStat({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+  return (
+    <div className="rounded-lg bg-background/10 px-3 py-2.5 backdrop-blur">
+      <div className="flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-wide text-background/65">
+        {icon}
+        {label}
+      </div>
+      <div className="mt-1 text-base font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+/* ---------- Plan summary ---------- */
+
+function PlanSummaryCard({
+  plan,
+  subscription,
+  onManage,
+  isLoading,
+}: {
+  plan: BillingPlanView | null;
+  subscription: BillingSubscriptionStateView["subscription"];
+  onManage: () => void;
+  isLoading: boolean;
+}) {
+  const status = subscription?.status ?? "trial";
+  return (
+    <section className="rounded-xl border bg-surface p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-success" />
+          <h2 className="text-sm font-semibold">Current plan</h2>
+        </div>
+        <span
+          className={cn(
+            "inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wide",
+            status === "active"
+              ? "bg-success/10 text-success"
+              : status === "trialing"
+                ? "bg-info/10 text-info"
+                : "bg-muted text-muted-foreground",
+          )}
+        >
+          {status.replace(/_/g, " ")}
+        </span>
+      </div>
+
+      <div className="mt-4">
+        <div className="text-2xl font-semibold tracking-tight">
+          {plan?.name ?? "Free trial"}
+        </div>
+        {plan ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            {formatUsd(plan.includedUsage)} included usage / month, then metered.
+          </p>
+        ) : (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Allowance-first. Upgrade for monthly included usage.
+          </p>
+        )}
+      </div>
+
+      <dl className="mt-5 space-y-2.5 text-xs">
+        <Row label="Billing period" value={subscription?.currentPeriodLabel ?? "Not subscribed"} />
+        <Row label="Trial ends" value={subscription?.trialEndsLabel ?? "Not active"} />
+        <Row
+          label="Renewal"
+          value={
+            subscription?.cancelAtPeriodEnd
+              ? "Cancels at period end"
+              : subscription
+                ? "Auto-renews"
+                : "—"
+          }
+        />
+      </dl>
+
+      <button
+        onClick={onManage}
+        disabled={isLoading}
+        className="mt-5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-60"
+      >
+        <ExternalLink className="h-3.5 w-3.5" />
+        {isLoading ? "Opening…" : "Manage in Stripe portal"}
+      </button>
+    </section>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="truncate font-medium">{value}</dd>
+    </div>
+  );
+}
+
+/* ---------- Plan grid ---------- */
 
 function PlanGrid({
   plans,
@@ -364,44 +485,81 @@ function PlanGrid({
   isActionLoading: BillingAction | null;
   onChoosePlan: (planKey: Exclude<BillingPlanKey, "free">) => void;
 }) {
-  const paidPlans = plans.filter((plan) => plan.key !== "free");
+  const paidPlans = plans.filter((p) => p.key !== "free");
+  if (paidPlans.length === 0) return null;
+  // Mark middle plan as recommended
+  const recommendedKey = paidPlans[Math.floor(paidPlans.length / 2)]?.key;
+
   return (
-    <section className="rounded-lg border bg-surface p-4 shadow-sm">
+    <section className="rounded-xl border bg-surface p-5 shadow-sm">
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-info" />
-        <h2 className="text-sm font-semibold">Upgrade plan</h2>
+        <h2 className="text-sm font-semibold">Choose your plan</h2>
       </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        All plans include a 14-day free trial. Cancel anytime from the Stripe portal.
+      </p>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {paidPlans.map((plan) => {
           const isCurrent = currentPlanKey === plan.key;
           const isLoading = isActionLoading === `plan:${plan.key}`;
+          const isRecommended = plan.key === recommendedKey && !isCurrent;
           return (
-            <div key={plan.key} className="rounded-lg border p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="font-semibold">{plan.name}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {formatUsd(plan.includedUsage)} included usage, then usage is settled from
-                    Stripe metering or balance.
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-xl font-semibold">{formatUsd(plan.monthlyPrice)}</div>
-                  <div className="text-xs text-muted-foreground">per month</div>
-                </div>
+            <div
+              key={plan.key}
+              className={cn(
+                "relative rounded-lg border p-4 transition",
+                isCurrent
+                  ? "border-success/50 bg-success/[0.04]"
+                  : isRecommended
+                    ? "border-foreground/30 ring-1 ring-foreground/10"
+                    : "hover:border-foreground/30",
+              )}
+            >
+              {isRecommended && (
+                <span className="absolute -top-2 right-4 rounded-full bg-foreground px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background">
+                  Recommended
+                </span>
+              )}
+              {isCurrent && (
+                <span className="absolute -top-2 right-4 inline-flex items-center gap-1 rounded-full bg-success px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background">
+                  <Check className="h-3 w-3" /> Current
+                </span>
+              )}
+              <h3 className="text-base font-semibold">{plan.name}</h3>
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="text-2xl font-semibold tracking-tight tabular-nums">
+                  {formatUsd(plan.monthlyPrice)}
+                </span>
+                <span className="text-xs text-muted-foreground">/ month</span>
               </div>
+              <ul className="mt-4 space-y-1.5 text-xs text-muted-foreground">
+                <Feature>{formatUsd(plan.includedUsage)} included usage / month</Feature>
+                <Feature>Then metered via Stripe or balance</Feature>
+                <Feature>{plan.trialDays}-day free trial</Feature>
+              </ul>
               <button
-                onClick={() => onChoosePlan(plan.key)}
+                onClick={() => onChoosePlan(plan.key as Exclude<BillingPlanKey, "free">)}
                 disabled={isCurrent || !plan.stripePriceConfigured || isActionLoading !== null}
-                className="mt-4 w-full rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className={cn(
+                  "mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
+                  isCurrent
+                    ? "border border-success/40 bg-transparent text-success"
+                    : "bg-foreground text-background hover:opacity-90",
+                )}
               >
                 {isCurrent
                   ? "Current plan"
                   : !plan.stripePriceConfigured
                     ? "Price not configured"
                     : isLoading
-                      ? "Starting checkout..."
-                      : `Start ${plan.trialDays}-day trial`}
+                      ? "Starting checkout…"
+                      : (
+                        <>
+                          Start {plan.trialDays}-day trial
+                          <ArrowUpRight className="h-3.5 w-3.5" />
+                        </>
+                      )}
               </button>
             </div>
           );
@@ -411,123 +569,360 @@ function PlanGrid({
   );
 }
 
+function Feature({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-1.5">
+      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+      <span>{children}</span>
+    </li>
+  );
+}
+
+/* ---------- Allowance card ---------- */
+
 function AllowanceCard({ grants }: { grants: BillingAllowanceGrantView[] }) {
   return (
-    <section className="rounded-lg border bg-surface p-4 shadow-sm">
+    <section className="rounded-xl border bg-surface p-5 shadow-sm">
       <div className="flex items-center gap-2">
         <Gauge className="h-4 w-4 text-info" />
         <h2 className="text-sm font-semibold">Usage allowances</h2>
       </div>
       {grants.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">No trial or included usage grants yet.</p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          No trial or included usage grants yet.
+        </p>
       ) : (
         <div className="mt-4 space-y-3">
-          {grants.map((grant) => (
-            <div key={grant.id} className="rounded-lg border p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-medium">{labelAllowanceSource(grant.source)}</div>
-                  <div className="text-xs text-muted-foreground">{grant.periodLabel}</div>
+          {grants.map((grant) => {
+            const pct = Math.max(0, Math.min(100, grant.usagePercent));
+            const tone =
+              pct >= 90 ? "bg-destructive" : pct >= 70 ? "bg-warning" : "bg-foreground";
+            return (
+              <div key={grant.id} className="rounded-lg border p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium">
+                      {labelAllowanceSource(grant.source)}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">
+                      {grant.periodLabel}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold tabular-nums">
+                      {formatUsd(grant.remaining)}
+                    </div>
+                    <div className="text-[10.5px] uppercase tracking-wide text-muted-foreground">
+                      left
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right text-sm font-semibold">
-                  {formatUsd(grant.remaining)} left
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div className={cn("h-full transition-all", tone)} style={{ width: `${pct}%` }} />
+                </div>
+                <div className="mt-2 flex justify-between text-[11px] text-muted-foreground tabular-nums">
+                  <span>{formatUsd(grant.consumed)} used</span>
+                  <span>{formatUsd(grant.amount)} total</span>
                 </div>
               </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                <div className="h-full bg-foreground" style={{ width: `${grant.usagePercent}%` }} />
-              </div>
-              <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-                <span>{formatUsd(grant.consumed)} used</span>
-                <span>{formatUsd(grant.amount)} total</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>
   );
 }
 
-function BillingTransactionsTable({
-  transactions,
+/* ---------- Account card ---------- */
+
+function AccountCard({
+  balance,
+  billingState,
+  successfulCredits,
+  stripeStatus,
 }: {
-  transactions: BillingTransactionListItem[];
+  balance: BillingBalanceView | null;
+  billingState: BillingSubscriptionStateView | null;
+  successfulCredits: number;
+  stripeStatus: StripeStatusView | null;
 }) {
   return (
-    <div className="rounded-lg border bg-surface shadow-sm">
-      <div className="border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">Billing transactions</h2>
+    <section className="rounded-xl border bg-surface p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">Account details</h2>
+        {stripeStatus && (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
+              isStripeReady(stripeStatus)
+                ? "bg-success/10 text-success"
+                : "bg-warning/10 text-warning",
+            )}
+          >
+            <Zap className="h-3 w-3" />
+            {stripeStatus.mode}
+          </span>
+        )}
       </div>
-      <DataTable minWidth={960} className="rounded-none border-0 shadow-none">
-        <thead className="border-b bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground">
-          <tr>
-            <th className="w-[180px] px-4 py-3 text-left font-medium">Created</th>
-            <th className="px-4 py-3 text-left font-medium">Type</th>
-            <th className="w-[120px] px-4 py-3 text-left font-medium">Provider</th>
-            <th className="w-[120px] px-4 py-3 text-left font-medium">Status</th>
-            <th className="w-[120px] px-4 py-3 text-right font-medium">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {transactions.map((transaction) => (
-            <tr key={transaction.id} className="border-b last:border-b-0 hover:bg-muted/35">
-              <td className="px-4 py-3 text-muted-foreground">{transaction.createdLabel}</td>
-              <td className="px-4 py-3">
-                <div className="truncate font-medium">{transaction.type}</div>
-                <Mono className="text-[11px] text-muted-foreground">{transaction.id}</Mono>
-              </td>
-              <td className="px-4 py-3 capitalize text-muted-foreground">{transaction.provider}</td>
-              <td className="px-4 py-3 capitalize">{transaction.status}</td>
-              <td
-                className={`px-4 py-3 text-right tabular-nums font-medium ${transaction.amount >= 0 ? "text-emerald-600" : "text-destructive"}`}
-              >
-                {transaction.amount >= 0 ? "+" : "-"}
-                {formatUsd(Math.abs(transaction.amount))}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </DataTable>
-    </div>
-  );
-}
-
-function MiniMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border px-3 py-2.5">
-      <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 truncate text-sm font-semibold">{value}</div>
-    </div>
+      <dl className="mt-4 space-y-3.5 text-xs">
+        <Detail
+          label="Stripe customer"
+          value={billingState?.billingAccount.providerCustomerId ?? "—"}
+          mono
+        />
+        <Detail label="Balance ID" value={balance?.id ?? "—"} mono />
+        <Detail label="Workspace" value={balance?.workspaceId ?? "—"} mono />
+        <Detail label="Last updated" value={balance?.updatedLabel ?? "—"} />
+        <Detail label="Lifetime credits purchased" value={formatUsd(successfulCredits)} />
+      </dl>
+    </section>
   );
 }
 
 function Detail({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <dt className="text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
-      </div>
-      {mono ? (
-        <Mono className="mt-1 block break-all text-xs">{value}</Mono>
-      ) : (
-        <div className="mt-1 font-medium">{value}</div>
-      )}
+      </dt>
+      <dd className="mt-1">
+        {mono ? (
+          <Mono className="block break-all text-[11.5px]">{value}</Mono>
+        ) : (
+          <span className="text-sm font-medium">{value}</span>
+        )}
+      </dd>
     </div>
   );
 }
 
-function isStripeReady(status: StripeStatusView) {
+/* ---------- Top-up dialog ---------- */
+
+function TopUpDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  isLoading,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: (amount: number) => void;
+  isLoading: boolean;
+}) {
+  const [selected, setSelected] = useState<number>(25);
+  const [customValue, setCustomValue] = useState<string>("");
+  const customNum = Number(customValue);
+  const isCustomValid = customValue !== "" && Number.isFinite(customNum) && customNum >= 5 && customNum <= 5000;
+  const finalAmount = customValue ? (isCustomValid ? customNum : null) : selected;
+
   return (
-    status.secretKeyConfigured && status.secretKeyMatchesMode && status.webhookSecretConfigured
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Add credits
+          </DialogTitle>
+          <DialogDescription>
+            Top up your prepaid balance. Credits never expire and apply to all usage.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div>
+          <div className="text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">
+            Quick amounts
+          </div>
+          <div className="mt-2 grid grid-cols-5 gap-2">
+            {PRESET_AMOUNTS.map((amount) => {
+              const isActive = !customValue && selected === amount;
+              return (
+                <button
+                  key={amount}
+                  type="button"
+                  onClick={() => {
+                    setSelected(amount);
+                    setCustomValue("");
+                  }}
+                  className={cn(
+                    "rounded-lg border px-3 py-2.5 text-sm font-semibold tabular-nums transition",
+                    isActive
+                      ? "border-foreground bg-foreground text-background"
+                      : "hover:border-foreground/40 hover:bg-muted",
+                  )}
+                >
+                  ${amount}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4">
+            <label
+              htmlFor="custom-amount"
+              className="text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground"
+            >
+              Custom amount
+            </label>
+            <div className="mt-2 flex items-center gap-2 rounded-md border bg-background px-3 py-2 focus-within:ring-2 focus-within:ring-ring">
+              <span className="text-sm text-muted-foreground">$</span>
+              <input
+                id="custom-amount"
+                type="number"
+                min={5}
+                max={5000}
+                step={1}
+                value={customValue}
+                onChange={(e) => setCustomValue(e.target.value)}
+                placeholder="Enter amount (5 – 5000)"
+                className="flex-1 bg-transparent text-sm tabular-nums outline-none"
+              />
+              <span className="text-xs text-muted-foreground">USD</span>
+            </div>
+            {customValue && !isCustomValid && (
+              <p className="mt-1.5 text-xs text-destructive">
+                Enter an amount between $5 and $5000.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-5 rounded-lg bg-muted/50 px-4 py-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">You'll be charged</span>
+              <span className="text-lg font-semibold tabular-nums">
+                {finalAmount ? formatUsd(finalAmount) : "—"}
+              </span>
+            </div>
+            <div className="mt-1 text-[11px] text-muted-foreground">
+              Securely processed by Stripe. Credits appear instantly after payment.
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => finalAmount && onConfirm(finalAmount)}
+            disabled={!finalAmount || isLoading}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <CreditCard className="h-3.5 w-3.5" />
+            {isLoading ? "Starting…" : `Continue to checkout`}
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
+/* ---------- Transactions table ---------- */
+
+function BillingTransactionsTable({ transactions }: { transactions: BillingTransactionListItem[] }) {
+  const columns: Column<BillingTransactionListItem>[] = [
+    {
+      key: "createdAt",
+      label: "Date",
+      width: 170,
+      sortable: true,
+      sortAccessor: (t) => new Date(t.createdAt),
+      render: (t) => <span className="text-muted-foreground">{t.createdLabel}</span>,
+    },
+    {
+      key: "type",
+      label: "Type",
+      sortable: true,
+      sortAccessor: (t) => t.type,
+      render: (t) => (
+        <div className="min-w-0">
+          <div className="truncate font-medium">{prettifyType(t.type)}</div>
+          <Mono className="text-[11px] text-muted-foreground">{t.id}</Mono>
+        </div>
+      ),
+    },
+    {
+      key: "provider",
+      label: "Provider",
+      width: 110,
+      sortable: true,
+      render: (t) => <span className="capitalize text-muted-foreground">{t.provider}</span>,
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 120,
+      sortable: true,
+      render: (t) => <StatusPill status={t.status} />,
+    },
+    {
+      key: "amount",
+      label: "Amount",
+      width: 130,
+      align: "right",
+      sortable: true,
+      sortAccessor: (t) => t.amount,
+      render: (t) => (
+        <span
+          className={cn(
+            "tabular-nums font-semibold",
+            t.amount >= 0 ? "text-success" : "text-destructive",
+          )}
+        >
+          {t.amount >= 0 ? "+" : "−"}
+          {formatUsd(Math.abs(t.amount))}
+        </span>
+      ),
+    },
+  ];
+
+  return (
+    <DataTable<BillingTransactionListItem>
+      columns={columns}
+      data={transactions}
+      getRowKey={(t) => t.id}
+      stickyHeader
+      maxBodyHeight={520}
+      pageSize={25}
+      defaultSort={{ key: "createdAt", dir: "desc" }}
+      className="rounded-none border-0 shadow-none"
+    />
+  );
+}
+
+function StatusPill({ status }: { status: string }) {
+  const tone =
+    status === "succeeded" || status === "paid"
+      ? "bg-success/10 text-success"
+      : status === "pending" || status === "processing"
+        ? "bg-info/10 text-info"
+        : status === "failed" || status === "canceled"
+          ? "bg-destructive/10 text-destructive"
+          : "bg-muted text-muted-foreground";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wide",
+        tone,
+      )}
+    >
+      {status.replace(/_/g, " ")}
+    </span>
+  );
+}
+
+/* ---------- helpers ---------- */
+
+function isStripeReady(status: StripeStatusView) {
+  return status.secretKeyConfigured && status.secretKeyMatchesMode && status.webhookSecretConfigured;
+}
+
 function isGrantActive(grant: BillingAllowanceGrantView) {
-  if (!grant.expiresAt) {
-    return true;
-  }
+  if (!grant.expiresAt) return true;
   return new Date(grant.expiresAt).getTime() >= Date.now();
 }
 
@@ -539,6 +934,12 @@ function labelAllowanceSource(source: string) {
     manual_credit: "Manual credit",
   };
   return labels[source] ?? source;
+}
+
+function prettifyType(type: string) {
+  return type
+    .replace(/[._]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatUsd(value: number) {
