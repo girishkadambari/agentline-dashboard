@@ -6,6 +6,7 @@ import { DataTable } from "@/components/agentline/DataTable";
 import { Stat } from "@/components/agentline/Stat";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { Mono } from "@/components/agentline/Mono";
+import { Banner } from "@/components/agentline/Banner";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import {
   createBackendCheckoutSession,
@@ -139,7 +140,7 @@ function Billing() {
           variant="error"
           className="mb-3"
           message={error}
-          action={{ label: "Retry", onClick: () => void load() }}
+          action={{ label: "Retry", onClick: () => void loadData() }}
           onDismiss={() => setError(null)}
         />
       )}
