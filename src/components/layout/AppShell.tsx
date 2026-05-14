@@ -179,6 +179,7 @@ function WorkspaceSwitcher({
 
   return (
     <div ref={ref} className={cn("relative pb-3", collapsed ? "px-2" : "px-3")}>
+      <CollapsedTooltip enabled={collapsed} label={name} hint={`Workspace · ${env}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -205,6 +206,7 @@ function WorkspaceSwitcher({
           </>
         )}
       </button>
+      </CollapsedTooltip>
       {open && (
         <div className={cn(
           "absolute top-full z-50 mt-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg",
