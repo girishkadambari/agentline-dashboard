@@ -8,6 +8,7 @@ import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { CopyButton } from "@/components/agentline/CopyButton";
 import { PhoneInput } from "@/components/agentline/PhoneInput";
+import { Banner } from "@/components/agentline/Banner";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import {
