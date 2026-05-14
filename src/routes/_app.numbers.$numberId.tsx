@@ -6,6 +6,8 @@ import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { Stat } from "@/components/agentline/Stat";
 import { EmptyState } from "@/components/agentline/EmptyState";
+import { Banner } from "@/components/agentline/Banner";
+import { BackLink } from "@/components/agentline/BackLink";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import {
