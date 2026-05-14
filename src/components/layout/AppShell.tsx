@@ -417,10 +417,22 @@ function ProfileSection({
 export function AppShell() {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("agentline:sidebar:collapsed") === "1";
+  });
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try { window.localStorage.setItem("agentline:sidebar:collapsed", next ? "1" : "0"); } catch {}
+      return next;
+    });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -506,13 +518,20 @@ export function AppShell() {
   return (
     <div className="flex h-svh max-w-full overflow-hidden bg-background">
       <Toaster position="bottom-right" />
-      <aside className="hidden h-svh w-60 shrink-0 overflow-hidden bg-sidebar md:flex md:flex-col">
+      <aside
+        className={cn(
+          "relative hidden h-svh shrink-0 bg-sidebar transition-[width] duration-200 ease-out md:flex md:flex-col",
+          collapsed ? "w-14" : "w-60"
+        )}
+      >
         <SidebarContent
           pathname={pathname}
           user={user}
           workspaceError={workspaceError}
           onWorkspaceChanged={setUser}
           onSignOut={signOut}
+          collapsed={collapsed}
+          onToggleCollapse={toggleCollapsed}
         />
       </aside>
 
