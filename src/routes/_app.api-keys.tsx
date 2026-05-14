@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Mono } from "@/components/agentline/Mono";
 import { EmptyState } from "@/components/agentline/EmptyState";
 import { CopyButton } from "@/components/agentline/CopyButton";
+import { Banner } from "@/components/agentline/Banner";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import {
   createBackendApiKey,
@@ -131,7 +132,9 @@ function ApiKeys() {
         }
       />
 
-      {error && <div className="mb-3 whitespace-pre-line rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
+      {error && (
+        <Banner variant="error" className="mb-3" message={error} onDismiss={() => setError(null)} />
+      )}
 
       {createdKey && (
         <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
