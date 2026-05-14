@@ -240,6 +240,10 @@ function StartCallDrawer({
   const [to, setTo] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [touched, setTouched] = useState(false);
+
+  const phoneError = touched && !/^\+?[0-9\s\-()]{6,}$/.test(to.trim()) ? "Enter a valid phone number (E.164, e.g. +15551234567)." : null;
+  const agentError = touched && !agentId ? "Choose an agent." : null;
 
   useEffect(() => {
     if (open) {
@@ -250,12 +254,10 @@ function StartCallDrawer({
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setTouched(true);
     setError(null);
 
-    if (!agentId) {
-      setError("Choose an agent.");
-      return;
-    }
+    if (!agentId || phoneError) return;
 
     setIsSaving(true);
     try {
@@ -278,19 +280,23 @@ function StartCallDrawer({
           </SheetDescription>
         </SheetHeader>
         <form className="mt-6 space-y-4" onSubmit={submit}>
-          {error && <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
-          <label className="block text-sm font-medium">
-            Agent
-            <select value={agentId} onChange={(event) => setAgentId(event.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm">
+          {error && (
+            <Banner variant="error" message={error} onDismiss={() => setError(null)} />
+          )}
+          <label htmlFor="call-agent" className="block text-sm font-medium">
+            Agent <span aria-hidden="true" className="text-destructive">*</span>
+            <select id="call-agent" aria-required="true" aria-invalid={!!agentError} value={agentId} onChange={(event) => setAgentId(event.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm">
               <option value="">Choose agent</option>
               {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
             </select>
+            {agentError && <p className="type-caption-12-400 mt-1 text-destructive">{agentError}</p>}
           </label>
-          <label className="block text-sm font-medium">
-            Destination number
+          <label htmlFor="call-to" className="block text-sm font-medium">
+            Destination number <span aria-hidden="true" className="text-destructive">*</span>
             <div className="mt-1.5">
-              <PhoneInput value={to} onChange={setTo} placeholder="+19015550123" />
+              <PhoneInput id="call-to" value={to} onChange={setTo} placeholder="+19015550123" />
             </div>
+            {phoneError && <p className="type-caption-12-400 mt-1 text-destructive">{phoneError}</p>}
           </label>
           <SheetFooter>
             <button type="button" onClick={() => onOpenChange(false)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">Cancel</button>
