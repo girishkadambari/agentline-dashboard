@@ -176,7 +176,7 @@ function Inbox() {
           }
         />
       ) : (
-        <div className="grid h-[calc(100vh-220px)] grid-cols-1 overflow-hidden rounded-xl border border-border/80 bg-surface shadow-[0_1px_0_rgba(15,23,42,0.02)] md:grid-cols-[320px_1fr_320px]">
+        <div className="grid h-[calc(100svh-240px)] min-h-[520px] grid-cols-1 overflow-hidden rounded-xl border border-border/80 bg-surface shadow-[0_1px_0_rgba(15,23,42,0.02)] md:grid-cols-[320px_minmax(0,1fr)_320px] [&>*]:min-h-0 [&>*]:min-w-0 [&>*]:overflow-hidden">
           <ConversationList
             conversations={filteredConversations}
             totalCount={conversations.length}
