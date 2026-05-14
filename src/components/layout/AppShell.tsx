@@ -622,14 +622,6 @@ export function AppShell() {
           </button>
           <Logo />
         </header>
-        <div className="sticky top-0 z-20 hidden h-11 items-center gap-3 border-b bg-background/90 px-6 backdrop-blur md:flex md:px-10">
-          <Breadcrumbs />
-          <span className="ml-auto inline-flex items-center gap-1 rounded-md border bg-surface px-1.5 py-0.5 type-caption-12-400 text-muted-foreground">
-            <kbd className="font-mono">⌘</kbd>
-            <kbd className="font-mono">[</kbd>
-            <span className="ml-1">toggle sidebar</span>
-          </span>
-        </div>
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-7 md:px-10 md:py-9">
           <Outlet />
         </main>
