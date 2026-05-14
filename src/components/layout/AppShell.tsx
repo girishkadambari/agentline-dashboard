@@ -309,13 +309,13 @@ function ProfileSection({
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
-    <div ref={ref} className="relative border-t border-sidebar-border p-2">
+    <div ref={ref} className="relative border-t border-sidebar-border/80 p-2">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-sidebar-accent"
+        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-sidebar-accent/70"
       >
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-[11px] font-semibold text-sidebar-accent-foreground">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sidebar-accent to-sidebar-active text-[11px] font-semibold text-sidebar-accent-foreground ring-1 ring-inset ring-white/5">
           {initials}
         </div>
         <div className="min-w-0 flex-1">
@@ -485,7 +485,7 @@ export function AppShell() {
           </button>
           <Logo />
         </header>
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 md:px-8 md:py-8">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-7 md:px-10 md:py-9">
           <Outlet />
         </main>
       </div>
