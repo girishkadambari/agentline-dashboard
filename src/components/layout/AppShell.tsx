@@ -18,6 +18,34 @@ import { getCurrentWorkspace, type Workspace } from "@/lib/api/workspace";
 import { clearStoredApiKey, getStoredApiKey } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+function CollapsedTooltip({
+  label,
+  hint,
+  children,
+  enabled,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+  enabled?: boolean;
+}) {
+  if (!enabled) return <>{children}</>;
+  return (
+    <Tooltip delayDuration={80}>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent
+        side="right"
+        sideOffset={10}
+        className="border-sidebar-border bg-sidebar px-2.5 py-1.5 text-sidebar-accent-foreground shadow-lg"
+      >
+        <div className="text-[12px] font-medium leading-tight">{label}</div>
+        {hint && <div className="mt-0.5 text-[10.5px] text-sidebar-muted">{hint}</div>}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard };
 type NavGroup = { label: string; items: NavItem[] };
@@ -151,10 +179,10 @@ function WorkspaceSwitcher({
 
   return (
     <div ref={ref} className={cn("relative pb-3", collapsed ? "px-2" : "px-3")}>
+      <CollapsedTooltip enabled={collapsed} label={name} hint={`Workspace · ${env}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        title={collapsed ? `${name} · ${env}` : undefined}
         className={cn(
           "flex w-full items-center rounded-lg border border-sidebar-border/80 bg-sidebar-accent/30 text-left text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent",
           collapsed ? "justify-center p-1.5" : "gap-2 px-2 py-1.5"
@@ -178,6 +206,7 @@ function WorkspaceSwitcher({
           </>
         )}
       </button>
+      </CollapsedTooltip>
       {open && (
         <div className={cn(
           "absolute top-full z-50 mt-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg",
@@ -267,8 +296,10 @@ function SidebarContent({
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Expand" : "Collapse"}
             className={cn(
-              "hidden h-6 w-6 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:inline-flex",
-              collapsed && "absolute right-[-12px] top-5 z-10 border border-sidebar-border bg-sidebar shadow"
+              "hidden items-center justify-center rounded-full text-sidebar-foreground transition-all md:inline-flex",
+              collapsed
+                ? "absolute right-[-13px] top-7 z-30 h-6 w-6 border border-sidebar-border bg-[oklch(0.62_0.18_255)] text-white shadow-[0_4px_12px_-2px_rgba(0,0,0,0.35)] hover:bg-[oklch(0.68_0.18_255)] hover:scale-105"
+                : "h-6 w-6 bg-sidebar-accent/40 text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             )}
           >
             {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
@@ -290,11 +321,10 @@ function SidebarContent({
               const active = isItemActive(pathname, item.to);
               const Icon = item.icon;
               return (
+                <CollapsedTooltip key={item.to} enabled={collapsed} label={item.label} hint={group.label}>
                 <Link
-                  key={item.to}
                   to={item.to}
                   onClick={onNav}
-                  title={item.label}
                   className={cn(
                     "group relative flex items-center rounded-md text-[13px] font-medium transition-colors",
                     collapsed ? "justify-center p-2" : "gap-2.5 px-2.5 py-[7px]",
@@ -309,6 +339,7 @@ function SidebarContent({
                   <Icon className={cn("h-4 w-4 shrink-0", active ? "text-sidebar-active-foreground" : "text-sidebar-muted")} />
                   {!collapsed && <span className="truncate">{item.label}</span>}
                 </Link>
+                </CollapsedTooltip>
               );
             })}
           </div>
@@ -357,10 +388,10 @@ function ProfileSection({
 
   return (
     <div ref={ref} className={cn("relative border-t border-sidebar-border/80", collapsed ? "p-1.5" : "p-2")}>
+      <CollapsedTooltip enabled={collapsed} label={displayName} hint={email ?? subtitle}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        title={collapsed ? `${displayName}${email ? ` · ${email}` : ""}` : undefined}
         className={cn(
           "flex w-full items-center rounded-lg text-left transition-colors hover:bg-sidebar-accent/70",
           collapsed ? "justify-center p-1.5" : "gap-2.5 px-2 py-2"
@@ -382,6 +413,7 @@ function ProfileSection({
           </>
         )}
       </button>
+      </CollapsedTooltip>
       {open && (
         <div className={cn(
           "absolute bottom-full z-50 mb-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg",
@@ -516,6 +548,7 @@ export function AppShell() {
   }
 
   return (
+    <TooltipProvider delayDuration={80}>
     <div className="flex h-svh max-w-full overflow-hidden bg-background">
       <Toaster position="bottom-right" />
       <aside
@@ -567,5 +600,6 @@ export function AppShell() {
         </main>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
