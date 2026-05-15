@@ -3,6 +3,34 @@
 This ledger records frontend work as it is implemented. Update it after each
 meaningful slice so another engineer or AI agent can resume without guessing.
 
+## 2026-05-15 - Usage Trust And Evidence Pass
+
+Status: implemented
+
+Implemented:
+
+- Fixed SMS usage totals to match backend production channels:
+  - `sms.outbound`
+  - `sms.inbound`
+- Replaced the generic SMS channel filter with explicit inbound/outbound SMS
+  filters so the dashboard queries real backend data correctly.
+- Added settlement and evidence columns to usage events so customers can see
+  how each charge was detected and settled.
+- Expanded the usage API mapper to preserve backend pricing version,
+  calculation, evidence, settlement status, settlement mode, allowance grant,
+  and Stripe meter event fields.
+
+Verification:
+
+- `npm run build` passed.
+
+Next:
+
+- Replace Settings provider/control placeholder panels with live readiness,
+  cost controls, audit, retention, and recording consent data.
+- Add a proper usage event detail drawer after the UI polish pass so evidence
+  can be reviewed without widening the table further.
+
 ## 2026-05-15 - Billing Trust Fixes
 
 Status: implemented
