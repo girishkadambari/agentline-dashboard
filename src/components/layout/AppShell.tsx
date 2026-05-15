@@ -192,7 +192,7 @@ function WorkspaceSwitcher({
           collapsed ? "justify-center p-1.5" : "gap-2.5 px-2.5 py-2"
         )}
       >
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[oklch(0.72_0.18_255)] to-[oklch(0.55_0.18_265)] text-[12px] font-semibold text-white shadow-[0_2px_6px_-1px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.25)]">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[oklch(0.7_0.18_295)] to-[oklch(0.55_0.22_295)] text-[12px] font-semibold text-white shadow-[0_2px_6px_-1px_rgba(109,40,217,0.35),inset_0_1px_0_rgba(255,255,255,0.25)]">
           {initial}
         </div>
         {!collapsed && (
@@ -236,7 +236,7 @@ function WorkspaceSwitcher({
                     isSwitching && !isActive && "opacity-60"
                   )}
                 >
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-[oklch(0.72_0.18_255)] to-[oklch(0.55_0.18_265)] text-[10.5px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-[oklch(0.7_0.18_295)] to-[oklch(0.55_0.22_295)] text-[10.5px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
                     {workspace.name.charAt(0).toUpperCase()}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -310,8 +310,8 @@ function SidebarContent({
             className={cn(
               "hidden items-center justify-center rounded-full text-sidebar-foreground transition-all md:inline-flex",
               collapsed
-                ? "absolute right-[-13px] top-7 z-30 h-6 w-6 border border-sidebar-border bg-[oklch(0.62_0.18_255)] text-white shadow-[0_4px_12px_-2px_rgba(0,0,0,0.35)] hover:bg-[oklch(0.68_0.18_255)] hover:scale-105"
-                : "h-6 w-6 bg-sidebar-accent/40 text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                ? "absolute right-[-13px] top-7 z-30 h-6 w-6 border border-sidebar-border bg-primary text-white shadow-[0_4px_12px_-2px_rgba(109,40,217,0.3)] hover:bg-[var(--primary-hover)] hover:scale-105"
+                : "h-6 w-6 bg-sidebar-accent/60 text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             )}
           >
             {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
@@ -346,7 +346,7 @@ function SidebarContent({
                   )}
                 >
                   {active && !collapsed && (
-                    <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-[oklch(0.7_0.18_255)]" />
+                    <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-primary" />
                   )}
                   <Icon className={cn("h-4 w-4 shrink-0", active ? "text-sidebar-active-foreground" : "text-sidebar-muted")} />
                   {!collapsed && <span className="truncate">{item.label}</span>}

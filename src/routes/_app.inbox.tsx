@@ -274,11 +274,11 @@ function ConversationList({
                 onClick={() => onSelect(conversation.id)}
                 className={cn(
                   "relative flex w-full items-start gap-2.5 border-b border-border/60 px-3 py-3 text-left transition-colors",
-                  active ? "bg-accent/5" : "hover:bg-muted/40",
+                  active ? "bg-primary/5" : "hover:bg-muted/40",
                 )}
               >
                 {active && (
-                  <span className="absolute inset-y-2 left-0 w-[2px] rounded-r-full bg-accent" />
+                  <span className="absolute inset-y-2 left-0 w-[2px] rounded-r-full bg-primary" />
                 )}
                 <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-muted to-muted/60 text-[11px] font-semibold text-foreground/80 ring-1 ring-inset ring-border/70">
                   {initial}

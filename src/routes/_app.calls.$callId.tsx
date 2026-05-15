@@ -265,7 +265,7 @@ function CallDetail() {
                         className={cn(
                           "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ring-1 ring-inset",
                           isAgent
-                            ? "bg-accent/10 text-accent ring-accent/20"
+                            ? "bg-primary/10 text-primary ring-primary/20"
                             : "bg-muted text-foreground/70 ring-border/70",
                         )}
                         title={turn.speaker}
