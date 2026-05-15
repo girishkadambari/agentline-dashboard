@@ -274,7 +274,7 @@ function ConversationList({
                 onClick={() => onSelect(conversation.id)}
                 className={cn(
                   "relative flex w-full items-start gap-2.5 border-b border-border/60 px-3 py-3 text-left transition-colors",
-                  active ? "bg-accent/5" : "hover:bg-muted/40",
+                  active ? "bg-primary/5" : "hover:bg-muted/40",
                 )}
               >
                 {active && (

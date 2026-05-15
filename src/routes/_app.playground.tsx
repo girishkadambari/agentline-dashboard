@@ -581,7 +581,7 @@ function Playground() {
 
               {scenario.successHint && (
                 <div className="flex items-start gap-2 text-[11.5px] text-muted-foreground">
-                  <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+                  <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                   <span>{scenario.successHint}</span>
                 </div>
               )}
@@ -699,7 +699,7 @@ function Playground() {
             <ScrollArea className="flex-1">
               {filteredLog.length === 0 ? (
                 <div className="flex h-full min-h-[320px] flex-col items-center justify-center px-6 py-16 text-center">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent ring-1 ring-accent/20">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/20">
                     <FlaskConical className="h-5 w-5" />
                   </div>
                   <div className="text-sm font-semibold">No events yet</div>
@@ -758,7 +758,7 @@ function StatCard({
               "flex h-5 w-5 items-center justify-center rounded-md",
               tone === "warn"
                 ? "bg-warning/15 text-[oklch(0.45_0.14_75)]"
-                : "bg-accent/10 text-accent",
+                : "bg-primary/10 text-primary",
             )}
           >
             {icon}
