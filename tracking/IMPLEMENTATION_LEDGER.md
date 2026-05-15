@@ -984,23 +984,3 @@ Implemented:
 Verification:
 
 - `npm run build` passed with filesystem permission for Wrangler log output.
-
-## 2026-05-15 - Billing Checkout Pending State
-
-Status: implemented
-
-Implemented:
-
-- Billing transaction view models now preserve backend transaction metadata.
-- Billing page shows an explicit warning when a subscription Checkout Session is
-  pending and no local subscription exists yet.
-- The warning tells the operator to finish Stripe Checkout and verify
-  `/v1/billing/stripe/webhook` is receiving `checkout.session.completed`.
-- Added a refresh action so the UI can pick up backend Stripe reconciliation
-  after a missed webhook.
-
-Verification:
-
-- `npm run build` completed and generated client/server bundles. Wrangler still
-  emitted its sandbox log-file warning while attempting to write under
-  `~/Library/Preferences`, but the build command exited successfully.

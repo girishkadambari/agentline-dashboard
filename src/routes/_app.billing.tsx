@@ -3,13 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
   Check,
-  ChevronDown,
   CreditCard,
   ExternalLink,
   Gauge,
-  Landmark,
-  MessageSquare,
-  Phone,
   Plus,
   Receipt,
   Settings2,
@@ -17,6 +13,7 @@ import {
   Sparkles,
   TrendingUp,
   Wallet,
+  Zap,
 } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { DataTable, type Column } from "@/components/agentline/DataTable";
@@ -53,47 +50,12 @@ import { listBackendUsageEvents } from "@/lib/api/usage";
 
 export const Route = createFileRoute("/_app/billing")({
   component: Billing,
-  head: () => ({ meta: [{ title: "Billing - AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Billing — AgentLine" }] }),
 });
 
 type BillingAction = "checkout" | "portal" | `plan:${string}`;
 
 const PRESET_AMOUNTS = [10, 25, 50, 100, 250] as const;
-
-const USAGE_RATES = [
-  {
-    key: "number",
-    label: "Phone number",
-    price: "$1.00",
-    unit: "per provision/import event",
-    note: "Number rental and compliance costs will move to versioned rate cards.",
-    icon: Phone,
-  },
-  {
-    key: "sms-out",
-    label: "Outbound SMS",
-    price: "$0.01",
-    unit: "per message",
-    note: "Charged when a provider accepts the outbound message.",
-    icon: MessageSquare,
-  },
-  {
-    key: "sms-in",
-    label: "Inbound SMS",
-    price: "$0.01",
-    unit: "per message",
-    note: "Charged when AgentLine receives the provider webhook.",
-    icon: MessageSquare,
-  },
-  {
-    key: "voice",
-    label: "Voice",
-    price: "$0.03",
-    unit: "per started minute",
-    note: "Final duration is settled from provider status callbacks.",
-    icon: Gauge,
-  },
-] as const;
 
 function Billing() {
   const [balance, setBalance] = useState<BillingBalanceView | null>(null);
@@ -128,7 +90,7 @@ function Billing() {
       setBillingState(subRes.data);
       setTransactions(txRes.data);
       setStripeStatus(stripeRes.data);
-      setMtdSpend(usageRes.data.reduce((sum, event) => sum + event.totalCost, 0));
+      setMtdSpend(usageRes.data.reduce((sum, e) => sum + e.totalCost, 0));
     } catch (caught) {
       setError(
         caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load billing.",
@@ -142,34 +104,25 @@ function Billing() {
     void loadData();
   }, []);
 
+  const successfulCredits = useMemo(
+    () =>
+      transactions
+        .filter((t) => t.amountCents > 0 && t.status === "succeeded")
+        .reduce((sum, t) => sum + t.amount, 0),
+    [transactions],
+  );
   const activeAllowance = useMemo(
     () =>
-      billingState?.allowanceGrants.find((grant) => grant.remainingCents > 0 && isGrantActive(grant)) ??
-      null,
+      billingState?.allowanceGrants.find((g) => g.remainingCents > 0 && isGrantActive(g)) ?? null,
     [billingState],
   );
   const planForSubscription = useMemo(
     () =>
-      billingState?.plans.find((plan) => plan.key === billingState.subscription?.planKey) ?? null,
+      billingState?.plans.find((p) => p.key === billingState.subscription?.planKey) ?? null,
     [billingState],
   );
-  const pendingSubscriptionCheckout = useMemo(
-    () =>
-      transactions.find(
-        (transaction) =>
-          transaction.type === "subscription_checkout_session.created" &&
-          transaction.status === "pending",
-      ) ?? null,
-    [transactions],
-  );
-  const customerTransactions = useMemo(
-    () => transactions.filter(isCustomerVisibleTransaction),
-    [transactions],
-  );
-  const recentTransactions = customerTransactions.slice(0, 8);
-  const allowanceRemaining = activeAllowance?.remaining ?? 0;
-  const prepaidBalance = balance?.balance ?? 0;
-  const totalAvailable = prepaidBalance + allowanceRemaining;
+
+  const totalAvailable = (balance?.balance ?? 0) + (activeAllowance?.remaining ?? 0);
 
   async function openCheckout(amountUsd: number) {
     setIsActionLoading("checkout");
@@ -231,7 +184,7 @@ function Billing() {
     <div>
       <PageHeader
         title="Billing"
-        description="Track plan, credits, and usage costs for your AI phone agents."
+        description="Manage your subscription, top up credits, and review every transaction."
         actions={
           <div className="flex items-center gap-2">
             <button
@@ -240,7 +193,7 @@ function Billing() {
               className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Settings2 className="h-3.5 w-3.5" />
-              {isActionLoading === "portal" ? "Opening..." : "Manage in Stripe"}
+              {isActionLoading === "portal" ? "Opening…" : "Manage in Stripe"}
             </button>
             <button
               onClick={() => setTopUpOpen(true)}
@@ -259,15 +212,22 @@ function Billing() {
           variant="warning"
           className="mb-4"
           title={<>Stripe needs configuration</>}
-          message="Payments are not fully ready. Configure the Stripe key, webhook secret, and matching mode before real customers use billing."
+          message={
+            <>
+              Mode <strong>{stripeStatus.mode}</strong>. Secret key{" "}
+              {stripeStatus.secretKeyConfigured ? "configured" : "missing"}, mode match{" "}
+              {stripeStatus.secretKeyMatchesMode ? "ok" : "failed"}, webhook secret{" "}
+              {stripeStatus.webhookSecretConfigured ? "configured" : "missing"}.
+            </>
+          }
         />
       )}
       {stripeStatus?.usageMeterEventNameConfigured === false && (
         <Banner
           variant="info"
           className="mb-4"
-          title={<>Stripe usage meter is not connected</>}
-          message="Subscription overage usage is still tracked in AgentLine. Configure the Stripe meter event name before billing overages through Stripe."
+          title={<>Stripe meter not configured</>}
+          message="Subscribed overage usage will stay in AgentLine until STRIPE_USAGE_METER_EVENT_NAME is configured."
         />
       )}
       {error && (
@@ -279,31 +239,18 @@ function Billing() {
           onDismiss={() => setError(null)}
         />
       )}
-      {!billingState?.subscription && pendingSubscriptionCheckout && (
-        <Banner
-          variant="warning"
-          className="mb-4"
-          title={<>Subscription checkout is still pending</>}
-          message={
-            <>
-              Finish the Stripe Checkout page, then confirm <Mono>checkout.session.completed</Mono>{" "}
-              is reaching <Mono>/v1/billing/stripe/webhook</Mono>.
-            </>
-          }
-          action={{ label: "Refresh", onClick: () => void loadData() }}
-        />
-      )}
 
+      {/* HERO — primary balance + plan summary */}
       {isLoading ? (
         <div className="h-44 animate-pulse rounded-xl bg-muted" />
       ) : (
-        <div className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
-          <BillingOverviewCard
-            totalAvailable={totalAvailable}
-            prepaidBalance={prepaidBalance}
-            allowanceRemaining={allowanceRemaining}
-            mtdSpend={mtdSpend}
+        <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+          <BalanceHero
+            balance={balance?.balance ?? 0}
+            allowance={activeAllowance?.remaining ?? 0}
             currency={balance?.currency ?? "USD"}
+            mtdSpend={mtdSpend}
+            totalAvailable={totalAvailable}
             onTopUp={() => setTopUpOpen(true)}
           />
           <PlanSummaryCard
@@ -315,52 +262,45 @@ function Billing() {
         </div>
       )}
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_360px]">
+      <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_380px]">
         <div className="space-y-4">
-          <RateCard />
-
-          <section className="rounded-xl border bg-surface shadow-sm">
-            <div className="flex items-center justify-between border-b px-5 py-3.5">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Receipt className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-sm font-semibold">Recent billing activity</h2>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Payment, credit, and subscription events customers actually need to see.
-                </p>
-              </div>
-              <span className="text-xs text-muted-foreground">
-                {recentTransactions.length} shown
-              </span>
-            </div>
-            {customerTransactions.length === 0 ? (
-              <div className="p-6">
-                <EmptyState
-                  icon={<Wallet className="h-5 w-5" />}
-                  title="No billing activity"
-                  description="Credits, subscription changes, invoices, and payment failures will appear here."
-                />
-              </div>
-            ) : (
-              <BillingTransactionsTable transactions={customerTransactions} />
-            )}
-          </section>
-
           <PlanGrid
             plans={billingState?.plans ?? []}
             currentPlanKey={billingState?.subscription?.planKey ?? "free"}
             isActionLoading={isActionLoading}
             onChoosePlan={startPlanCheckout}
           />
+
+          <section className="rounded-xl border bg-surface shadow-sm">
+            <div className="flex items-center justify-between border-b px-5 py-3.5">
+              <div className="flex items-center gap-2">
+                <Receipt className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold">Transaction history</h2>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {transactions.length} {transactions.length === 1 ? "entry" : "entries"}
+              </span>
+            </div>
+            {transactions.length === 0 ? (
+              <div className="p-6">
+                <EmptyState
+                  icon={<Wallet className="h-5 w-5" />}
+                  title="No billing transactions"
+                  description="Top-ups, subscription checkouts, invoices, and Stripe webhook credits will appear here."
+                />
+              </div>
+            ) : (
+              <BillingTransactionsTable transactions={transactions} />
+            )}
+          </section>
         </div>
 
         <div className="space-y-4">
           <AllowanceCard grants={billingState?.allowanceGrants ?? []} />
-          <SettlementCard />
-          <DeveloperBillingDetails
+          <AccountCard
             balance={balance}
             billingState={billingState}
+            successfulCredits={successfulCredits}
             stripeStatus={stripeStatus}
           />
         </div>
@@ -379,77 +319,74 @@ function Billing() {
   );
 }
 
-function BillingOverviewCard({
-  totalAvailable,
-  prepaidBalance,
-  allowanceRemaining,
-  mtdSpend,
+/* ---------- Hero ---------- */
+
+function BalanceHero({
+  balance,
+  allowance,
   currency,
+  mtdSpend,
+  totalAvailable,
   onTopUp,
 }: {
-  totalAvailable: number;
-  prepaidBalance: number;
-  allowanceRemaining: number;
-  mtdSpend: number;
+  balance: number;
+  allowance: number;
   currency: string;
+  mtdSpend: number;
+  totalAvailable: number;
   onTopUp: () => void;
 }) {
   return (
-    <section className="rounded-xl border bg-surface p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-            <Wallet className="h-3.5 w-3.5" />
-            Available usage funds
-          </div>
-          <div className="mt-2 flex items-end gap-3">
-            <div className="text-4xl font-semibold tracking-tight tabular-nums">
-              {formatUsd(totalAvailable)}
-            </div>
-            <div className="pb-1 text-xs text-muted-foreground">{currency}</div>
-          </div>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            AgentLine spends allowance first, then prepaid credits. When Stripe metering is
-            enabled for a subscription, overages can be settled through Stripe invoices.
-          </p>
+    <section className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-foreground to-foreground/85 p-6 text-background shadow-sm">
+      <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-background/5 blur-3xl" />
+      <div className="relative">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-background/60">
+          <Wallet className="h-3.5 w-3.5" />
+          Available balance
         </div>
-        <button
-          onClick={onTopUp}
-          className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3.5 py-2 text-xs font-semibold text-background hover:opacity-90"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add credits
-        </button>
-      </div>
+        <div className="mt-2 flex items-end gap-3">
+          <div className="text-4xl font-semibold tracking-tight tabular-nums">
+            {formatUsd(totalAvailable)}
+          </div>
+          <div className="pb-1 text-xs text-background/60">{currency}</div>
+        </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        <MetricCard label="Prepaid credits" value={formatUsd(prepaidBalance)} icon={<CreditCard className="h-4 w-4" />} />
-        <MetricCard label="Included allowance left" value={formatUsd(allowanceRemaining)} icon={<Sparkles className="h-4 w-4" />} />
-        <MetricCard label="Used this month" value={formatUsd(mtdSpend)} icon={<TrendingUp className="h-4 w-4" />} />
+        <div className="mt-5 grid grid-cols-3 gap-4 text-sm">
+          <HeroStat label="Prepaid" value={formatUsd(balance)} icon={<CreditCard className="h-3.5 w-3.5" />} />
+          <HeroStat label="Allowance" value={formatUsd(allowance)} icon={<Sparkles className="h-3.5 w-3.5" />} />
+          <HeroStat label="MTD spend" value={formatUsd(mtdSpend)} icon={<TrendingUp className="h-3.5 w-3.5" />} />
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <button
+            onClick={onTopUp}
+            className="inline-flex items-center gap-1.5 rounded-md bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-background/90"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add credits
+          </button>
+          <span className="text-[11px] text-background/55">
+            Powered by Stripe • Instant credit
+          </span>
+        </div>
       </div>
     </section>
   );
 }
 
-function MetricCard({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-}) {
+function HeroStat({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
-    <div className="rounded-lg border bg-muted/20 px-4 py-3">
-      <div className="flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="rounded-lg bg-background/10 px-3 py-2.5 backdrop-blur">
+      <div className="flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-wide text-background/65">
         {icon}
         {label}
       </div>
-      <div className="mt-2 text-xl font-semibold tabular-nums">{value}</div>
+      <div className="mt-1 text-base font-semibold tabular-nums">{value}</div>
     </div>
   );
 }
+
+/* ---------- Plan summary ---------- */
 
 function PlanSummaryCard({
   plan,
@@ -470,16 +407,33 @@ function PlanSummaryCard({
           <ShieldCheck className="h-4 w-4 text-success" />
           <h2 className="text-sm font-semibold">Current plan</h2>
         </div>
-        <StatusPill status={status} />
+        <span
+          className={cn(
+            "inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wide",
+            status === "active"
+              ? "bg-success/10 text-success"
+              : status === "trialing"
+                ? "bg-info/10 text-info"
+                : "bg-muted text-muted-foreground",
+          )}
+        >
+          {status.replace(/_/g, " ")}
+        </span>
       </div>
 
       <div className="mt-4">
-        <div className="text-2xl font-semibold tracking-tight">{plan?.name ?? "Free trial"}</div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {plan
-            ? `${formatUsd(plan.includedUsage)} included usage each month, then metered.`
-            : "Trial allowance first. Upgrade when you need monthly included usage."}
-        </p>
+        <div className="text-2xl font-semibold tracking-tight">
+          {plan?.name ?? "Free trial"}
+        </div>
+        {plan ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            {formatUsd(plan.includedUsage)} included usage / month, then metered.
+          </p>
+        ) : (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Allowance-first. Upgrade for monthly included usage.
+          </p>
+        )}
       </div>
 
       <dl className="mt-5 space-y-2.5 text-xs">
@@ -492,7 +446,7 @@ function PlanSummaryCard({
               ? "Cancels at period end"
               : subscription
                 ? "Auto-renews"
-                : "Not active"
+                : "—"
           }
         />
       </dl>
@@ -503,7 +457,7 @@ function PlanSummaryCard({
         className="mt-5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-60"
       >
         <ExternalLink className="h-3.5 w-3.5" />
-        {isLoading ? "Opening..." : "Manage invoices and payment method"}
+        {isLoading ? "Opening…" : "Manage in Stripe portal"}
       </button>
     </section>
   );
@@ -518,44 +472,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function RateCard() {
-  return (
-    <section className="rounded-xl border bg-surface p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <Landmark className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold">Usage pricing</h2>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Transparent rates used by the current AgentLine usage ledger.
-          </p>
-        </div>
-        <span className="rounded-full bg-muted px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
-          Rate card v2026-05-14
-        </span>
-      </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {USAGE_RATES.map((rate) => {
-          const Icon = rate.icon;
-          return (
-            <div key={rate.key} className="rounded-lg border p-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Icon className="h-4 w-4 text-muted-foreground" />
-                {rate.label}
-              </div>
-              <div className="mt-3">
-                <span className="text-2xl font-semibold tabular-nums">{rate.price}</span>
-                <span className="ml-1 text-xs text-muted-foreground">{rate.unit}</span>
-              </div>
-              <p className="mt-2 text-[11.5px] leading-5 text-muted-foreground">{rate.note}</p>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
+/* ---------- Plan grid ---------- */
 
 function PlanGrid({
   plans,
@@ -568,19 +485,19 @@ function PlanGrid({
   isActionLoading: BillingAction | null;
   onChoosePlan: (planKey: Exclude<BillingPlanKey, "free">) => void;
 }) {
-  const paidPlans = plans.filter((plan) => plan.key !== "free");
+  const paidPlans = plans.filter((p) => p.key !== "free");
   if (paidPlans.length === 0) return null;
+  // Mark middle plan as recommended
   const recommendedKey = paidPlans[Math.floor(paidPlans.length / 2)]?.key;
 
   return (
     <section className="rounded-xl border bg-surface p-5 shadow-sm">
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-info" />
-        <h2 className="text-sm font-semibold">Plan options</h2>
+        <h2 className="text-sm font-semibold">Choose your plan</h2>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Plans include monthly usage allowance. Extra usage is settled from credits or Stripe
-        metering when enabled.
+        All plans include a 14-day free trial. Cancel anytime from the Stripe portal.
       </p>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {paidPlans.map((plan) => {
@@ -618,7 +535,7 @@ function PlanGrid({
               </div>
               <ul className="mt-4 space-y-1.5 text-xs text-muted-foreground">
                 <Feature>{formatUsd(plan.includedUsage)} included usage / month</Feature>
-                <Feature>Overage settled from Stripe or prepaid credits</Feature>
+                <Feature>Then metered via Stripe or balance</Feature>
                 <Feature>{plan.trialDays}-day free trial</Feature>
               </ul>
               <button
@@ -636,7 +553,7 @@ function PlanGrid({
                   : !plan.stripePriceConfigured
                     ? "Price not configured"
                     : isLoading
-                      ? "Starting checkout..."
+                      ? "Starting checkout…"
                       : (
                         <>
                           Start {plan.trialDays}-day trial
@@ -661,15 +578,19 @@ function Feature({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* ---------- Allowance card ---------- */
+
 function AllowanceCard({ grants }: { grants: BillingAllowanceGrantView[] }) {
   return (
     <section className="rounded-xl border bg-surface p-5 shadow-sm">
       <div className="flex items-center gap-2">
         <Gauge className="h-4 w-4 text-info" />
-        <h2 className="text-sm font-semibold">Allowance</h2>
+        <h2 className="text-sm font-semibold">Usage allowances</h2>
       </div>
       {grants.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">No trial or plan allowance yet.</p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          No trial or included usage grants yet.
+        </p>
       ) : (
         <div className="mt-4 space-y-3">
           {grants.map((grant) => {
@@ -680,7 +601,9 @@ function AllowanceCard({ grants }: { grants: BillingAllowanceGrantView[] }) {
               <div key={grant.id} className="rounded-lg border p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-sm font-medium">{labelAllowanceSource(grant.source)}</div>
+                    <div className="text-sm font-medium">
+                      {labelAllowanceSource(grant.source)}
+                    </div>
                     <div className="mt-0.5 text-[11px] text-muted-foreground">
                       {grant.periodLabel}
                     </div>
@@ -710,59 +633,49 @@ function AllowanceCard({ grants }: { grants: BillingAllowanceGrantView[] }) {
   );
 }
 
-function SettlementCard() {
-  return (
-    <section className="rounded-xl border bg-surface p-5 shadow-sm">
-      <h2 className="text-sm font-semibold">How charges settle</h2>
-      <ol className="mt-4 space-y-3 text-sm">
-        <SettlementStep index={1} title="Use allowance" text="Trial and monthly included usage are consumed first." />
-        <SettlementStep index={2} title="Report subscribed usage" text="When Stripe meters are enabled, overages can be sent to Stripe." />
-        <SettlementStep index={3} title="Use prepaid credits" text="Credits cover usage when there is no active allowance or meter path." />
-      </ol>
-    </section>
-  );
-}
+/* ---------- Account card ---------- */
 
-function SettlementStep({ index, title, text }: { index: number; title: string; text: string }) {
-  return (
-    <li className="flex gap-3">
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">
-        {index}
-      </span>
-      <span>
-        <span className="block font-medium">{title}</span>
-        <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{text}</span>
-      </span>
-    </li>
-  );
-}
-
-function DeveloperBillingDetails({
+function AccountCard({
   balance,
   billingState,
+  successfulCredits,
   stripeStatus,
 }: {
   balance: BillingBalanceView | null;
   billingState: BillingSubscriptionStateView | null;
+  successfulCredits: number;
   stripeStatus: StripeStatusView | null;
 }) {
   return (
-    <details className="group rounded-xl border bg-surface p-5 shadow-sm">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold">
-        Developer billing details
-        <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
-      </summary>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Support identifiers for debugging Stripe and workspace billing issues.
-      </p>
+    <section className="rounded-xl border bg-surface p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">Account details</h2>
+        {stripeStatus && (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
+              isStripeReady(stripeStatus)
+                ? "bg-success/10 text-success"
+                : "bg-warning/10 text-warning",
+            )}
+          >
+            <Zap className="h-3 w-3" />
+            {stripeStatus.mode}
+          </span>
+        )}
+      </div>
       <dl className="mt-4 space-y-3.5 text-xs">
-        <Detail label="Stripe mode" value={stripeStatus?.mode ?? "-"} />
-        <Detail label="Stripe customer" value={billingState?.billingAccount.providerCustomerId ?? "-"} mono />
-        <Detail label="Balance ID" value={balance?.id ?? "-"} mono />
-        <Detail label="Workspace" value={balance?.workspaceId ?? "-"} mono />
-        <Detail label="Last updated" value={balance?.updatedLabel ?? "-"} />
+        <Detail
+          label="Stripe customer"
+          value={billingState?.billingAccount.providerCustomerId ?? "—"}
+          mono
+        />
+        <Detail label="Balance ID" value={balance?.id ?? "—"} mono />
+        <Detail label="Workspace" value={balance?.workspaceId ?? "—"} mono />
+        <Detail label="Last updated" value={balance?.updatedLabel ?? "—"} />
+        <Detail label="Lifetime credits purchased" value={formatUsd(successfulCredits)} />
       </dl>
-    </details>
+    </section>
   );
 }
 
@@ -783,6 +696,8 @@ function Detail({ label, value, mono = false }: { label: string; value: string; 
   );
 }
 
+/* ---------- Top-up dialog ---------- */
+
 function TopUpDialog({
   open,
   onOpenChange,
@@ -797,8 +712,7 @@ function TopUpDialog({
   const [selected, setSelected] = useState<number>(25);
   const [customValue, setCustomValue] = useState<string>("");
   const customNum = Number(customValue);
-  const isCustomValid =
-    customValue !== "" && Number.isFinite(customNum) && customNum >= 5 && customNum <= 5000;
+  const isCustomValid = customValue !== "" && Number.isFinite(customNum) && customNum >= 5 && customNum <= 5000;
   const finalAmount = customValue ? (isCustomValid ? customNum : null) : selected;
 
   return (
@@ -810,7 +724,7 @@ function TopUpDialog({
             Add credits
           </DialogTitle>
           <DialogDescription>
-            Top up prepaid credits. Credits are applied after allowance and before blocked usage.
+            Top up your prepaid balance. Credits never expire and apply to all usage.
           </DialogDescription>
         </DialogHeader>
 
@@ -858,8 +772,8 @@ function TopUpDialog({
                 max={5000}
                 step={1}
                 value={customValue}
-                onChange={(event) => setCustomValue(event.target.value)}
-                placeholder="Enter amount (5 - 5000)"
+                onChange={(e) => setCustomValue(e.target.value)}
+                placeholder="Enter amount (5 – 5000)"
                 className="flex-1 bg-transparent text-sm tabular-nums outline-none"
               />
               <span className="text-xs text-muted-foreground">USD</span>
@@ -875,11 +789,11 @@ function TopUpDialog({
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">You'll be charged</span>
               <span className="text-lg font-semibold tabular-nums">
-                {finalAmount ? formatUsd(finalAmount) : "-"}
+                {finalAmount ? formatUsd(finalAmount) : "—"}
               </span>
             </div>
             <div className="mt-1 text-[11px] text-muted-foreground">
-              Stripe processes the payment. AgentLine credits only after a verified webhook.
+              Securely processed by Stripe. Credits appear instantly after payment.
             </div>
           </div>
         </div>
@@ -899,13 +813,15 @@ function TopUpDialog({
             className="inline-flex items-center justify-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CreditCard className="h-3.5 w-3.5" />
-            {isLoading ? "Starting..." : "Continue to checkout"}
+            {isLoading ? "Starting…" : `Continue to checkout`}
           </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+/* ---------- Transactions table ---------- */
 
 function BillingTransactionsTable({ transactions }: { transactions: BillingTransactionListItem[] }) {
   const columns: Column<BillingTransactionListItem>[] = [
@@ -914,31 +830,34 @@ function BillingTransactionsTable({ transactions }: { transactions: BillingTrans
       label: "Date",
       width: 170,
       sortable: true,
-      sortAccessor: (transaction) => new Date(transaction.createdAt),
-      render: (transaction) => (
-        <span className="text-muted-foreground">{transaction.createdLabel}</span>
-      ),
+      sortAccessor: (t) => new Date(t.createdAt),
+      render: (t) => <span className="text-muted-foreground">{t.createdLabel}</span>,
     },
     {
       key: "type",
-      label: "Activity",
+      label: "Type",
       sortable: true,
-      sortAccessor: (transaction) => customerTransactionLabel(transaction),
-      render: (transaction) => (
+      sortAccessor: (t) => t.type,
+      render: (t) => (
         <div className="min-w-0">
-          <div className="truncate font-medium">{customerTransactionLabel(transaction)}</div>
-          <div className="mt-0.5 text-[11px] text-muted-foreground">
-            {customerTransactionDescription(transaction)}
-          </div>
+          <div className="truncate font-medium">{prettifyType(t.type)}</div>
+          <Mono className="text-[11px] text-muted-foreground">{t.id}</Mono>
         </div>
       ),
+    },
+    {
+      key: "provider",
+      label: "Provider",
+      width: 110,
+      sortable: true,
+      render: (t) => <span className="capitalize text-muted-foreground">{t.provider}</span>,
     },
     {
       key: "status",
       label: "Status",
       width: 120,
       sortable: true,
-      render: (transaction) => <StatusPill status={transaction.status} />,
+      render: (t) => <StatusPill status={t.status} />,
     },
     {
       key: "amount",
@@ -946,16 +865,16 @@ function BillingTransactionsTable({ transactions }: { transactions: BillingTrans
       width: 130,
       align: "right",
       sortable: true,
-      sortAccessor: (transaction) => transaction.amount,
-      render: (transaction) => (
+      sortAccessor: (t) => t.amount,
+      render: (t) => (
         <span
           className={cn(
             "tabular-nums font-semibold",
-            transaction.amount >= 0 ? "text-success" : "text-destructive",
+            t.amount >= 0 ? "text-success" : "text-destructive",
           )}
         >
-          {transaction.amount >= 0 ? "+" : "-"}
-          {formatUsd(Math.abs(transaction.amount))}
+          {t.amount >= 0 ? "+" : "−"}
+          {formatUsd(Math.abs(t.amount))}
         </span>
       ),
     },
@@ -965,10 +884,10 @@ function BillingTransactionsTable({ transactions }: { transactions: BillingTrans
     <DataTable<BillingTransactionListItem>
       columns={columns}
       data={transactions}
-      getRowKey={(transaction) => transaction.id}
+      getRowKey={(t) => t.id}
       stickyHeader
       maxBodyHeight={520}
-      pageSize={10}
+      pageSize={25}
       defaultSort={{ key: "createdAt", dir: "desc" }}
       className="rounded-none border-0 shadow-none"
     />
@@ -977,11 +896,11 @@ function BillingTransactionsTable({ transactions }: { transactions: BillingTrans
 
 function StatusPill({ status }: { status: string }) {
   const tone =
-    status === "succeeded" || status === "paid" || status === "active"
+    status === "succeeded" || status === "paid"
       ? "bg-success/10 text-success"
-      : status === "pending" || status === "processing" || status === "trialing"
+      : status === "pending" || status === "processing"
         ? "bg-info/10 text-info"
-        : status === "failed" || status === "canceled" || status === "incomplete"
+        : status === "failed" || status === "canceled"
           ? "bg-destructive/10 text-destructive"
           : "bg-muted text-muted-foreground";
   return (
@@ -995,6 +914,8 @@ function StatusPill({ status }: { status: string }) {
     </span>
   );
 }
+
+/* ---------- helpers ---------- */
 
 function isStripeReady(status: StripeStatusView) {
   return status.secretKeyConfigured && status.secretKeyMatchesMode && status.webhookSecretConfigured;
@@ -1015,38 +936,10 @@ function labelAllowanceSource(source: string) {
   return labels[source] ?? source;
 }
 
-function isCustomerVisibleTransaction(transaction: BillingTransactionListItem) {
-  const succeededInternalStart =
-    transaction.status === "succeeded" &&
-    (transaction.type === "checkout_session.created" ||
-      transaction.type === "subscription_checkout_session.created");
-  return !succeededInternalStart;
-}
-
-function customerTransactionLabel(transaction: BillingTransactionListItem) {
-  const labels: Record<string, string> = {
-    "checkout_session.created": "Credit checkout started",
-    "checkout.session.completed": "Credits added",
-    "checkout.session.expired": "Checkout expired",
-    "subscription_checkout_session.created": "Plan checkout started",
-    "customer.subscription.created": "Subscription started",
-    "customer.subscription.updated": "Subscription updated",
-    "customer.subscription.deleted": "Subscription canceled",
-    "invoice.paid": "Invoice paid",
-    "invoice.payment_failed": "Payment failed",
-  };
-  return labels[transaction.type] ?? prettifyType(transaction.type);
-}
-
-function customerTransactionDescription(transaction: BillingTransactionListItem) {
-  if (transaction.type.includes("subscription")) return "Plan lifecycle managed by Stripe";
-  if (transaction.type.includes("invoice")) return "Recurring billing event";
-  if (transaction.type.includes("checkout")) return "Stripe Checkout event";
-  return "Billing ledger event";
-}
-
 function prettifyType(type: string) {
-  return type.replace(/[._]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  return type
+    .replace(/[._]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatUsd(value: number) {
