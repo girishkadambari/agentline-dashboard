@@ -3,6 +3,22 @@
 This ledger records frontend work as it is implemented. Update it after each
 meaningful slice so another engineer or AI agent can resume without guessing.
 
+## 2026-05-15 - Billing Trust Fixes
+
+Status: implemented
+
+Implemented:
+
+- Added customer-visible usage pricing for phone numbers, inbound SMS, outbound SMS, and voice.
+- Filtered succeeded checkout-start rows out of billing activity to avoid duplicate credit-looking rows.
+- Replaced raw billing transaction ids in the visible table with customer-friendly activity labels and descriptions.
+- Updated plan actions so existing subscribers see switch-plan language instead of another trial-start prompt.
+- Normalized renewal/trial labels so active or trialing subscriptions do not show confusing placeholder states.
+
+Verification:
+
+- npm run build passed. Wrangler still logs a sandbox permission warning while writing its local debug log, but the build exits successfully.
+
 ## 2026-05-07 - Frontend Tracking Started
 
 Status: in progress

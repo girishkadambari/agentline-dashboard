@@ -6,6 +6,9 @@ import {
   Check,
   CreditCard,
   ExternalLink,
+  Gauge,
+  MessageSquare,
+  Phone,
   Plus,
   Receipt,
   Sparkles,
@@ -51,6 +54,40 @@ export const Route = createFileRoute("/_app/billing")({
 
 type BillingAction = "checkout" | "portal" | `plan:${string}`;
 const PRESET_AMOUNTS = [10, 25, 50, 100, 250] as const;
+const USAGE_RATES = [
+  {
+    key: "number",
+    label: "Phone number",
+    price: "$1.00",
+    unit: "provision/import event",
+    note: "Current setup charge. Monthly rental controls come next.",
+    icon: Phone,
+  },
+  {
+    key: "sms-out",
+    label: "Outbound SMS",
+    price: "$0.01",
+    unit: "message",
+    note: "Charged when Twilio accepts the outbound message.",
+    icon: MessageSquare,
+  },
+  {
+    key: "sms-in",
+    label: "Inbound SMS",
+    price: "$0.01",
+    unit: "message",
+    note: "Charged when AgentLine receives the inbound webhook.",
+    icon: MessageSquare,
+  },
+  {
+    key: "voice",
+    label: "Voice",
+    price: "$0.03",
+    unit: "started minute",
+    note: "Final cost settles from provider call duration callbacks.",
+    icon: Gauge,
+  },
+] as const;
 
 function Billing() {
   const [balance, setBalance] = useState<BillingBalanceView | null>(null);
@@ -107,6 +144,10 @@ function Billing() {
   const planForSubscription = useMemo(
     () => billingState?.plans.find((p) => p.key === billingState.subscription?.planKey) ?? null,
     [billingState],
+  );
+  const customerTransactions = useMemo(
+    () => transactions.filter(isCustomerVisibleTransaction).slice(0, 8),
+    [transactions],
   );
 
   const totalAvailable = (balance?.balance ?? 0) + (activeAllowance?.remaining ?? 0);
@@ -235,6 +276,15 @@ function Billing() {
         />
       )}
 
+      {/* RATES */}
+      <div className="mt-8">
+        <SectionHeader
+          title="Usage pricing"
+          description="Current rates used to calculate phone, SMS, and voice usage."
+        />
+        <RateGrid />
+      </div>
+
       {/* PLANS */}
       <div className="mt-8">
         <SectionHeader
@@ -244,6 +294,7 @@ function Billing() {
         <PlanGrid
           plans={billingState?.plans ?? []}
           currentPlanKey={billingState?.subscription?.planKey ?? "free"}
+          hasSubscription={Boolean(billingState?.subscription)}
           isActionLoading={isActionLoading}
           onChoosePlan={startPlanCheckout}
         />
@@ -256,12 +307,12 @@ function Billing() {
           description="Top-ups, subscription charges, and credits applied to your workspace."
           right={
             <span className="text-xs text-muted-foreground">
-              {transactions.length} {transactions.length === 1 ? "entry" : "entries"}
+              {customerTransactions.length} shown
             </span>
           }
         />
         <div className="rounded-xl border bg-surface shadow-sm">
-          {transactions.length === 0 ? (
+          {customerTransactions.length === 0 ? (
             <div className="p-6">
               <EmptyState
                 icon={<Receipt className="h-5 w-5" />}
@@ -279,7 +330,7 @@ function Billing() {
               />
             </div>
           ) : (
-            <BillingTransactionsTable transactions={transactions} />
+            <BillingTransactionsTable transactions={customerTransactions} />
           )}
         </div>
       </div>
@@ -335,6 +386,31 @@ function SectionHeader({
         {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
       </div>
       {right}
+    </div>
+  );
+}
+
+/* ---------- Rates ---------- */
+
+function RateGrid() {
+  return (
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      {USAGE_RATES.map((rate) => {
+        const Icon = rate.icon;
+        return (
+          <div key={rate.key} className="rounded-xl border bg-surface p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Icon className="h-4 w-4 text-muted-foreground" />
+              {rate.label}
+            </div>
+            <div className="mt-3">
+              <span className="text-2xl font-semibold tabular-nums">{rate.price}</span>
+              <span className="ml-1 text-xs text-muted-foreground">/ {rate.unit}</span>
+            </div>
+            <p className="mt-2 text-[11.5px] leading-5 text-muted-foreground">{rate.note}</p>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -468,11 +544,11 @@ function SummaryHero({
             </div>
           )}
 
-          <div className="mt-auto pt-4 grid grid-cols-2 gap-3 text-[11px]">
-            <MetaRow label="Renews" value={subscription?.currentPeriodLabel ?? "—"} />
+          <div className="mt-auto grid grid-cols-2 gap-3 pt-4 text-[11px]">
+            <MetaRow label="Renews" value={renewalLabel(subscription)} />
             <MetaRow
               label={subscription?.cancelAtPeriodEnd ? "Cancels" : "Trial ends"}
-              value={subscription?.trialEndsLabel ?? "—"}
+              value={trialLabel(subscription)}
             />
           </div>
         </div>
@@ -509,11 +585,13 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 function PlanGrid({
   plans,
   currentPlanKey,
+  hasSubscription,
   isActionLoading,
   onChoosePlan,
 }: {
   plans: BillingPlanView[];
   currentPlanKey: string;
+  hasSubscription: boolean;
   isActionLoading: BillingAction | null;
   onChoosePlan: (planKey: Exclude<BillingPlanKey, "free">) => void;
 }) {
@@ -581,7 +659,12 @@ function PlanGrid({
               ) : !plan.stripePriceConfigured ? (
                 "Price not configured"
               ) : isLoading ? (
-                "Starting checkout…"
+                "Opening Stripe..."
+              ) : hasSubscription ? (
+                <>
+                  Switch to {plan.name}
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </>
               ) : (
                 <>
                   Start {plan.trialDays}-day trial
@@ -766,11 +849,13 @@ function BillingTransactionsTable({ transactions }: { transactions: BillingTrans
       key: "type",
       label: "Activity",
       sortable: true,
-      sortAccessor: (t) => t.type,
+      sortAccessor: (t) => customerTransactionLabel(t),
       render: (t) => (
         <div className="min-w-0">
-          <div className="truncate font-medium">{prettifyType(t.type)}</div>
-          <Mono className="text-[11px] text-muted-foreground">{t.id}</Mono>
+          <div className="truncate font-medium">{customerTransactionLabel(t)}</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
+            {customerTransactionDescription(t)}
+          </div>
         </div>
       ),
     },
@@ -863,6 +948,51 @@ function labelAllowanceSource(source: string) {
     manual_credit: "Manual credit",
   };
   return labels[source] ?? source;
+}
+
+function renewalLabel(subscription: BillingSubscriptionStateView["subscription"]) {
+  if (!subscription) return "Not subscribed";
+  if (subscription.cancelAtPeriodEnd) return "Cancels at period end";
+  if (subscription.currentPeriodLabel && subscription.currentPeriodLabel !== "Not started") {
+    return subscription.currentPeriodLabel;
+  }
+  if (subscription.status === "trialing") return "After trial";
+  if (subscription.status === "active") return "Auto-renews";
+  return "Not started";
+}
+
+function trialLabel(subscription: BillingSubscriptionStateView["subscription"]) {
+  return subscription?.trialEndsLabel ?? "Not active";
+}
+
+function isCustomerVisibleTransaction(transaction: BillingTransactionListItem) {
+  const succeededCheckoutStart =
+    transaction.status === "succeeded" &&
+    (transaction.type === "checkout_session.created" ||
+      transaction.type === "subscription_checkout_session.created");
+  return !succeededCheckoutStart;
+}
+
+function customerTransactionLabel(transaction: BillingTransactionListItem) {
+  const labels: Record<string, string> = {
+    "checkout_session.created": "Credit checkout started",
+    "checkout.session.completed": "Credits added",
+    "checkout.session.expired": "Checkout expired",
+    "subscription_checkout_session.created": "Plan checkout started",
+    "customer.subscription.created": "Subscription started",
+    "customer.subscription.updated": "Subscription updated",
+    "customer.subscription.deleted": "Subscription canceled",
+    "invoice.paid": "Invoice paid",
+    "invoice.payment_failed": "Payment failed",
+  };
+  return labels[transaction.type] ?? prettifyType(transaction.type);
+}
+
+function customerTransactionDescription(transaction: BillingTransactionListItem) {
+  if (transaction.type.includes("subscription")) return "Plan lifecycle managed by Stripe";
+  if (transaction.type.includes("invoice")) return "Recurring billing event";
+  if (transaction.type.includes("checkout")) return "Stripe Checkout event";
+  return "Billing ledger event";
 }
 
 function prettifyType(type: string) {

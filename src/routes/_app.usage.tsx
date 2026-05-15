@@ -84,7 +84,9 @@ function Usage() {
   const totalCost = events.reduce((sum, event) => sum + event.totalCost, 0);
   const totalQuantity = events.reduce((sum, event) => sum + event.quantity, 0);
   const voiceCost = events.filter((event) => event.channel === "voice").reduce((sum, event) => sum + event.totalCost, 0);
-  const smsCost = events.filter((event) => event.channel === "sms").reduce((sum, event) => sum + event.totalCost, 0);
+  const smsCost = events
+    .filter((event) => event.channel.startsWith("sms."))
+    .reduce((sum, event) => sum + event.totalCost, 0);
 
   return (
     <div className="min-w-0">
@@ -119,7 +121,8 @@ function Usage() {
         >
           <option value="">All channels</option>
           <option value="voice">Voice</option>
-          <option value="sms">SMS</option>
+          <option value="sms.outbound">Outbound SMS</option>
+          <option value="sms.inbound">Inbound SMS</option>
           <option value="number">Numbers</option>
         </select>
       </div>
@@ -409,7 +412,7 @@ function UsageEventsTable({
         </span>
       </div>
       <DataTable<UsageEventListItem>
-        minWidth={1000}
+        minWidth={1260}
         data={events}
         stickyHeader
         maxBodyHeight={560}
@@ -419,13 +422,29 @@ function UsageEventsTable({
           { key: "time", label: "Time", width: 160, sortable: true, sortAccessor: (e) => e.occurredLabel, render: (e) => <span className="text-muted-foreground">{e.occurredLabel}</span> },
           { key: "agent", label: "Agent", width: 180, sortable: true, sortAccessor: (e) => agentsById.get(e.agentId)?.name ?? e.agentId, render: (e) => <span className="block truncate font-medium">{agentsById.get(e.agentId)?.name ?? e.agentId}</span> },
           { key: "resource", label: "Resource", render: (e) => (<><span className="capitalize">{e.resourceType}</span><span className="text-muted-foreground"> · </span><Mono className="text-muted-foreground">{e.resourceId}</Mono></>) },
-          { key: "channel", label: "Channel", width: 110, sortable: true, sortAccessor: (e) => e.channel, cellClassName: "capitalize text-muted-foreground", render: (e) => e.channel },
+          { key: "channel", label: "Channel", width: 130, sortable: true, sortAccessor: (e) => e.channel, cellClassName: "text-muted-foreground", render: (e) => formatChannel(e.channel) },
           { key: "qty", label: "Qty", width: 80, align: "right", sortable: true, sortAccessor: (e) => e.quantity, cellClassName: "tabular-nums", render: (e) => e.quantity },
           { key: "unit", label: "Unit", width: 100, render: (e) => <span className="text-muted-foreground">{e.unit}</span> },
           { key: "unitCost", label: "Unit $", width: 110, align: "right", sortable: true, sortAccessor: (e) => e.unitCost, cellClassName: "tabular-nums", render: (e) => formatUsd(e.unitCost, 4) },
           { key: "totalCost", label: "Total $", width: 110, align: "right", sortable: true, sortAccessor: (e) => e.totalCost, cellClassName: "tabular-nums font-semibold text-foreground", render: (e) => formatUsd(e.totalCost, 4) },
+          { key: "settlement", label: "Settlement", width: 150, sortable: true, sortAccessor: (e) => e.settlementStatus, render: (e) => <span className="text-muted-foreground">{formatSettlement(e)}</span> },
+          { key: "evidence", label: "Evidence", width: 190, render: (e) => <UsageEvidence event={e} /> },
         ] satisfies Column<UsageEventListItem>[]}
       />
+    </div>
+  );
+}
+
+function UsageEvidence({ event }: { event: UsageEventListItem }) {
+  const source = typeof event.evidence.source === "string" ? event.evidence.source : event.channel;
+  const formula = typeof event.calculation.formula === "string" ? event.calculation.formula : null;
+
+  return (
+    <div className="min-w-0 text-[12px] leading-tight">
+      <div className="truncate text-foreground">{source}</div>
+      <div className="mt-0.5 truncate text-muted-foreground">
+        {formula ?? `pricing ${event.pricingVersion}`}
+      </div>
     </div>
   );
 }
@@ -461,4 +480,29 @@ function formatUsdCompact(value: number) {
   if (Math.abs(value) >= 1000) return `$${(value / 1000).toFixed(1)}k`;
   if (Math.abs(value) >= 10) return `$${value.toFixed(0)}`;
   return `$${value.toFixed(2)}`;
+}
+
+function formatChannel(channel: string) {
+  const labels: Record<string, string> = {
+    "sms.outbound": "Outbound SMS",
+    "sms.inbound": "Inbound SMS",
+    voice: "Voice",
+    number: "Number",
+  };
+
+  return labels[channel] ?? channel;
+}
+
+function formatSettlement(event: UsageEventListItem) {
+  const labels: Record<string, string> = {
+    allowance: "Allowance",
+    prepaid_balance: "Prepaid",
+    stripe_metered: "Stripe metered",
+    internal_debited: "Debited",
+    internal_adjusted: "Adjusted",
+    pending: "Pending",
+    voided: "Voided",
+  };
+
+  return labels[event.settlementMode] ?? labels[event.settlementStatus] ?? event.settlementStatus;
 }

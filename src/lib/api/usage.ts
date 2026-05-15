@@ -12,6 +12,13 @@ export interface BackendUsageEvent {
   unit: string;
   unitCost: string;
   totalCost: string;
+  pricingVersion?: string;
+  calculation?: Record<string, unknown>;
+  evidence?: Record<string, unknown>;
+  settlementStatus?: string;
+  settlementMode?: string;
+  allowanceGrantId?: string | null;
+  stripeMeterEventId?: string | null;
   occurredAt: string;
   createdAt: string;
 }
@@ -32,6 +39,13 @@ export interface UsageEventListItem {
   unit: string;
   unitCost: number;
   totalCost: number;
+  pricingVersion: string;
+  calculation: Record<string, unknown>;
+  evidence: Record<string, unknown>;
+  settlementStatus: string;
+  settlementMode: string;
+  allowanceGrantId: string | null;
+  stripeMeterEventId: string | null;
   occurredAt: string;
   occurredLabel: string;
 }
@@ -99,6 +113,13 @@ export function mapBackendUsageEvent(event: BackendUsageEvent): UsageEventListIt
     unit: event.unit,
     unitCost: asNumber(event.unitCost),
     totalCost: asNumber(event.totalCost),
+    pricingVersion: event.pricingVersion ?? "unknown",
+    calculation: event.calculation ?? {},
+    evidence: event.evidence ?? {},
+    settlementStatus: event.settlementStatus ?? "unknown",
+    settlementMode: event.settlementMode ?? "unknown",
+    allowanceGrantId: event.allowanceGrantId ?? null,
+    stripeMeterEventId: event.stripeMeterEventId ?? null,
     occurredAt: event.occurredAt,
     occurredLabel: formatDateTime(event.occurredAt),
   };
