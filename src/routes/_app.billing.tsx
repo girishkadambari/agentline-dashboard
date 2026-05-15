@@ -1,19 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ArrowRight,
   ArrowUpRight,
   Check,
   CreditCard,
   ExternalLink,
-  Gauge,
   Plus,
   Receipt,
-  Settings2,
-  ShieldCheck,
   Sparkles,
-  TrendingUp,
   Wallet,
-  Zap,
 } from "lucide-react";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { DataTable, type Column } from "@/components/agentline/DataTable";
@@ -54,7 +50,6 @@ export const Route = createFileRoute("/_app/billing")({
 });
 
 type BillingAction = "checkout" | "portal" | `plan:${string}`;
-
 const PRESET_AMOUNTS = [10, 25, 50, 100, 250] as const;
 
 function Billing() {
@@ -104,21 +99,13 @@ function Billing() {
     void loadData();
   }, []);
 
-  const successfulCredits = useMemo(
-    () =>
-      transactions
-        .filter((t) => t.amountCents > 0 && t.status === "succeeded")
-        .reduce((sum, t) => sum + t.amount, 0),
-    [transactions],
-  );
   const activeAllowance = useMemo(
     () =>
       billingState?.allowanceGrants.find((g) => g.remainingCents > 0 && isGrantActive(g)) ?? null,
     [billingState],
   );
   const planForSubscription = useMemo(
-    () =>
-      billingState?.plans.find((p) => p.key === billingState.subscription?.planKey) ?? null,
+    () => billingState?.plans.find((p) => p.key === billingState.subscription?.planKey) ?? null,
     [billingState],
   );
 
@@ -181,10 +168,10 @@ function Billing() {
   }
 
   return (
-    <div>
+    <div className="mx-auto max-w-6xl">
       <PageHeader
         title="Billing"
-        description="Manage your subscription, top up credits, and review every transaction."
+        description="Your plan, credits, and payments — all in one place."
         actions={
           <div className="flex items-center gap-2">
             <button
@@ -192,8 +179,8 @@ function Billing() {
               disabled={isActionLoading !== null}
               className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Settings2 className="h-3.5 w-3.5" />
-              {isActionLoading === "portal" ? "Opening…" : "Manage in Stripe"}
+              <ExternalLink className="h-3.5 w-3.5" />
+              {isActionLoading === "portal" ? "Opening…" : "Invoices & payment method"}
             </button>
             <button
               onClick={() => setTopUpOpen(true)}
@@ -222,14 +209,6 @@ function Billing() {
           }
         />
       )}
-      {stripeStatus?.usageMeterEventNameConfigured === false && (
-        <Banner
-          variant="info"
-          className="mb-4"
-          title={<>Stripe meter not configured</>}
-          message="Subscribed overage usage will stay in AgentLine until STRIPE_USAGE_METER_EVENT_NAME is configured."
-        />
-      )}
       {error && (
         <Banner
           variant="error"
@@ -240,71 +219,90 @@ function Billing() {
         />
       )}
 
-      {/* HERO — primary balance + plan summary */}
+      {/* HERO — combined balance + plan card */}
       {isLoading ? (
-        <div className="h-44 animate-pulse rounded-xl bg-muted" />
+        <div className="h-56 animate-pulse rounded-xl bg-muted" />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-          <BalanceHero
-            balance={balance?.balance ?? 0}
-            allowance={activeAllowance?.remaining ?? 0}
-            currency={balance?.currency ?? "USD"}
-            mtdSpend={mtdSpend}
-            totalAvailable={totalAvailable}
-            onTopUp={() => setTopUpOpen(true)}
-          />
-          <PlanSummaryCard
-            plan={planForSubscription}
-            subscription={billingState?.subscription ?? null}
-            onManage={openPortal}
-            isLoading={isActionLoading === "portal"}
-          />
-        </div>
+        <SummaryHero
+          totalAvailable={totalAvailable}
+          balance={balance?.balance ?? 0}
+          allowance={activeAllowance?.remaining ?? 0}
+          mtdSpend={mtdSpend}
+          plan={planForSubscription}
+          subscription={billingState?.subscription ?? null}
+          activeAllowance={activeAllowance}
+          onTopUp={() => setTopUpOpen(true)}
+        />
       )}
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_380px]">
-        <div className="space-y-4">
-          <PlanGrid
-            plans={billingState?.plans ?? []}
-            currentPlanKey={billingState?.subscription?.planKey ?? "free"}
-            isActionLoading={isActionLoading}
-            onChoosePlan={startPlanCheckout}
-          />
+      {/* PLANS */}
+      <div className="mt-8">
+        <SectionHeader
+          title="Plans"
+          description="Switch plans anytime. Changes prorate automatically through Stripe."
+        />
+        <PlanGrid
+          plans={billingState?.plans ?? []}
+          currentPlanKey={billingState?.subscription?.planKey ?? "free"}
+          isActionLoading={isActionLoading}
+          onChoosePlan={startPlanCheckout}
+        />
+      </div>
 
-          <section className="rounded-xl border bg-surface shadow-sm">
-            <div className="flex items-center justify-between border-b px-5 py-3.5">
-              <div className="flex items-center gap-2">
-                <Receipt className="h-4 w-4 text-muted-foreground" />
-                <h2 className="text-sm font-semibold">Transaction history</h2>
-              </div>
-              <span className="text-xs text-muted-foreground">
-                {transactions.length} {transactions.length === 1 ? "entry" : "entries"}
-              </span>
+      {/* ACTIVITY */}
+      <div className="mt-8">
+        <SectionHeader
+          title="Billing activity"
+          description="Top-ups, subscription charges, and credits applied to your workspace."
+          right={
+            <span className="text-xs text-muted-foreground">
+              {transactions.length} {transactions.length === 1 ? "entry" : "entries"}
+            </span>
+          }
+        />
+        <div className="rounded-xl border bg-surface shadow-sm">
+          {transactions.length === 0 ? (
+            <div className="p-6">
+              <EmptyState
+                icon={<Receipt className="h-5 w-5" />}
+                title="No billing activity yet"
+                description="Your top-ups, subscription charges, and credits will appear here."
+                action={
+                  <button
+                    onClick={() => setTopUpOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add your first credits
+                  </button>
+                }
+              />
             </div>
-            {transactions.length === 0 ? (
-              <div className="p-6">
-                <EmptyState
-                  icon={<Wallet className="h-5 w-5" />}
-                  title="No billing transactions"
-                  description="Top-ups, subscription checkouts, invoices, and Stripe webhook credits will appear here."
-                />
-              </div>
-            ) : (
-              <BillingTransactionsTable transactions={transactions} />
-            )}
-          </section>
-        </div>
-
-        <div className="space-y-4">
-          <AllowanceCard grants={billingState?.allowanceGrants ?? []} />
-          <AccountCard
-            balance={balance}
-            billingState={billingState}
-            successfulCredits={successfulCredits}
-            stripeStatus={stripeStatus}
-          />
+          ) : (
+            <BillingTransactionsTable transactions={transactions} />
+          )}
         </div>
       </div>
+
+      {/* DEVELOPER DETAILS — collapsible footer */}
+      {balance && (
+        <details className="group mt-8 rounded-xl border bg-surface px-5 py-3 shadow-sm">
+          <summary className="flex cursor-pointer items-center justify-between text-xs font-medium text-muted-foreground hover:text-foreground">
+            Developer details
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+          </summary>
+          <dl className="mt-4 grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
+            <Detail
+              label="Stripe customer"
+              value={billingState?.billingAccount.providerCustomerId ?? "—"}
+              mono
+            />
+            <Detail label="Balance ID" value={balance.id} mono />
+            <Detail label="Workspace" value={balance.workspaceId} mono />
+            <Detail label="Last updated" value={balance.updatedLabel} />
+          </dl>
+        </details>
+      )}
 
       <TopUpDialog
         open={topUpOpen}
@@ -319,155 +317,189 @@ function Billing() {
   );
 }
 
-/* ---------- Hero ---------- */
+/* ---------- Section header ---------- */
 
-function BalanceHero({
-  balance,
-  allowance,
-  currency,
-  mtdSpend,
-  totalAvailable,
-  onTopUp,
+function SectionHeader({
+  title,
+  description,
+  right,
 }: {
-  balance: number;
-  allowance: number;
-  currency: string;
-  mtdSpend: number;
-  totalAvailable: number;
-  onTopUp: () => void;
+  title: string;
+  description?: string;
+  right?: React.ReactNode;
 }) {
   return (
-    <section className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-foreground to-foreground/85 p-6 text-background shadow-sm">
-      <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-background/5 blur-3xl" />
-      <div className="relative">
-        <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-background/60">
-          <Wallet className="h-3.5 w-3.5" />
-          Available balance
-        </div>
-        <div className="mt-2 flex items-end gap-3">
-          <div className="text-4xl font-semibold tracking-tight tabular-nums">
-            {formatUsd(totalAvailable)}
-          </div>
-          <div className="pb-1 text-xs text-background/60">{currency}</div>
-        </div>
-
-        <div className="mt-5 grid grid-cols-3 gap-4 text-sm">
-          <HeroStat label="Prepaid" value={formatUsd(balance)} icon={<CreditCard className="h-3.5 w-3.5" />} />
-          <HeroStat label="Allowance" value={formatUsd(allowance)} icon={<Sparkles className="h-3.5 w-3.5" />} />
-          <HeroStat label="MTD spend" value={formatUsd(mtdSpend)} icon={<TrendingUp className="h-3.5 w-3.5" />} />
-        </div>
-
-        <div className="mt-6 flex flex-wrap items-center gap-2">
-          <button
-            onClick={onTopUp}
-            className="inline-flex items-center gap-1.5 rounded-md bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-background/90"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add credits
-          </button>
-          <span className="text-[11px] text-background/55">
-            Powered by Stripe • Instant credit
-          </span>
-        </div>
+    <div className="mb-3 flex items-end justify-between gap-3">
+      <div>
+        <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+        {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
       </div>
-    </section>
-  );
-}
-
-function HeroStat({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
-  return (
-    <div className="rounded-lg bg-background/10 px-3 py-2.5 backdrop-blur">
-      <div className="flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-wide text-background/65">
-        {icon}
-        {label}
-      </div>
-      <div className="mt-1 text-base font-semibold tabular-nums">{value}</div>
+      {right}
     </div>
   );
 }
 
-/* ---------- Plan summary ---------- */
+/* ---------- Hero: balance + plan combined ---------- */
 
-function PlanSummaryCard({
+function SummaryHero({
+  totalAvailable,
+  balance,
+  allowance,
+  mtdSpend,
   plan,
   subscription,
-  onManage,
-  isLoading,
+  activeAllowance,
+  onTopUp,
 }: {
+  totalAvailable: number;
+  balance: number;
+  allowance: number;
+  mtdSpend: number;
   plan: BillingPlanView | null;
   subscription: BillingSubscriptionStateView["subscription"];
-  onManage: () => void;
-  isLoading: boolean;
+  activeAllowance: BillingAllowanceGrantView | null;
+  onTopUp: () => void;
 }) {
   const status = subscription?.status ?? "trial";
+  const statusTone =
+    status === "active"
+      ? "bg-success/10 text-success"
+      : status === "trialing"
+        ? "bg-info/10 text-info"
+        : "bg-muted text-muted-foreground";
+
   return (
-    <section className="rounded-xl border bg-surface p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-success" />
-          <h2 className="text-sm font-semibold">Current plan</h2>
+    <section className="overflow-hidden rounded-xl border bg-surface shadow-sm">
+      <div className="grid gap-0 lg:grid-cols-[1.3fr_1fr]">
+        {/* LEFT — Balance */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-foreground to-foreground/85 p-6 text-background">
+          <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-background/5 blur-3xl" />
+          <div className="relative">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-background/60">
+              <Wallet className="h-3.5 w-3.5" />
+              Available to spend
+            </div>
+            <div className="mt-2 flex items-end gap-2">
+              <div className="text-[40px] font-semibold leading-none tracking-tight tabular-nums">
+                {formatUsd(totalAvailable)}
+              </div>
+              <div className="pb-1 text-xs text-background/60">USD</div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-3 gap-2.5 text-sm">
+              <HeroStat label="Prepaid" value={formatUsd(balance)} />
+              <HeroStat label="Allowance" value={formatUsd(allowance)} />
+              <HeroStat label="This month" value={formatUsd(mtdSpend)} hint="spent" />
+            </div>
+
+            <button
+              onClick={onTopUp}
+              className="mt-5 inline-flex items-center gap-1.5 rounded-md bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-background/90"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add credits
+            </button>
+          </div>
         </div>
-        <span
-          className={cn(
-            "inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wide",
-            status === "active"
-              ? "bg-success/10 text-success"
-              : status === "trialing"
-                ? "bg-info/10 text-info"
-                : "bg-muted text-muted-foreground",
+
+        {/* RIGHT — Plan */}
+        <div className="flex flex-col p-6">
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              Current plan
+            </div>
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wide",
+                statusTone,
+              )}
+            >
+              {status.replace(/_/g, " ")}
+            </span>
+          </div>
+
+          <div className="mt-2 flex items-baseline gap-2">
+            <div className="text-2xl font-semibold tracking-tight">
+              {plan?.name ?? "Free trial"}
+            </div>
+            {plan && plan.monthlyPrice > 0 && (
+              <div className="text-xs text-muted-foreground tabular-nums">
+                {formatUsd(plan.monthlyPrice)}/mo
+              </div>
+            )}
+          </div>
+          {plan ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {formatUsd(plan.includedUsage)} included usage each month, then metered.
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Allowance-first. Upgrade for monthly included usage.
+            </p>
           )}
-        >
-          {status.replace(/_/g, " ")}
-        </span>
-      </div>
 
-      <div className="mt-4">
-        <div className="text-2xl font-semibold tracking-tight">
-          {plan?.name ?? "Free trial"}
+          {/* Allowance progress (if active) */}
+          {activeAllowance && (
+            <div className="mt-4 rounded-lg border bg-muted/30 p-3">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-medium text-foreground">
+                  {labelAllowanceSource(activeAllowance.source)}
+                </span>
+                <span className="tabular-nums text-muted-foreground">
+                  {formatUsd(activeAllowance.remaining)} of {formatUsd(activeAllowance.amount)} left
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn(
+                    "h-full transition-all",
+                    activeAllowance.usagePercent >= 90
+                      ? "bg-destructive"
+                      : activeAllowance.usagePercent >= 70
+                        ? "bg-warning"
+                        : "bg-foreground",
+                  )}
+                  style={{ width: `${Math.max(2, activeAllowance.usagePercent)}%` }}
+                />
+              </div>
+              <div className="mt-1.5 text-[10.5px] text-muted-foreground">
+                {activeAllowance.periodLabel}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-auto pt-4 grid grid-cols-2 gap-3 text-[11px]">
+            <MetaRow label="Renews" value={subscription?.currentPeriodLabel ?? "—"} />
+            <MetaRow
+              label={subscription?.cancelAtPeriodEnd ? "Cancels" : "Trial ends"}
+              value={subscription?.trialEndsLabel ?? "—"}
+            />
+          </div>
         </div>
-        {plan ? (
-          <p className="mt-1 text-xs text-muted-foreground">
-            {formatUsd(plan.includedUsage)} included usage / month, then metered.
-          </p>
-        ) : (
-          <p className="mt-1 text-xs text-muted-foreground">
-            Allowance-first. Upgrade for monthly included usage.
-          </p>
-        )}
       </div>
-
-      <dl className="mt-5 space-y-2.5 text-xs">
-        <Row label="Billing period" value={subscription?.currentPeriodLabel ?? "Not subscribed"} />
-        <Row label="Trial ends" value={subscription?.trialEndsLabel ?? "Not active"} />
-        <Row
-          label="Renewal"
-          value={
-            subscription?.cancelAtPeriodEnd
-              ? "Cancels at period end"
-              : subscription
-                ? "Auto-renews"
-                : "—"
-          }
-        />
-      </dl>
-
-      <button
-        onClick={onManage}
-        disabled={isLoading}
-        className="mt-5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-60"
-      >
-        <ExternalLink className="h-3.5 w-3.5" />
-        {isLoading ? "Opening…" : "Manage in Stripe portal"}
-      </button>
     </section>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function HeroStat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="truncate font-medium">{value}</dd>
+    <div className="rounded-lg bg-background/10 px-3 py-2 backdrop-blur">
+      <div className="text-[10px] font-medium uppercase tracking-wide text-background/60">
+        {label}
+      </div>
+      <div className="mt-0.5 text-[15px] font-semibold tabular-nums">{value}</div>
+      {hint && <div className="text-[10px] text-background/55">{hint}</div>}
+    </div>
+  );
+}
+
+function MetaRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-0.5 truncate text-xs font-medium">{value}</div>
     </div>
   );
 }
@@ -487,85 +519,80 @@ function PlanGrid({
 }) {
   const paidPlans = plans.filter((p) => p.key !== "free");
   if (paidPlans.length === 0) return null;
-  // Mark middle plan as recommended
   const recommendedKey = paidPlans[Math.floor(paidPlans.length / 2)]?.key;
 
   return (
-    <section className="rounded-xl border bg-surface p-5 shadow-sm">
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-info" />
-        <h2 className="text-sm font-semibold">Choose your plan</h2>
-      </div>
-      <p className="mt-1 text-xs text-muted-foreground">
-        All plans include a 14-day free trial. Cancel anytime from the Stripe portal.
-      </p>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        {paidPlans.map((plan) => {
-          const isCurrent = currentPlanKey === plan.key;
-          const isLoading = isActionLoading === `plan:${plan.key}`;
-          const isRecommended = plan.key === recommendedKey && !isCurrent;
-          return (
-            <div
-              key={plan.key}
+    <div className="grid gap-3 md:grid-cols-2">
+      {paidPlans.map((plan) => {
+        const isCurrent = currentPlanKey === plan.key;
+        const isLoading = isActionLoading === `plan:${plan.key}`;
+        const isRecommended = plan.key === recommendedKey && !isCurrent;
+        return (
+          <div
+            key={plan.key}
+            className={cn(
+              "relative rounded-xl border bg-surface p-5 shadow-sm transition",
+              isCurrent
+                ? "border-success/50 bg-success/[0.03]"
+                : isRecommended
+                  ? "border-foreground/30 ring-1 ring-foreground/10"
+                  : "hover:border-foreground/30",
+            )}
+          >
+            {isRecommended && (
+              <span className="absolute -top-2 right-4 rounded-full bg-foreground px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background">
+                Recommended
+              </span>
+            )}
+            {isCurrent && (
+              <span className="absolute -top-2 right-4 inline-flex items-center gap-1 rounded-full bg-success px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background">
+                <Check className="h-3 w-3" /> Current
+              </span>
+            )}
+            <h3 className="text-base font-semibold">{plan.name}</h3>
+            <div className="mt-1.5 flex items-baseline gap-1">
+              <span className="text-3xl font-semibold tracking-tight tabular-nums">
+                {formatUsd(plan.monthlyPrice)}
+              </span>
+              <span className="text-xs text-muted-foreground">/ month</span>
+            </div>
+            <ul className="mt-4 space-y-2 text-xs text-muted-foreground">
+              <Feature>
+                <strong className="text-foreground tabular-nums">
+                  {formatUsd(plan.includedUsage)}
+                </strong>{" "}
+                included usage every month
+              </Feature>
+              <Feature>Overages metered through Stripe or balance</Feature>
+              <Feature>{plan.trialDays}-day free trial, no card surprises</Feature>
+            </ul>
+            <button
+              onClick={() => onChoosePlan(plan.key as Exclude<BillingPlanKey, "free">)}
+              disabled={isCurrent || !plan.stripePriceConfigured || isActionLoading !== null}
               className={cn(
-                "relative rounded-lg border p-4 transition",
+                "mt-5 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
                 isCurrent
-                  ? "border-success/50 bg-success/[0.04]"
-                  : isRecommended
-                    ? "border-foreground/30 ring-1 ring-foreground/10"
-                    : "hover:border-foreground/30",
+                  ? "border border-success/40 bg-transparent text-success"
+                  : "bg-foreground text-background hover:opacity-90",
               )}
             >
-              {isRecommended && (
-                <span className="absolute -top-2 right-4 rounded-full bg-foreground px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background">
-                  Recommended
-                </span>
+              {isCurrent ? (
+                "Current plan"
+              ) : !plan.stripePriceConfigured ? (
+                "Price not configured"
+              ) : isLoading ? (
+                "Starting checkout…"
+              ) : (
+                <>
+                  Start {plan.trialDays}-day trial
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </>
               )}
-              {isCurrent && (
-                <span className="absolute -top-2 right-4 inline-flex items-center gap-1 rounded-full bg-success px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background">
-                  <Check className="h-3 w-3" /> Current
-                </span>
-              )}
-              <h3 className="text-base font-semibold">{plan.name}</h3>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-2xl font-semibold tracking-tight tabular-nums">
-                  {formatUsd(plan.monthlyPrice)}
-                </span>
-                <span className="text-xs text-muted-foreground">/ month</span>
-              </div>
-              <ul className="mt-4 space-y-1.5 text-xs text-muted-foreground">
-                <Feature>{formatUsd(plan.includedUsage)} included usage / month</Feature>
-                <Feature>Then metered via Stripe or balance</Feature>
-                <Feature>{plan.trialDays}-day free trial</Feature>
-              </ul>
-              <button
-                onClick={() => onChoosePlan(plan.key as Exclude<BillingPlanKey, "free">)}
-                disabled={isCurrent || !plan.stripePriceConfigured || isActionLoading !== null}
-                className={cn(
-                  "mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
-                  isCurrent
-                    ? "border border-success/40 bg-transparent text-success"
-                    : "bg-foreground text-background hover:opacity-90",
-                )}
-              >
-                {isCurrent
-                  ? "Current plan"
-                  : !plan.stripePriceConfigured
-                    ? "Price not configured"
-                    : isLoading
-                      ? "Starting checkout…"
-                      : (
-                        <>
-                          Start {plan.trialDays}-day trial
-                          <ArrowUpRight className="h-3.5 w-3.5" />
-                        </>
-                      )}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </section>
+            </button>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -578,106 +605,7 @@ function Feature({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ---------- Allowance card ---------- */
-
-function AllowanceCard({ grants }: { grants: BillingAllowanceGrantView[] }) {
-  return (
-    <section className="rounded-xl border bg-surface p-5 shadow-sm">
-      <div className="flex items-center gap-2">
-        <Gauge className="h-4 w-4 text-info" />
-        <h2 className="text-sm font-semibold">Usage allowances</h2>
-      </div>
-      {grants.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">
-          No trial or included usage grants yet.
-        </p>
-      ) : (
-        <div className="mt-4 space-y-3">
-          {grants.map((grant) => {
-            const pct = Math.max(0, Math.min(100, grant.usagePercent));
-            const tone =
-              pct >= 90 ? "bg-destructive" : pct >= 70 ? "bg-warning" : "bg-foreground";
-            return (
-              <div key={grant.id} className="rounded-lg border p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium">
-                      {labelAllowanceSource(grant.source)}
-                    </div>
-                    <div className="mt-0.5 text-[11px] text-muted-foreground">
-                      {grant.periodLabel}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold tabular-nums">
-                      {formatUsd(grant.remaining)}
-                    </div>
-                    <div className="text-[10.5px] uppercase tracking-wide text-muted-foreground">
-                      left
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div className={cn("h-full transition-all", tone)} style={{ width: `${pct}%` }} />
-                </div>
-                <div className="mt-2 flex justify-between text-[11px] text-muted-foreground tabular-nums">
-                  <span>{formatUsd(grant.consumed)} used</span>
-                  <span>{formatUsd(grant.amount)} total</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
-}
-
-/* ---------- Account card ---------- */
-
-function AccountCard({
-  balance,
-  billingState,
-  successfulCredits,
-  stripeStatus,
-}: {
-  balance: BillingBalanceView | null;
-  billingState: BillingSubscriptionStateView | null;
-  successfulCredits: number;
-  stripeStatus: StripeStatusView | null;
-}) {
-  return (
-    <section className="rounded-xl border bg-surface p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Account details</h2>
-        {stripeStatus && (
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
-              isStripeReady(stripeStatus)
-                ? "bg-success/10 text-success"
-                : "bg-warning/10 text-warning",
-            )}
-          >
-            <Zap className="h-3 w-3" />
-            {stripeStatus.mode}
-          </span>
-        )}
-      </div>
-      <dl className="mt-4 space-y-3.5 text-xs">
-        <Detail
-          label="Stripe customer"
-          value={billingState?.billingAccount.providerCustomerId ?? "—"}
-          mono
-        />
-        <Detail label="Balance ID" value={balance?.id ?? "—"} mono />
-        <Detail label="Workspace" value={balance?.workspaceId ?? "—"} mono />
-        <Detail label="Last updated" value={balance?.updatedLabel ?? "—"} />
-        <Detail label="Lifetime credits purchased" value={formatUsd(successfulCredits)} />
-      </dl>
-    </section>
-  );
-}
+/* ---------- Detail (developer footer) ---------- */
 
 function Detail({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
@@ -712,7 +640,8 @@ function TopUpDialog({
   const [selected, setSelected] = useState<number>(25);
   const [customValue, setCustomValue] = useState<string>("");
   const customNum = Number(customValue);
-  const isCustomValid = customValue !== "" && Number.isFinite(customNum) && customNum >= 5 && customNum <= 5000;
+  const isCustomValid =
+    customValue !== "" && Number.isFinite(customNum) && customNum >= 5 && customNum <= 5000;
   const finalAmount = customValue ? (isCustomValid ? customNum : null) : selected;
 
   return (
@@ -720,7 +649,7 @@ function TopUpDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
+            <Sparkles className="h-4 w-4" />
             Add credits
           </DialogTitle>
           <DialogDescription>
@@ -835,7 +764,7 @@ function BillingTransactionsTable({ transactions }: { transactions: BillingTrans
     },
     {
       key: "type",
-      label: "Type",
+      label: "Activity",
       sortable: true,
       sortAccessor: (t) => t.type,
       render: (t) => (
@@ -889,7 +818,7 @@ function BillingTransactionsTable({ transactions }: { transactions: BillingTrans
       maxBodyHeight={520}
       pageSize={25}
       defaultSort={{ key: "createdAt", dir: "desc" }}
-      className="rounded-none border-0 shadow-none"
+      className="rounded-xl border-0 shadow-none"
     />
   );
 }
@@ -937,9 +866,7 @@ function labelAllowanceSource(source: string) {
 }
 
 function prettifyType(type: string) {
-  return type
-    .replace(/[._]/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return type.replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatUsd(value: number) {
