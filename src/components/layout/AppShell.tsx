@@ -5,7 +5,7 @@ import {
   CreditCard, KeyRound, FlaskConical, Settings, Activity,
   LogOut, Menu, X, Check, Circle, ChevronUp, ChevronDown, UserRound, ChevronLeft, ChevronRight,
 } from "lucide-react";
-import { Logo } from "@/components/agentline/Logo";
+import { Logo, LogoMark } from "@/components/agentline/Logo";
 import {
   getCurrentUser,
   logoutSession,
@@ -294,13 +294,7 @@ function SidebarContent({
         "flex items-center pb-3 pt-5",
         collapsed ? "justify-center px-2" : "justify-between px-4"
       )}>
-        {collapsed ? (
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-white/95 to-white/70 text-[13px] font-bold text-sidebar shadow-[0_1px_0_rgba(255,255,255,0.4)_inset]">
-            A
-          </div>
-        ) : (
-          <Logo />
-        )}
+        {collapsed ? <LogoMark size={28} /> : <Logo />}
         {onToggleCollapse && (
           <button
             type="button"
