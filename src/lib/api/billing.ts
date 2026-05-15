@@ -44,6 +44,7 @@ export interface BillingTransactionListItem {
   amount: number;
   currency: string;
   status: string;
+  metadata: unknown;
   createdAt: string;
   createdLabel: string;
 }
@@ -270,6 +271,7 @@ export function mapBackendBillingTransaction(
     amount: centsToUsd(transaction.amountCents) ?? 0,
     currency: transaction.currency,
     status: transaction.status,
+    metadata: transaction.metadata,
     createdAt: transaction.createdAt,
     createdLabel: formatDateTime(transaction.createdAt),
   };
