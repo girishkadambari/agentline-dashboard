@@ -31,6 +31,42 @@ Next:
 - Add a proper usage event detail drawer after the UI polish pass so evidence
   can be reviewed without widening the table further.
 
+## 2026-05-15 - Settings Readiness And Controls Pass
+
+Status: implemented
+
+Implemented:
+
+- Added a frontend client for `GET /workspaces/current/settings`.
+- Replaced placeholder Provider settings with live readiness from the backend:
+  - Twilio credentials
+  - Twilio callbacks
+  - Stripe billing
+  - Stripe metered usage
+  - Brevo email
+  - Google SSO
+- Replaced placeholder Controls with live permission and workspace operating
+  limit data:
+  - workspace management
+  - billing controls
+  - team invites
+  - API key management
+  - balance
+  - spend limit
+  - prepaid requirement
+  - active project
+
+Verification:
+
+- `npm run build` passed.
+
+Next:
+
+- Add audit log UI and replace `window.confirm` member removal with a proper
+  confirmation dialog.
+- Add editable spend limit and recording/data retention controls when backend
+  mutation endpoints are added.
+
 ## 2026-05-15 - Billing Trust Fixes
 
 Status: implemented
