@@ -310,8 +310,8 @@ function SidebarContent({
             className={cn(
               "hidden items-center justify-center rounded-full text-sidebar-foreground transition-all md:inline-flex",
               collapsed
-                ? "absolute right-[-13px] top-7 z-30 h-6 w-6 border border-sidebar-border bg-[oklch(0.62_0.18_255)] text-white shadow-[0_4px_12px_-2px_rgba(0,0,0,0.35)] hover:bg-[oklch(0.68_0.18_255)] hover:scale-105"
-                : "h-6 w-6 bg-sidebar-accent/40 text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                ? "absolute right-[-13px] top-7 z-30 h-6 w-6 border border-sidebar-border bg-primary text-white shadow-[0_4px_12px_-2px_rgba(109,40,217,0.3)] hover:bg-[var(--primary-hover)] hover:scale-105"
+                : "h-6 w-6 bg-sidebar-accent/60 text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             )}
           >
             {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
