@@ -835,7 +835,11 @@ function TopUpDialog({
 
 /* ---------- Transactions table ---------- */
 
-function BillingTransactionsTable({ transactions }: { transactions: BillingTransactionListItem[] }) {
+function BillingTransactionsTable({
+  transactions,
+}: {
+  transactions: BillingTransactionListItem[];
+}) {
   const columns: Column<BillingTransactionListItem>[] = [
     {
       key: "createdAt",
@@ -879,18 +883,20 @@ function BillingTransactionsTable({ transactions }: { transactions: BillingTrans
       width: 130,
       align: "right",
       sortable: true,
-      sortAccessor: (t) => t.amount,
-      render: (t) => (
-        <span
-          className={cn(
-            "tabular-nums font-semibold",
-            t.amount >= 0 ? "text-success" : "text-destructive",
-          )}
-        >
-          {t.amount >= 0 ? "+" : "−"}
-          {formatUsd(Math.abs(t.amount))}
-        </span>
-      ),
+      sortAccessor: (t) => customerTransactionAmount(t).value,
+      render: (t) => {
+        const amount = customerTransactionAmount(t);
+        return (
+          <span
+            className={cn(
+              "tabular-nums font-semibold",
+              amount.tone === "credit" ? "text-success" : "text-destructive",
+            )}
+          >
+            {amount.label}
+          </span>
+        );
+      },
     },
   ];
 
@@ -932,7 +938,9 @@ function StatusPill({ status }: { status: string }) {
 /* ---------- helpers ---------- */
 
 function isStripeReady(status: StripeStatusView) {
-  return status.secretKeyConfigured && status.secretKeyMatchesMode && status.webhookSecretConfigured;
+  return (
+    status.secretKeyConfigured && status.secretKeyMatchesMode && status.webhookSecretConfigured
+  );
 }
 
 function isGrantActive(grant: BillingAllowanceGrantView) {
@@ -984,15 +992,52 @@ function customerTransactionLabel(transaction: BillingTransactionListItem) {
     "customer.subscription.deleted": "Subscription canceled",
     "invoice.paid": "Invoice paid",
     "invoice.payment_failed": "Payment failed",
+    "usage.settlement_adjustment": "Voice usage adjusted",
   };
   return labels[transaction.type] ?? prettifyType(transaction.type);
 }
 
 function customerTransactionDescription(transaction: BillingTransactionListItem) {
+  if (transaction.type === "usage.settlement_adjustment") {
+    const metadata = transaction.metadata as Record<string, unknown> | null;
+    const resourceId = typeof metadata?.resourceId === "string" ? metadata.resourceId : "call";
+    if (transaction.amountCents < 0) {
+      return `Unused voice preauthorization returned for ${resourceId}`;
+    }
+    if (transaction.amountCents > 0) {
+      return `Final voice duration required an additional charge for ${resourceId}`;
+    }
+    return `Final voice duration matched the preauthorized charge for ${resourceId}`;
+  }
   if (transaction.type.includes("subscription")) return "Plan lifecycle managed by Stripe";
   if (transaction.type.includes("invoice")) return "Recurring billing event";
   if (transaction.type.includes("checkout")) return "Stripe Checkout event";
   return "Billing ledger event";
+}
+
+function customerTransactionAmount(transaction: BillingTransactionListItem) {
+  if (transaction.type === "usage.settlement_adjustment") {
+    if (transaction.amountCents < 0) {
+      return {
+        value: Math.abs(transaction.amount),
+        label: `+${formatUsd(Math.abs(transaction.amount))}`,
+        tone: "credit" as const,
+      };
+    }
+    if (transaction.amountCents > 0) {
+      return {
+        value: -transaction.amount,
+        label: `−${formatUsd(Math.abs(transaction.amount))}`,
+        tone: "debit" as const,
+      };
+    }
+  }
+
+  return {
+    value: transaction.amount,
+    label: `${transaction.amount >= 0 ? "+" : "−"}${formatUsd(Math.abs(transaction.amount))}`,
+    tone: transaction.amount >= 0 ? ("credit" as const) : ("debit" as const),
+  };
 }
 
 function prettifyType(type: string) {
