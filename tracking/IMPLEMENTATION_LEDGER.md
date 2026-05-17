@@ -3,6 +3,38 @@
 This ledger records frontend work as it is implemented. Update it after each
 meaningful slice so another engineer or AI agent can resume without guessing.
 
+## 2026-05-17 - Customer-Facing Settings And Health Polish
+
+Status: implemented
+
+Implemented:
+
+- Reframed Settings around AgentLine customer concepts instead of internal vendors:
+  - `Auth` is now `Sign-in`
+  - `Providers` is now `Channels`
+  - provider readiness cards are now capability readiness cards
+- Removed customer-visible Twilio, Stripe, Brevo, backend URL, and provider-mode language from Settings and Service Health.
+- Reworked Service Health into capability health:
+  - Dashboard
+  - Workspace access
+  - Agent API
+  - Phone numbers
+  - Messaging
+  - Voice calls
+  - Billing
+  - Customer webhooks
+- Kept all readiness data backed by the real backend settings endpoint; no mock data was introduced.
+- Cleaned Controls copy so spend limits, audit logs, recording consent, retention, and permissions read like customer trust controls.
+
+Verification:
+
+- `npm run build` passed.
+
+Next:
+
+- Add the customer-facing audit log viewer UI so the active audit coverage is visible without exposing API paths.
+- Split operator-facing diagnostics from customer settings if internal deployment readiness needs a private admin view later.
+
 ## 2026-05-15 - Usage Trust And Evidence Pass
 
 Status: implemented
@@ -1063,4 +1095,33 @@ Implemented:
 
 Verification:
 
+- `npm run build` passed with filesystem permission for Wrangler log output.
+
+## 2026-05-17 - Settings Provider And Control Readiness
+
+Status: implemented
+
+Implemented:
+
+- Replaced Settings Providers placeholder cards with real backend readiness
+  data from `GET /workspaces/current/settings`.
+- Providers now show actionable readiness for:
+  - Twilio credentials by mode
+  - Twilio callback URL coverage
+  - Stripe billing/webhook/usage-meter setup
+  - Brevo transactional email setup
+  - Google SSO setup
+- Replaced Settings Controls placeholder cards with real billing/workspace
+  control state.
+- Added editable workspace spend-limit control backed by
+  `PATCH /billing/controls`.
+- Controls now surface available balance, prepaid requirement, low-balance
+  state, billing permission, audit-log availability, and remaining compliance
+  blockers.
+- Added frontend workspace settings and billing-controls API client types.
+- No mock settings data was introduced.
+
+Verification:
+
+- `npx prettier --write src/routes/_app.settings.tsx src/lib/api/workspace.ts src/lib/api/billing.ts` passed.
 - `npm run build` passed with filesystem permission for Wrangler log output.

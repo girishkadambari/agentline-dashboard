@@ -157,6 +157,10 @@ export interface CreateSubscriptionCheckoutSessionInput {
   cancelUrl: string;
 }
 
+export interface UpdateBillingControlsInput {
+  spendLimitCents?: number | null;
+}
+
 export interface StripeSessionView {
   id: string;
   url: string;
@@ -350,4 +354,22 @@ export async function createBackendPortalSession(input: CreatePortalSessionInput
   });
 
   return response;
+}
+
+export async function updateBackendBillingControls(input: UpdateBillingControlsInput) {
+  return apiRequest<{
+    data: {
+      balance: BackendBillingBalance;
+      controls: {
+        prepaidRequired: boolean;
+        spendLimitCents: number | null;
+        balanceCents: number;
+        canSpend: boolean;
+        lowBalance: boolean;
+      };
+    };
+  }>("/billing/controls", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
 }

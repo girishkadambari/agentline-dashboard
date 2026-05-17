@@ -14,6 +14,62 @@ export interface WorkspaceResponse {
   data: Workspace;
 }
 
+export interface WorkspaceSettings {
+  workspace: Workspace;
+  currentUserRole: WorkspaceRole | null;
+  currentProjectId: string;
+  projects: Array<{
+    id: string;
+    name: string;
+    environment: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  counts: {
+    activeMembers: number;
+    pendingInvites: number;
+    agents: number;
+    activeNumbers: number;
+    activeWebhooks: number;
+  };
+  billing: {
+    currency: string;
+    balanceCents: number;
+    spendLimitCents: number | null;
+    prepaidRequired: boolean;
+    lowBalance: boolean;
+  };
+  providers: {
+    telecom: {
+      provider: string;
+      mode: string;
+      credentialsReady: boolean;
+      liveCredentialsReady: boolean;
+      testCredentialsReady: boolean;
+      callbackUrlsReady: boolean;
+    };
+    stripe: {
+      mode: string;
+      secretKeyConfigured: boolean;
+      webhookSecretConfigured: boolean;
+      usageMeterEventNameConfigured: boolean;
+    };
+    brevo: {
+      apiKeyConfigured: boolean;
+      fromEmailConfigured: boolean;
+    };
+    auth: {
+      googleConfigured: boolean;
+    };
+  };
+  controls: {
+    canManageWorkspace: boolean;
+    canManageBilling: boolean;
+    canInviteMembers: boolean;
+    canManageApiKeys: boolean;
+  };
+}
+
 export type WorkspaceRole = "owner" | "admin" | "developer" | "billing" | "viewer" | "member";
 export type WorkspaceMemberStatus = "active" | "suspended" | "removed";
 export type WorkspaceInviteStatus = "pending" | "accepted" | "revoked" | "expired";
@@ -52,6 +108,10 @@ export interface WorkspaceInvite {
 
 export function getCurrentWorkspace(authToken?: string) {
   return apiRequest<WorkspaceResponse>("/workspaces/current", { authToken });
+}
+
+export function getCurrentWorkspaceSettings() {
+  return apiRequest<{ data: WorkspaceSettings }>("/workspaces/current/settings");
 }
 
 export function updateCurrentWorkspace(input: Partial<Pick<Workspace, "name">>) {

@@ -1,5 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MailPlus, RefreshCw, Save, Trash2 } from "lucide-react";
+import {
+  Activity,
+  CreditCard,
+  KeyRound,
+  MailCheck,
+  MailPlus,
+  RefreshCw,
+  Save,
+  ShieldCheck,
+  Trash2,
+  type LucideIcon,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -12,9 +23,11 @@ import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Banner } from "@/components/agentline/Banner";
 import { getCurrentUser, type CurrentUser } from "@/lib/api/auth";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { updateBackendBillingControls } from "@/lib/api/billing";
 import {
   createWorkspaceInvite,
   getCurrentWorkspace,
+  getCurrentWorkspaceSettings,
   listWorkspaceInvites,
   listWorkspaceMembers,
   removeWorkspaceMember,
@@ -26,6 +39,7 @@ import {
   type WorkspaceInvite,
   type WorkspaceMember,
   type WorkspaceRole,
+  type WorkspaceSettings,
 } from "@/lib/api/workspace";
 import { cn } from "@/lib/utils";
 
@@ -34,12 +48,13 @@ export const Route = createFileRoute("/_app/settings")({
   head: () => ({ meta: [{ title: "Settings — AgentLine" }] }),
 });
 
-const tabs = ["Workspace", "Members", "Invites", "Auth", "Providers", "Controls"] as const;
+const tabs = ["Workspace", "Members", "Invites", "Sign-in", "Channels", "Controls"] as const;
 const roles: WorkspaceRole[] = ["owner", "admin", "developer", "billing", "viewer", "member"];
 
 function Settings() {
   const [tab, setTab] = useState<(typeof tabs)[number]>("Workspace");
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [invites, setInvites] = useState<WorkspaceInvite[]>([]);
@@ -56,7 +71,9 @@ function Settings() {
         listWorkspaceMembers(),
         listWorkspaceInvites(),
       ]);
+      const settingsResponse = await getCurrentWorkspaceSettings();
       setWorkspace(workspaceResponse.data);
+      setWorkspaceSettings(settingsResponse.data);
       setCurrentUser(userResponse.data);
       setMembers(memberResponse.data);
       setInvites(inviteResponse.data);
@@ -77,7 +94,7 @@ function Settings() {
     <div>
       <PageHeader
         title="Settings"
-        description="Workspace controls, team access, provider readiness, and product gaps."
+        description="Workspace identity, team access, phone channels, billing controls, and trust settings."
         actions={
           <button
             onClick={loadSettings}
@@ -120,30 +137,10 @@ function Settings() {
         {tab === "Invites" && (
           <InvitesPanel invites={invites} loading={loading} onChanged={loadSettings} />
         )}
-        {tab === "Auth" && (
-          <AuthPanel currentUser={currentUser} loading={loading} />
-        )}
-        {tab === "Providers" && (
-          <BackendGapPanel
-            title="Provider settings"
-            items={[
-              "Twilio runtime status endpoint",
-              "Provider credential validation endpoint",
-              "10DLC/compliance status fields",
-              "Provider failover preference",
-            ]}
-          />
-        )}
+        {tab === "Sign-in" && <AuthPanel currentUser={currentUser} loading={loading} />}
+        {tab === "Channels" && <ChannelsPanel settings={workspaceSettings} loading={loading} />}
         {tab === "Controls" && (
-          <BackendGapPanel
-            title="Usage and compliance controls"
-            items={[
-              "Editable spend limit endpoint",
-              "Recording consent controls",
-              "Audit log viewer",
-              "Data retention settings",
-            ]}
-          />
+          <ControlsPanel settings={workspaceSettings} loading={loading} onChanged={loadSettings} />
         )}
       </div>
     </div>
@@ -296,56 +293,56 @@ function MembersPanel({
         />
       ) : (
         <DataTable minWidth={820}>
-            <thead className="border-b bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">User</th>
-                <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 text-right font-medium">Actions</th>
+          <thead className="border-b bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3 font-medium">User</th>
+              <th className="px-4 py-3 font-medium">Role</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 text-right font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {activeMembers.map((member) => (
+              <tr key={member.id} className="border-b last:border-0 hover:bg-muted/20">
+                <td className="px-4 py-3">
+                  <div className="font-medium">{member.user.name ?? member.user.email}</div>
+                  <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{member.user.email}</span>
+                    <CopyButton value={member.user.email} label="Copy email" />
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <select
+                    value={member.role}
+                    onChange={(event) =>
+                      void changeRole(member, event.target.value as WorkspaceRole)
+                    }
+                    disabled={busyId === member.id}
+                    className="rounded-md border bg-surface px-2 py-1 text-xs"
+                  >
+                    {roles.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td className="px-4 py-3">
+                  <StatusBadge status={member.status} />
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <button
+                    onClick={() => void removeMember(member)}
+                    disabled={busyId === member.id || member.role === "owner"}
+                    className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/5 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Remove
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {activeMembers.map((member) => (
-                <tr key={member.id} className="border-b last:border-0 hover:bg-muted/20">
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{member.user.name ?? member.user.email}</div>
-                    <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{member.user.email}</span>
-                      <CopyButton value={member.user.email} label="Copy email" />
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <select
-                      value={member.role}
-                      onChange={(event) =>
-                        void changeRole(member, event.target.value as WorkspaceRole)
-                      }
-                      disabled={busyId === member.id}
-                      className="rounded-md border bg-surface px-2 py-1 text-xs"
-                    >
-                      {roles.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={member.status} />
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => void removeMember(member)}
-                      disabled={busyId === member.id || member.role === "owner"}
-                      className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/5 disabled:opacity-50"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Remove
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+            ))}
+          </tbody>
         </DataTable>
       )}
     </PanelShell>
@@ -473,55 +470,55 @@ function InvitesPanel({
           />
         ) : (
           <DataTable minWidth={920}>
-              <thead className="border-b bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Email</th>
-                  <th className="px-4 py-3 font-medium">Role</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Expires</th>
-                  <th className="px-4 py-3 text-right font-medium">Actions</th>
+            <thead className="border-b bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 font-medium">Email</th>
+                <th className="px-4 py-3 font-medium">Role</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Expires</th>
+                <th className="px-4 py-3 text-right font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invites.map((invite) => (
+                <tr key={invite.id} className="border-b last:border-0 hover:bg-muted/20">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{invite.email}</span>
+                      <CopyButton value={invite.email} label="Copy email" />
+                    </div>
+                    <div className="mt-1">
+                      <Mono>{invite.id}</Mono>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 capitalize">{invite.role}</td>
+                  <td className="px-4 py-3">
+                    <StatusBadge status={invite.status} />
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {formatDate(invite.expiresAt)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => void resend(invite)}
+                        disabled={busyId === invite.id || invite.status !== "pending"}
+                        className="rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted disabled:opacity-50"
+                      >
+                        Resend
+                      </button>
+                      <button
+                        onClick={() => void revoke(invite)}
+                        disabled={busyId === invite.id || invite.status !== "pending"}
+                        className="rounded-md border px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/5 disabled:opacity-50"
+                      >
+                        Revoke
+                      </button>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {invites.map((invite) => (
-                  <tr key={invite.id} className="border-b last:border-0 hover:bg-muted/20">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{invite.email}</span>
-                        <CopyButton value={invite.email} label="Copy email" />
-                      </div>
-                      <div className="mt-1">
-                        <Mono>{invite.id}</Mono>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 capitalize">{invite.role}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={invite.status} />
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {formatDate(invite.expiresAt)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => void resend(invite)}
-                          disabled={busyId === invite.id || invite.status !== "pending"}
-                          className="rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted disabled:opacity-50"
-                        >
-                          Resend
-                        </button>
-                        <button
-                          onClick={() => void revoke(invite)}
-                          disabled={busyId === invite.id || invite.status !== "pending"}
-                          className="rounded-md border px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/5 disabled:opacity-50"
-                        >
-                          Revoke
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+              ))}
+            </tbody>
           </DataTable>
         )}
       </div>
@@ -529,38 +526,336 @@ function InvitesPanel({
   );
 }
 
-function BackendGapPanel({ title, items }: { title: string; items: string[] }) {
+function ChannelsPanel({
+  settings,
+  loading,
+}: {
+  settings: WorkspaceSettings | null;
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <PanelShell title="AgentLine readiness">
+        <SkeletonRows />
+      </PanelShell>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <PanelShell title="AgentLine readiness">
+        <EmptyState
+          title="Readiness unavailable"
+          description="Refresh settings after the backend is reachable."
+        />
+      </PanelShell>
+    );
+  }
+
+  const telecom = settings.providers.telecom;
+  const stripe = settings.providers.stripe;
+  const brevo = settings.providers.brevo;
+  const auth = settings.providers.auth;
+  const channelItems = [
+    {
+      icon: Activity,
+      title: "Phone number operations",
+      description: telecom.credentialsReady
+        ? "Numbers can be assigned to agents for calls and SMS."
+        : "Finish phone account setup before assigning live numbers to agents.",
+      status: telecom.credentialsReady ? "active" : "pending",
+      meta: ["Numbers", "Calls", "SMS"],
+    },
+    {
+      icon: ShieldCheck,
+      title: "Inbound events",
+      description: telecom.callbackUrlsReady
+        ? "Incoming messages, call updates, and speech turns can reach AgentLine."
+        : "Finish event routing so live calls and messages update the workspace.",
+      status: telecom.callbackUrlsReady ? "active" : "pending",
+      meta: ["Inbound SMS", "Call updates", "Speech capture"],
+    },
+    {
+      icon: CreditCard,
+      title: "Billing and payments",
+      description:
+        stripe.secretKeyConfigured && stripe.webhookSecretConfigured
+          ? "Plans, credits, invoices, and usage settlement are connected."
+          : "Connect billing before paid workspaces can self-serve plans and credits.",
+      status: stripe.secretKeyConfigured && stripe.webhookSecretConfigured ? "active" : "pending",
+      meta: [
+        "Credits",
+        "Subscriptions",
+        "Invoices",
+        stripe.usageMeterEventNameConfigured ? "Metered usage" : "Usage ledger",
+      ],
+    },
+    {
+      icon: MailCheck,
+      title: "Team emails",
+      description:
+        brevo.apiKeyConfigured && brevo.fromEmailConfigured
+          ? "Workspace invitations and account notices can be delivered."
+          : "Finish email setup before relying on invite delivery.",
+      status: brevo.apiKeyConfigured && brevo.fromEmailConfigured ? "active" : "pending",
+      meta: ["Invites", "Account notices"],
+    },
+    {
+      icon: KeyRound,
+      title: "Secure sign-in",
+      description: auth.googleConfigured
+        ? "Workspace users can sign in with a protected dashboard session."
+        : "Finish sign-in setup before inviting production teammates.",
+      status: auth.googleConfigured ? "active" : "pending",
+      meta: ["SSO", "Sessions", "CSRF protection"],
+    },
+  ];
+
   return (
-    <PanelShell title={title}>
-      <div className="grid gap-3 md:grid-cols-2">
-        {items.map((item) => (
-          <div
-            key={item}
-            className="flex items-center justify-between rounded-lg border bg-muted/15 px-4 py-3"
-          >
-            <span className="text-sm font-medium">{item}</span>
-            <StatusBadge status="pending" />
-          </div>
+    <PanelShell title="AgentLine readiness">
+      <div className="grid gap-3 lg:grid-cols-2">
+        {channelItems.map((item) => (
+          <CapabilityReadinessCard key={item.title} item={item} />
         ))}
       </div>
     </PanelShell>
   );
 }
 
-function AuthPanel({ currentUser, loading }: { currentUser: CurrentUser | null; loading: boolean }) {
+function ControlsPanel({
+  settings,
+  loading,
+  onChanged,
+}: {
+  settings: WorkspaceSettings | null;
+  loading: boolean;
+  onChanged: () => Promise<void>;
+}) {
+  const [spendLimit, setSpendLimit] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (settings?.billing.spendLimitCents == null) {
+      setSpendLimit("");
+      return;
+    }
+    setSpendLimit((settings.billing.spendLimitCents / 100).toFixed(2));
+  }, [settings?.billing.spendLimitCents]);
+
+  async function saveSpendLimit() {
+    setSaving(true);
+    setError(null);
+    try {
+      const normalized = spendLimit.trim();
+      const spendLimitCents =
+        normalized.length === 0 ? null : Math.round(Number.parseFloat(normalized) * 100);
+      if (spendLimitCents !== null && (!Number.isFinite(spendLimitCents) || spendLimitCents < 0)) {
+        setError("Spend limit must be a positive dollar amount.");
+        return;
+      }
+      await updateBackendBillingControls({ spendLimitCents });
+      toast.success("Billing controls saved");
+      await onChanged();
+    } catch (caught) {
+      setError(
+        caught instanceof AgentLineApiError
+          ? formatApiError(caught)
+          : "Could not save billing controls.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <PanelShell title="Usage and compliance controls">
+        <SkeletonRows />
+      </PanelShell>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <PanelShell title="Usage and compliance controls">
+        <EmptyState
+          title="Controls unavailable"
+          description="Refresh settings after the backend is reachable."
+        />
+      </PanelShell>
+    );
+  }
+
+  const canManageBilling = settings.controls.canManageBilling;
+  const balance = settings.billing.balanceCents / 100;
+
   return (
-    <PanelShell title="Auth and Google SSO">
+    <PanelShell title="Usage and compliance controls">
+      <div className="space-y-5">
+        {error && <InlineError error={error} />}
+        <div className="grid gap-4 lg:grid-cols-[minmax(280px,1fr)_minmax(280px,1fr)]">
+          <div className="rounded-lg border bg-muted/15 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold">Workspace spend limit</div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Stop new billable calls, messages, and number actions once tracked usage reaches
+                  this cap.
+                </p>
+              </div>
+              <StatusBadge
+                status={settings.billing.spendLimitCents == null ? "disabled" : "active"}
+              />
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
+              <label className="block">
+                <span className="text-xs font-medium text-muted-foreground">Monthly cap, USD</span>
+                <input
+                  value={spendLimit}
+                  onChange={(event) => setSpendLimit(event.target.value)}
+                  placeholder="No limit"
+                  disabled={!canManageBilling}
+                  inputMode="decimal"
+                  className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm"
+                />
+              </label>
+              <button
+                onClick={saveSpendLimit}
+                disabled={saving || !canManageBilling}
+                className="self-end rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background disabled:opacity-60"
+              >
+                {saving ? "Saving..." : "Save limit"}
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-lg border bg-muted/15 p-4">
+            <div className="text-sm font-semibold">Billing guardrails</div>
+            <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
+              <Meta
+                label="Available balance"
+                value={`${settings.billing.currency} ${balance.toFixed(2)}`}
+              />
+              <Meta
+                label="Prepaid required"
+                value={settings.billing.prepaidRequired ? "Enabled" : "Disabled"}
+              />
+              <Meta label="Low balance state" value={settings.billing.lowBalance ? "Yes" : "No"} />
+              <Meta label="Can manage billing" value={canManageBilling ? "Yes" : "No"} />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <ControlStatus
+            title="Audit log viewer"
+            status="active"
+            description="Every workspace, team, API key, billing, number, call, and webhook change is captured for review."
+          />
+          <ControlStatus
+            title="Recording consent controls"
+            status="pending"
+            description="Choose how call recording consent is handled before recording is enabled."
+          />
+          <ControlStatus
+            title="Data retention settings"
+            status="pending"
+            description="Set how long transcripts, recordings, and raw event evidence are retained."
+          />
+          <ControlStatus
+            title="Team permission controls"
+            status="active"
+            description="Workspace roles gate member, invite, API key, and billing actions."
+          />
+        </div>
+      </div>
+    </PanelShell>
+  );
+}
+
+function CapabilityReadinessCard({
+  item,
+}: {
+  item: {
+    icon: LucideIcon;
+    title: string;
+    description: string;
+    status: string;
+    meta: string[];
+  };
+}) {
+  const Icon = item.icon;
+  return (
+    <div className="rounded-lg border bg-muted/15 p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex gap-3">
+          <span className="rounded-md border bg-surface p-2 text-muted-foreground">
+            <Icon className="h-4 w-4" />
+          </span>
+          <div>
+            <div className="text-sm font-semibold">{item.title}</div>
+            <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
+          </div>
+        </div>
+        <StatusBadge status={item.status} />
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {item.meta.map((meta) => (
+          <span
+            key={meta}
+            className="rounded-md border bg-surface px-2 py-1 text-xs text-muted-foreground"
+          >
+            {meta}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ControlStatus({
+  title,
+  status,
+  description,
+}: {
+  title: string;
+  status: string;
+  description: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-lg border bg-muted/15 p-4">
+      <div>
+        <div className="text-sm font-semibold">{title}</div>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      </div>
+      <StatusBadge status={status} />
+    </div>
+  );
+}
+
+function AuthPanel({
+  currentUser,
+  loading,
+}: {
+  currentUser: CurrentUser | null;
+  loading: boolean;
+}) {
+  return (
+    <PanelShell title="Sign-in and sessions">
       {loading ? (
         <SkeletonRows />
       ) : !currentUser ? (
         <EmptyState
           title="No session loaded"
-          description="Sign in with Google to create a backend session."
+          description="Sign in again to create a secure dashboard session."
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-lg border bg-muted/15 p-4">
-            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">User</div>
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              User
+            </div>
             <div className="mt-2 text-sm font-medium">{currentUser.name ?? currentUser.email}</div>
             <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
               <span>{currentUser.email}</span>
@@ -568,18 +863,28 @@ function AuthPanel({ currentUser, loading }: { currentUser: CurrentUser | null; 
             </div>
           </div>
           <div className="rounded-lg border bg-muted/15 p-4">
-            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Session context</div>
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Session context
+            </div>
             <div className="mt-2 text-sm font-medium">{currentUser.activeWorkspace.name}</div>
-            <div className="mt-1 text-sm text-muted-foreground">{currentUser.activeProject.name}</div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              {currentUser.activeProject.name}
+            </div>
           </div>
           <div className="rounded-lg border bg-muted/15 p-4">
-            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Workspaces</div>
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Workspaces
+            </div>
             <div className="mt-2 text-2xl font-semibold">{currentUser.workspaces.length}</div>
-            <div className="mt-1 text-sm text-muted-foreground">Available through backend session switching.</div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              Available through backend session switching.
+            </div>
           </div>
           <div className="rounded-lg border bg-success/5 p-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Google SSO</span>
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Single sign-on
+              </span>
               <StatusBadge status="active" />
             </div>
             <div className="mt-2 text-sm text-muted-foreground">
