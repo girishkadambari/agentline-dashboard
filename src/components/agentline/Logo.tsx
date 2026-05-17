@@ -26,9 +26,9 @@ export function LogoMark({
     >
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="oklch(0.72 0.16 295)" />
-          <stop offset="55%" stopColor="oklch(0.62 0.21 295)" />
-          <stop offset="100%" stopColor="oklch(0.5 0.22 295)" />
+          <stop offset="0%" stopColor="oklch(0.82 0.18 152)" />
+          <stop offset="55%" stopColor="oklch(0.62 0.15 158)" />
+          <stop offset="100%" stopColor="oklch(0.45 0.13 162)" />
         </linearGradient>
         <linearGradient id={`${id}-sheen`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
