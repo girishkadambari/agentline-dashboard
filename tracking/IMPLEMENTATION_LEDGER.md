@@ -3,6 +3,68 @@
 This ledger records frontend work as it is implemented. Update it after each
 meaningful slice so another engineer or AI agent can resume without guessing.
 
+## 2026-05-17 - Audit Actor Labels
+
+Status: implemented
+
+Implemented:
+
+- Updated the Settings audit log to use the backend's enriched actor object.
+- Replaced vague labels like `Dashboard user` with customer-readable actor
+  labels:
+  - user name or email for dashboard actions
+  - API key label and prefix for API-key actions
+  - AgentLine system for automated actions
+- Added a secondary actor detail line in the audit table and detail panel when
+  useful.
+- Preserved existing sanitization so customer-facing audit details do not expose
+  vendor secrets, raw provider payloads, tokens, or implementation-specific
+  internals.
+
+Verification:
+
+- `npx prettier --write src/lib/api/audit.ts src/routes/_app.settings.tsx` passed.
+- `npm run build` passed.
+
+Next:
+
+- Add audit filters for area/action/actor once the backend exposes query
+  filters.
+- Add CSV export or admin-only evidence export after the core release flows are
+  stable.
+
+## 2026-05-17 - Customer-Facing Audit Log Screen
+
+Status: implemented
+
+Implemented:
+
+- Added `src/lib/api/audit.ts` for the real `GET /audit-events` backend endpoint.
+- Added a new Settings `Audit log` tab.
+- The audit screen shows a customer-readable activity table:
+  - time
+  - activity
+  - area
+  - actor
+  - affected object
+- Added an activity detail panel with copyable audit event and object IDs.
+- Sanitized visible metadata so customer-facing audit details do not expose
+  vendor secrets, raw provider payloads, tokens, or implementation-specific
+  provider identifiers.
+- Kept the screen backed by real backend audit events; no mock data was
+  introduced.
+
+Verification:
+
+- `npx prettier --write src/lib/api/audit.ts src/routes/_app.settings.tsx` passed.
+- `npm run build` passed.
+
+Next:
+
+- Add audit filters for area/action/actor once the backend supports query
+  filters beyond `limit`.
+- Add CSV export or admin-only raw evidence export for enterprise support.
+
 ## 2026-05-17 - Customer-Facing Settings And Health Polish
 
 Status: implemented

@@ -21,6 +21,7 @@ import { Mono } from "@/components/agentline/Mono";
 import { PageHeader } from "@/components/agentline/PageHeader";
 import { StatusBadge } from "@/components/agentline/StatusBadge";
 import { Banner } from "@/components/agentline/Banner";
+import { listAuditEvents, type AuditEventListItem } from "@/lib/api/audit";
 import { getCurrentUser, type CurrentUser } from "@/lib/api/auth";
 import { AgentLineApiError, formatApiError } from "@/lib/api/client";
 import { updateBackendBillingControls } from "@/lib/api/billing";
@@ -48,7 +49,15 @@ export const Route = createFileRoute("/_app/settings")({
   head: () => ({ meta: [{ title: "Settings — AgentLine" }] }),
 });
 
-const tabs = ["Workspace", "Members", "Invites", "Sign-in", "Channels", "Controls"] as const;
+const tabs = [
+  "Workspace",
+  "Members",
+  "Invites",
+  "Sign-in",
+  "Channels",
+  "Controls",
+  "Audit log",
+] as const;
 const roles: WorkspaceRole[] = ["owner", "admin", "developer", "billing", "viewer", "member"];
 
 function Settings() {
@@ -142,6 +151,7 @@ function Settings() {
         {tab === "Controls" && (
           <ControlsPanel settings={workspaceSettings} loading={loading} onChanged={loadSettings} />
         )}
+        {tab === "Audit log" && <AuditLogPanel />}
       </div>
     </div>
   );
@@ -895,6 +905,278 @@ function AuthPanel({
       )}
     </PanelShell>
   );
+}
+
+function AuditLogPanel() {
+  const [events, setEvents] = useState<AuditEventListItem[]>([]);
+  const [selected, setSelected] = useState<AuditEventListItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadAuditEvents() {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await listAuditEvents(75);
+      setEvents(response.data);
+      setSelected((current) => {
+        if (!current) {
+          return response.data[0] ?? null;
+        }
+        return response.data.find((event) => event.id === current.id) ?? response.data[0] ?? null;
+      });
+    } catch (caught) {
+      setError(
+        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load audit log.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadAuditEvents();
+  }, []);
+
+  const columns = [
+    {
+      key: "createdAt",
+      label: "Time",
+      width: 150,
+      sortable: true,
+      sortAccessor: (event: AuditEventListItem) => new Date(event.createdAt),
+      render: (event: AuditEventListItem) => (
+        <span className="text-muted-foreground">{event.createdLabel}</span>
+      ),
+    },
+    {
+      key: "action",
+      label: "Activity",
+      width: 260,
+      sortable: true,
+      render: (event: AuditEventListItem) => (
+        <div>
+          <div className="font-medium">{event.actionLabel}</div>
+          <div className="mt-1 text-xs text-muted-foreground">{event.summary}</div>
+        </div>
+      ),
+    },
+    {
+      key: "category",
+      label: "Area",
+      width: 130,
+      sortable: true,
+      render: (event: AuditEventListItem) => <StatusBadge status={event.category} />,
+    },
+    {
+      key: "actor",
+      label: "Actor",
+      width: 150,
+      sortable: true,
+      sortAccessor: (event: AuditEventListItem) => event.actorLabel,
+      render: (event: AuditEventListItem) => (
+        <div>
+          <div>{event.actorLabel}</div>
+          {event.actorDetail && (
+            <div className="mt-1 text-xs text-muted-foreground">{event.actorDetail}</div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "resource",
+      label: "Object",
+      width: 220,
+      sortable: true,
+      sortAccessor: (event: AuditEventListItem) => event.resourceLabel,
+      render: (event: AuditEventListItem) => (
+        <div>
+          <div>{event.resourceLabel}</div>
+          {event.resourceId && (
+            <div className="mt-1 flex items-center gap-2">
+              <Mono>{event.resourceId}</Mono>
+              <CopyButton value={event.resourceId} label="Copy object ID" />
+            </div>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <PanelShell title="Audit log">
+      <div className="space-y-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">
+              Review workspace, team, billing, API key, number, call, and webhook changes.
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Use this when you need to answer who changed something, when it happened, and what
+              object was affected.
+            </p>
+          </div>
+          <button
+            onClick={loadAuditEvents}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Refresh
+          </button>
+        </div>
+
+        {error && <InlineError error={error} />}
+
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <DataTable
+            columns={columns}
+            data={events}
+            isLoading={loading}
+            skeletonRows={6}
+            minWidth={900}
+            stickyHeader
+            maxBodyHeight={520}
+            defaultSort={{ key: "createdAt", dir: "desc" }}
+            getRowKey={(event) => event.id}
+            onRowClick={(event) => setSelected(event)}
+            emptyState={
+              <EmptyState
+                title="No audit activity yet"
+                description="Workspace changes will appear here after users edit settings, billing, API keys, calls, numbers, or webhooks."
+              />
+            }
+          />
+
+          <AuditEventDetails event={selected} />
+        </div>
+      </div>
+    </PanelShell>
+  );
+}
+
+function AuditEventDetails({ event }: { event: AuditEventListItem | null }) {
+  if (!event) {
+    return (
+      <aside className="rounded-lg border bg-muted/15 p-4">
+        <div className="text-sm font-semibold">Activity details</div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Select an audit event to inspect the affected object and captured context.
+        </p>
+      </aside>
+    );
+  }
+
+  const details = friendlyAuditDetails(event);
+
+  return (
+    <aside className="rounded-lg border bg-muted/15 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold">{event.actionLabel}</div>
+          <p className="mt-1 text-sm text-muted-foreground">{event.createdLabel}</p>
+        </div>
+        <StatusBadge status={event.category} />
+      </div>
+
+      <div className="mt-5 space-y-4">
+        <Meta
+          label="Actor"
+          value={
+            event.actorDetail ? `${event.actorLabel} (${event.actorDetail})` : event.actorLabel
+          }
+        />
+        <Meta label="Object" value={event.resourceLabel} />
+        {event.resourceId && (
+          <div>
+            <div className="text-xs font-medium text-muted-foreground">Object ID</div>
+            <div className="mt-1 flex items-center gap-2">
+              <Mono>{event.resourceId}</Mono>
+              <CopyButton value={event.resourceId} label="Copy object ID" />
+            </div>
+          </div>
+        )}
+        <Meta label="Summary" value={event.summary} />
+
+        {details.length > 0 && (
+          <div>
+            <div className="text-xs font-medium text-muted-foreground">Captured details</div>
+            <div className="mt-2 divide-y rounded-lg border bg-surface">
+              {details.map((detail) => (
+                <div key={detail.label} className="grid gap-2 px-3 py-2 text-sm">
+                  <span className="text-xs font-medium text-muted-foreground">{detail.label}</span>
+                  <span className="break-words">{detail.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div>
+          <div className="text-xs font-medium text-muted-foreground">Audit event ID</div>
+          <div className="mt-1 flex items-center gap-2">
+            <Mono>{event.id}</Mono>
+            <CopyButton value={event.id} label="Copy audit event ID" />
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function friendlyAuditDetails(event: AuditEventListItem) {
+  const entries = Object.entries(event.metadata).filter(
+    ([key, value]) => isCustomerSafeAuditMetadata(key) && value !== null && value !== undefined,
+  );
+
+  return entries.slice(0, 8).map(([key, value]) => ({
+    label: formatAuditMetadataLabel(key),
+    value: formatAuditMetadataValue(key, value),
+  }));
+}
+
+function isCustomerSafeAuditMetadata(key: string) {
+  const lower = key.toLowerCase();
+  return !(
+    lower.includes("provider") ||
+    lower.includes("stripe") ||
+    lower.includes("twilio") ||
+    lower.includes("secret") ||
+    lower.includes("token") ||
+    lower.includes("raw")
+  );
+}
+
+function formatAuditMetadataLabel(key: string) {
+  return key
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_./-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatAuditMetadataValue(key: string, value: unknown) {
+  if (typeof value === "number" && key.toLowerCase().endsWith("cents")) {
+    return `$${(value / 100).toFixed(2)}`;
+  }
+
+  if (typeof value === "string" && key.toLowerCase().endsWith("cents")) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return `$${(parsed / 100).toFixed(2)}`;
+    }
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(String).join(", ");
+  }
+
+  if (typeof value === "object") {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
 }
 
 function PanelShell({ title, children }: { title: string; children: ReactNode }) {
