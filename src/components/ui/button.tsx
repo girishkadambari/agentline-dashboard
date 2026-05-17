@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[12px] text-sm font-medium transition-all duration-150 ease-out focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[12px] text-sm font-medium transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-border)] focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -14,11 +14,13 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
-          "border border-border bg-surface text-foreground hover:bg-[var(--surface-hover)] hover:border-[var(--primary-border)]",
+          "border border-border bg-surface text-foreground hover:bg-[var(--surface-hover)] hover:border-[var(--primary-border)] hover:text-[var(--primary-strong)] active:translate-y-[0.5px]",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[var(--surface-hover)]",
-        ghost: "text-foreground hover:bg-[var(--surface-hover)] hover:text-[var(--primary-strong)]",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-[var(--primary-soft)] text-[var(--primary-strong)] border border-[var(--primary-border)]/70 hover:bg-gradient-to-b hover:from-[var(--primary-soft)] hover:to-[color-mix(in_oklab,var(--primary)_14%,white)] hover:border-[var(--primary-border)] active:translate-y-[0.5px]",
+        ghost:
+          "text-foreground hover:bg-[var(--primary-soft)] hover:text-[var(--primary-strong)]",
+        link:
+          "text-[var(--primary-strong)] underline-offset-4 hover:underline decoration-[var(--primary-border)] hover:decoration-[var(--primary)]",
       },
       size: {
         default: "h-10 px-4 py-2",
