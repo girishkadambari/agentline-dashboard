@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 140" role="img" aria-label="Vukho">
+  <rect width="520" height="140" fill="#0B0F0E"/>
+  <g transform="translate(40 38)">
+    <path d="M0 0 L32 64 L64 0 L52 0 L32 40 L12 0 Z" fill="#FFFFFF"/>
+    <g fill="#00C896">
+      <rect x="18" y="20" width="3" height="14" rx="1.5"/>
+      <rect x="23" y="14" width="3" height="26" rx="1.5"/>
+      <rect x="28" y="8"  width="3" height="38" rx="1.5"/>
+      <rect x="33" y="14" width="3" height="26" rx="1.5"/>
+      <rect x="38" y="20" width="3" height="14" rx="1.5"/>
+    </g>
+  </g>
+  <text x="138" y="92" font-family="'Space Grotesk','Inter',sans-serif" font-weight="600" font-size="56" letter-spacing="10" fill="#FFFFFF">VUKHO</text>
+</svg>
