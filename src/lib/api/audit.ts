@@ -6,6 +6,7 @@ export interface BackendAuditEvent {
   actorUserId: string | null;
   actorApiKeyId: string | null;
   actor?: BackendAuditActor;
+  display?: BackendAuditDisplay;
   action: string;
   resourceType: string;
   resourceId: string | null;
@@ -21,6 +22,17 @@ export interface BackendAuditActor {
   email: string | null;
   apiKeyLabel: string | null;
   apiKeyPrefix: string | null;
+  displayName?: string;
+  detail?: string | null;
+}
+
+export interface BackendAuditDisplay {
+  actionLabel: string;
+  actorLabel: string;
+  actorDetail: string | null;
+  category: string;
+  resourceLabel: string;
+  summary: string;
 }
 
 export interface AuditEventListItem {
@@ -123,6 +135,14 @@ function titleize(value: string) {
 }
 
 function actorLabel(event: BackendAuditEvent) {
+  if (event.display?.actorLabel) {
+    return event.display.actorLabel;
+  }
+
+  if (event.actor?.displayName) {
+    return event.actor.displayName;
+  }
+
   if (event.actor?.type === "user") {
     return event.actor.name || event.actor.email || "Workspace user";
   }
@@ -151,6 +171,14 @@ function actorLabel(event: BackendAuditEvent) {
 }
 
 function actorDetail(event: BackendAuditEvent) {
+  if (event.display) {
+    return event.display.actorDetail;
+  }
+
+  if (event.actor?.detail) {
+    return event.actor.detail;
+  }
+
   if (event.actor?.type === "user") {
     return event.actor.email;
   }
@@ -200,8 +228,12 @@ function metadataSummary(metadata: Record<string, unknown>) {
 }
 
 export function mapBackendAuditEvent(event: BackendAuditEvent): AuditEventListItem {
-  const actionLabel = actionLabels[event.action] ?? titleize(event.action);
-  const resourceLabel = resourceLabels[event.resourceType] ?? titleize(event.resourceType);
+  const actionLabel =
+    event.display?.actionLabel ?? actionLabels[event.action] ?? titleize(event.action);
+  const resourceLabel =
+    event.display?.resourceLabel ??
+    resourceLabels[event.resourceType] ??
+    titleize(event.resourceType);
 
   return {
     id: event.id,
@@ -212,12 +244,12 @@ export function mapBackendAuditEvent(event: BackendAuditEvent): AuditEventListIt
     actorDetail: actorDetail(event),
     action: event.action,
     actionLabel,
-    category: categoryFromAction(event.action),
+    category: event.display?.category ?? categoryFromAction(event.action),
     resourceType: event.resourceType,
     resourceLabel,
     resourceId: event.resourceId,
     metadata: event.metadata ?? {},
-    summary: metadataSummary(event.metadata ?? {}),
+    summary: event.display?.summary ?? metadataSummary(event.metadata ?? {}),
     ipAddress: event.ipAddress,
     userAgent: event.userAgent,
     createdAt: event.createdAt,
