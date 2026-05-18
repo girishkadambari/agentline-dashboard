@@ -72,7 +72,7 @@ const FALLBACK_EVENT_CATALOG: WebhookEventCatalogGroup[] = [
       { name: "agent.call.*", description: "All call lifecycle and transcript events." },
       { name: "agent.number.*", description: "All phone number lifecycle events." },
       { name: "agent.*", description: "All agent-scoped events." },
-      { name: "*", description: "Every AgentLine event." },
+      { name: "*", description: "Every Vukho event." },
     ],
   },
   {
@@ -100,7 +100,7 @@ const FALLBACK_EVENT_CATALOG: WebhookEventCatalogGroup[] = [
 
 export const Route = createFileRoute("/_app/webhooks")({
   component: Webhooks,
-  head: () => ({ meta: [{ title: "Webhooks — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Webhooks — Vukho" }] }),
 });
 
 function Webhooks() {
@@ -214,7 +214,7 @@ function Webhooks() {
     <div>
       <PageHeader
         title="Webhooks"
-        description="Endpoints that receive AgentLine event deliveries."
+        description="Endpoints that receive Vukho event deliveries."
         actions={
           <button
             onClick={() => openDrawer("create")}
@@ -240,7 +240,7 @@ function Webhooks() {
         <EmptyState
           icon={<WebhookIcon className="h-5 w-5" />}
           title="No webhook endpoints"
-          description="Create an endpoint to receive signed AgentLine events from messages, calls, and tests."
+          description="Create an endpoint to receive signed Vukho events from messages, calls, and tests."
           action={
             <button
               onClick={() => openDrawer("create")}
@@ -289,7 +289,7 @@ function Webhooks() {
         ) : deliveries.length === 0 ? (
           <EmptyState
             title="No webhook deliveries"
-            description="Test an endpoint or trigger an AgentLine event to create delivery records."
+            description="Test an endpoint or trigger an Vukho event to create delivery records."
           />
         ) : (
           <DeliveriesTable deliveries={deliveries} onRetry={retryDelivery} />
@@ -736,7 +736,7 @@ function WebhookDrawer({
         ? "Test webhook endpoint"
         : "Webhook endpoint";
   const description = isCreate
-    ? "Create a signed endpoint for AgentLine events."
+    ? "Create a signed endpoint for Vukho events."
     : isUpdate
       ? "Update endpoint URL, event subscriptions, and status."
       : isTest

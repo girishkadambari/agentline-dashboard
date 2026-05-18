@@ -9,7 +9,7 @@ import { setStoredApiKey } from "@/lib/auth/session";
 
 export const Route = createFileRoute("/login")({
   component: Login,
-  head: () => ({ meta: [{ title: "Sign in — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Sign in — Vukho" }] }),
 });
 
 function Login() {
@@ -24,7 +24,7 @@ function Login() {
     setError(null);
 
     if (!apiKey.trim()) {
-      setError("Enter an AgentLine API key.");
+      setError("Enter an Vukho API key.");
       return;
     }
 
@@ -37,7 +37,7 @@ function Login() {
       if (caught instanceof AgentLineApiError) {
         setError(caught.status === 401 ? "Invalid API key." : formatApiError(caught));
       } else {
-        setError("Could not connect to the AgentLine backend.");
+        setError("Could not connect to the Vukho backend.");
       }
     } finally {
       setIsSubmitting(false);
@@ -49,7 +49,7 @@ function Login() {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex justify-center"><Logo /></div>
         <div className="rounded-xl border bg-surface p-7 shadow-sm">
-          <h1 className="text-lg font-semibold tracking-tight">Sign in to AgentLine</h1>
+          <h1 className="text-lg font-semibold tracking-tight">Sign in to Vukho</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Use Google SSO to create your backend session.
           </p>

@@ -49,7 +49,7 @@ import { listBackendUsageEvents } from "@/lib/api/usage";
 
 export const Route = createFileRoute("/_app/billing")({
   component: Billing,
-  head: () => ({ meta: [{ title: "Billing — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Billing — Vukho" }] }),
 });
 
 type BillingAction = "checkout" | "portal" | `plan:${string}`;
@@ -76,7 +76,7 @@ const USAGE_RATES = [
     label: "Inbound SMS",
     price: "$0.01",
     unit: "message",
-    note: "Charged when AgentLine receives the inbound webhook.",
+    note: "Charged when Vukho receives the inbound webhook.",
     icon: MessageSquare,
   },
   {

@@ -20,7 +20,7 @@ import { listBackendWebhookDeliveries } from "@/lib/api/webhooks";
 
 export const Route = createFileRoute("/_app/")({
   component: Overview,
-  head: () => ({ meta: [{ title: "Overview — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Overview — Vukho" }] }),
 });
 
 function Overview() {

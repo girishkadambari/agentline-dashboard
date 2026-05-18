@@ -29,7 +29,7 @@ import {
 
 export const Route = createFileRoute("/_app/numbers")({
   component: Numbers,
-  head: () => ({ meta: [{ title: "Numbers — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Numbers — Vukho" }] }),
 });
 
 function Numbers() {

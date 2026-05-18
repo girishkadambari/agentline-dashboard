@@ -34,7 +34,7 @@ import {
 
 export const Route = createFileRoute("/_app/calls/$callId")({
   component: CallDetail,
-  head: () => ({ meta: [{ title: "Call — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Call — Vukho" }] }),
 });
 
 function CallDetail() {

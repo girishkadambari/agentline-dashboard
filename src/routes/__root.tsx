@@ -29,14 +29,14 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "AgentLine" },
+      { title: "Vukho" },
       { name: "description", content: "Phone infrastructure for AI agents" },
-      { name: "author", content: "AgentLine" },
-      { property: "og:title", content: "AgentLine" },
+      { name: "author", content: "Vukho" },
+      { property: "og:title", content: "Vukho" },
       { property: "og:description", content: "Phone infrastructure for AI agents" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@AgentLine" },
+      { name: "twitter:site", content: "@Vukho" },
     ],
     links: [
       {

@@ -11,7 +11,7 @@ export const Route = createFileRoute("/accept-invite")({
   validateSearch: (search) => ({
     token: typeof search.token === "string" ? search.token : "",
   }),
-  head: () => ({ meta: [{ title: "Accept invite — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Accept invite — Vukho" }] }),
 });
 
 type InviteState = "checking-session" | "needs-login" | "accepting" | "accepted" | "error";
@@ -94,7 +94,7 @@ function AcceptInvite() {
                 {state === "checking-session" ? "Checking your session" : "Accepting invite"}
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                AgentLine is validating this workspace invite with the backend.
+                Vukho is validating this workspace invite with the backend.
               </p>
             </>
           ) : null}
@@ -125,7 +125,7 @@ function AcceptInvite() {
               </div>
               <h1 className="mt-5 text-lg font-semibold tracking-tight">Invite accepted</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                You now have access to this AgentLine workspace.
+                You now have access to this Vukho workspace.
               </p>
               <div className="mt-6 flex gap-2">
                 <button

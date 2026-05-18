@@ -118,7 +118,7 @@ function Onboarding() {
           {error && <Banner variant="error" message={error} className="mb-5" />}
           {step === 0 && (
             <div>
-              <h2 className="text-xl font-semibold tracking-tight">Set up your AgentLine workspace</h2>
+              <h2 className="text-xl font-semibold tracking-tight">Set up your Vukho workspace</h2>
               <p className="mt-1 text-sm text-muted-foreground">Three quick steps: create an agent, attach a number, test a call or SMS.</p>
               <label className="mt-6 block text-sm font-medium">Workspace name</label>
               <input value={workspace} onChange={(e) => setWorkspace(e.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />

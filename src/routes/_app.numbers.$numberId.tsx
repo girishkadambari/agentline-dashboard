@@ -19,7 +19,7 @@ import {
 
 export const Route = createFileRoute("/_app/numbers/$numberId")({
   component: NumberDetail,
-  head: () => ({ meta: [{ title: "Number — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Number — Vukho" }] }),
 });
 
 function NumberDetail() {

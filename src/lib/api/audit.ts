@@ -136,7 +136,7 @@ function actorLabel(event: BackendAuditEvent) {
   }
 
   if (event.actor?.type === "system") {
-    return "AgentLine system";
+    return "Vukho system";
   }
 
   if (event.actorUserId) {
@@ -160,7 +160,7 @@ function actorDetail(event: BackendAuditEvent) {
   }
 
   if (event.actor?.type === "system") {
-    return "Automated AgentLine action";
+    return "Automated Vukho action";
   }
 
   return null;
