@@ -29,7 +29,7 @@ import {
 
 export const Route = createFileRoute("/_app/inbox")({
   component: Inbox,
-  head: () => ({ meta: [{ title: "Inbox — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Inbox — Vukho" }] }),
 });
 
 function Inbox() {

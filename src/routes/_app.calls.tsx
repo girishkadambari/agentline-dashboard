@@ -27,7 +27,7 @@ import {
 
 export const Route = createFileRoute("/_app/calls")({
   component: Calls,
-  head: () => ({ meta: [{ title: "Calls — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Calls — Vukho" }] }),
 });
 
 function Calls() {

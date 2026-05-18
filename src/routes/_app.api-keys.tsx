@@ -20,7 +20,7 @@ import {
 
 export const Route = createFileRoute("/_app/api-keys")({
   component: ApiKeys,
-  head: () => ({ meta: [{ title: "API Keys — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "API Keys — Vukho" }] }),
 });
 
 function ApiKeys() {

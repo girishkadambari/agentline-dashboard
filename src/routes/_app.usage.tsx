@@ -30,7 +30,7 @@ import {
 
 export const Route = createFileRoute("/_app/usage")({
   component: Usage,
-  head: () => ({ meta: [{ title: "Usage — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Usage — Vukho" }] }),
 });
 
 type RangeValue = "7" | "30" | "month";

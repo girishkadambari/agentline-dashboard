@@ -9,7 +9,7 @@ import { setStoredApiKey } from "@/lib/auth/session";
 
 export const Route = createFileRoute("/login")({
   component: Login,
-  head: () => ({ meta: [{ title: "Sign in — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Sign in — Vukho" }] }),
 });
 
 function Login() {

@@ -53,7 +53,7 @@ import {
 
 export const Route = createFileRoute("/_app/playground")({
   component: Playground,
-  head: () => ({ meta: [{ title: "Playground — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Playground — Vukho" }] }),
 });
 
 type ScenarioId =

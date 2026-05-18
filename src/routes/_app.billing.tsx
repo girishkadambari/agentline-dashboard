@@ -49,7 +49,7 @@ import { listBackendUsageEvents } from "@/lib/api/usage";
 
 export const Route = createFileRoute("/_app/billing")({
   component: Billing,
-  head: () => ({ meta: [{ title: "Billing — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Billing — Vukho" }] }),
 });
 
 type BillingAction = "checkout" | "portal" | `plan:${string}`;

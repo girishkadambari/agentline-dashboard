@@ -16,7 +16,7 @@ import {
 
 export const Route = createFileRoute("/_app/contacts")({
   component: Contacts,
-  head: () => ({ meta: [{ title: "Contacts — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Contacts — Vukho" }] }),
 });
 
 function Contacts() {

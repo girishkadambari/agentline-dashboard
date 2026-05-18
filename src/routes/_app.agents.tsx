@@ -30,7 +30,7 @@ import { Bot, Eye, Pencil, Plus, Search } from "lucide-react";
 
 export const Route = createFileRoute("/_app/agents")({
   component: Agents,
-  head: () => ({ meta: [{ title: "Agents — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Agents — Vukho" }] }),
 });
 
 function Agents() {
@@ -294,7 +294,7 @@ function AgentDrawer({
       setAgentMode("webhook");
       setVoice("alloy");
       setSystemPrompt("You are a concise phone agent.");
-      setBeginMessage("Hi, this is AgentLine. How can I help?");
+      setBeginMessage("Hi, this is Vukho. How can I help?");
       setWebhookUrl("");
       return;
     }

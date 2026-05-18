@@ -11,7 +11,7 @@ export const Route = createFileRoute("/accept-invite")({
   validateSearch: (search) => ({
     token: typeof search.token === "string" ? search.token : "",
   }),
-  head: () => ({ meta: [{ title: "Accept invite — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Accept invite — Vukho" }] }),
 });
 
 type InviteState = "checking-session" | "needs-login" | "accepting" | "accepted" | "error";

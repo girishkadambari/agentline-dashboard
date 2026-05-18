@@ -100,7 +100,7 @@ const FALLBACK_EVENT_CATALOG: WebhookEventCatalogGroup[] = [
 
 export const Route = createFileRoute("/_app/webhooks")({
   component: Webhooks,
-  head: () => ({ meta: [{ title: "Webhooks — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Webhooks — Vukho" }] }),
 });
 
 function Webhooks() {

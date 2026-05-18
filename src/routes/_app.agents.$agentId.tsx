@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_app/agents/$agentId")({
     tab: search.tab === "config" ? "config" : undefined,
   }),
   component: AgentDetail,
-  head: () => ({ meta: [{ title: "Agent — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Agent — Vukho" }] }),
 });
 
 function AgentDetail() {

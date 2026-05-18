@@ -15,7 +15,7 @@ import {
 
 export const Route = createFileRoute("/_app/service-health")({
   component: ServiceHealth,
-  head: () => ({ meta: [{ title: "Service Health — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Service Health — Vukho" }] }),
 });
 
 type ServiceStatus = "operational" | "degraded" | "failing";

@@ -46,7 +46,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/settings")({
   component: Settings,
-  head: () => ({ meta: [{ title: "Settings — AgentLine" }] }),
+  head: () => ({ meta: [{ title: "Settings — Vukho" }] }),
 });
 
 const tabs = [
