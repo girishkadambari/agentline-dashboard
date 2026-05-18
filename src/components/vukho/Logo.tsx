@@ -39,19 +39,21 @@ export function LogoMark({
         </>
       )}
 
-      {/* Open chevron "V" — two thick strokes forming the outline */}
+      {/* Hollow chevron "V" outline — outer V minus inner V, even-odd fill */}
       <path
-        d="M10 10 L32 54 L54 10 L46 10 L32 38 L18 10 Z"
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M6 8 L18 8 L32 40 L46 8 L58 8 L34.2 58 a2.6 2.6 0 0 1 -4.4 0 Z M21 8 L32 33 L43 8 Z"
         fill={ink}
       />
 
-      {/* Centered green voice equalizer — five bars, symmetric arch */}
+      {/* Green equalizer — five rounded pills, symmetric arch */}
       <g fill={bar}>
-        <rect x="22.5" y="24" width="2.6" height="12" rx="1.3" />
-        <rect x="26.7" y="20" width="2.6" height="20" rx="1.3" />
-        <rect x="30.9" y="16" width="2.6" height="28" rx="1.3" />
-        <rect x="35.1" y="20" width="2.6" height="20" rx="1.3" />
-        <rect x="39.3" y="24" width="2.6" height="12" rx="1.3" />
+        <rect x="19.5" y="24" width="3" height="12" rx="1.5" />
+        <rect x="24.5" y="20" width="3" height="20" rx="1.5" />
+        <rect x="30.5" y="16" width="3" height="28" rx="1.5" />
+        <rect x="36.5" y="20" width="3" height="20" rx="1.5" />
+        <rect x="41.5" y="24" width="3" height="12" rx="1.5" />
       </g>
     </svg>
   );
