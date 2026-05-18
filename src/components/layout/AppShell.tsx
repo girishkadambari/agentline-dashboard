@@ -5,7 +5,7 @@ import {
   CreditCard, KeyRound, FlaskConical, Settings, Activity,
   LogOut, Menu, X, Check, Circle, ChevronUp, ChevronDown, UserRound, ChevronLeft, ChevronRight,
 } from "lucide-react";
-import { Logo, LogoMark } from "@/components/agentline/Logo";
+import { Logo, LogoMark } from "@/components/vukho/Logo";
 import {
   getCurrentUser,
   logoutSession,
@@ -13,7 +13,7 @@ import {
   type CurrentUser,
   type CurrentUserWorkspace,
 } from "@/lib/api/auth";
-import { AgentLineApiError } from "@/lib/api/client";
+import { VukhoApiError } from "@/lib/api/client";
 import { getCurrentWorkspace, type Workspace } from "@/lib/api/workspace";
 import { clearStoredApiKey, getStoredApiKey } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
@@ -156,7 +156,7 @@ function WorkspaceSwitcher({
   const activeWorkspace = user?.activeWorkspace;
   const name = activeWorkspace?.name ?? (workspaceError ? "Backend offline" : "Loading...");
   const initial = (activeWorkspace?.name ?? "A").charAt(0).toUpperCase();
-  const env = (import.meta.env.VITE_AGENTLINE_API_URL ?? "").includes("localhost") ? "Local" : "Live";
+  const env = (import.meta.env.VITE_VUKHO_API_URL ?? "").includes("localhost") ? "Local" : "Live";
   const envColor = env === "Live" ? "text-success" : "text-sidebar-muted";
 
   async function switchWorkspace(workspace: CurrentUserWorkspace) {
@@ -457,7 +457,7 @@ export function AppShell() {
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("agentline:sidebar:collapsed") === "1";
+    return window.localStorage.getItem("vukho:sidebar:collapsed") === "1";
   });
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
@@ -467,7 +467,7 @@ export function AppShell() {
   function toggleCollapsed() {
     setCollapsed((prev) => {
       const next = !prev;
-      try { window.localStorage.setItem("agentline:sidebar:collapsed", next ? "1" : "0"); } catch {}
+      try { window.localStorage.setItem("vukho:sidebar:collapsed", next ? "1" : "0"); } catch {}
       return next;
     });
   }
@@ -498,7 +498,7 @@ export function AppShell() {
       })
       .catch((caught) => {
         if (!cancelled) {
-          if (caught instanceof AgentLineApiError && caught.status === 401) {
+          if (caught instanceof VukhoApiError && caught.status === 401) {
             const fallbackApiKey = getStoredApiKey();
             if (!fallbackApiKey) {
               window.location.href = "/login";

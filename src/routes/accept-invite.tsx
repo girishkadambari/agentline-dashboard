@@ -2,9 +2,9 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CheckCircle2, Loader2, Mail, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { Logo } from "@/components/agentline/Logo";
+import { Logo } from "@/components/vukho/Logo";
 import { acceptWorkspaceInvite, getCurrentUser, startGoogleLogin, switchSessionWorkspace } from "@/lib/api/auth";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 
 export const Route = createFileRoute("/accept-invite")({
   component: AcceptInvite,
@@ -61,13 +61,13 @@ function AcceptInvite() {
           return;
         }
 
-        if (caught instanceof AgentLineApiError && caught.status === 401) {
+        if (caught instanceof VukhoApiError && caught.status === 401) {
           setState("needs-login");
           return;
         }
 
         setState("error");
-        setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not accept this invite.");
+        setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not accept this invite.");
       }
     }
 

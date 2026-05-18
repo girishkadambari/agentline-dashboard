@@ -12,13 +12,13 @@ import {
   YAxis,
 } from "recharts";
 import { BarChart3, DollarSign, MessageSquare, PhoneCall, Sigma } from "lucide-react";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable, type Column } from "@/components/agentline/DataTable";
-import { Mono } from "@/components/agentline/Mono";
-import { EmptyState } from "@/components/agentline/EmptyState";
-import { Banner } from "@/components/agentline/Banner";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { DataTable, type Column } from "@/components/vukho/DataTable";
+import { Mono } from "@/components/vukho/Mono";
+import { EmptyState } from "@/components/vukho/EmptyState";
+import { Banner } from "@/components/vukho/Banner";
 import { cn } from "@/lib/utils";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import {
   listBackendDailyUsage,
@@ -70,7 +70,7 @@ function Usage() {
       setMonthly(monthlyResponse.data);
       setAgents(agentsResponse.data);
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load usage.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load usage.");
     } finally {
       setIsLoading(false);
     }

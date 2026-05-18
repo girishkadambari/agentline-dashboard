@@ -1,15 +1,15 @@
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Eye, PhoneOutgoing } from "lucide-react";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable, type Column } from "@/components/agentline/DataTable";
-import { StatusBadge } from "@/components/agentline/StatusBadge";
-import { Mono } from "@/components/agentline/Mono";
-import { EmptyState } from "@/components/agentline/EmptyState";
-import { CopyButton } from "@/components/agentline/CopyButton";
-import { PhoneInput } from "@/components/agentline/PhoneInput";
-import { Banner } from "@/components/agentline/Banner";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { DataTable, type Column } from "@/components/vukho/DataTable";
+import { StatusBadge } from "@/components/vukho/StatusBadge";
+import { Mono } from "@/components/vukho/Mono";
+import { EmptyState } from "@/components/vukho/EmptyState";
+import { CopyButton } from "@/components/vukho/CopyButton";
+import { PhoneInput } from "@/components/vukho/PhoneInput";
+import { Banner } from "@/components/vukho/Banner";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import {
   listBackendCalls,
@@ -49,7 +49,7 @@ function Calls() {
       setCalls(callsResponse.data);
       setAgents(agentsResponse.data);
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load calls.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load calls.");
     } finally {
       setIsLoading(false);
     }
@@ -276,7 +276,7 @@ function StartCallDrawer({
       const response = await startOutboundBackendCall({ agentId, to: to.trim() });
       onCreated(response.data);
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not start call.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not start call.");
     } finally {
       setIsSaving(false);
     }

@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Pencil, Save, UserRound, X } from "lucide-react";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable, type Column } from "@/components/agentline/DataTable";
-import { Mono } from "@/components/agentline/Mono";
-import { EmptyState } from "@/components/agentline/EmptyState";
-import { CopyButton } from "@/components/agentline/CopyButton";
-import { Banner } from "@/components/agentline/Banner";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { DataTable, type Column } from "@/components/vukho/DataTable";
+import { Mono } from "@/components/vukho/Mono";
+import { EmptyState } from "@/components/vukho/EmptyState";
+import { CopyButton } from "@/components/vukho/CopyButton";
+import { Banner } from "@/components/vukho/Banner";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import {
   listBackendContacts,
   updateBackendContact,
@@ -34,7 +34,7 @@ function Contacts() {
       const response = await listBackendContacts();
       setContacts(response.data);
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load contacts.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load contacts.");
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +60,7 @@ function Contacts() {
       setEditingId(null);
       setNameDraft("");
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not update contact.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not update contact.");
     } finally {
       setPendingId(null);
     }

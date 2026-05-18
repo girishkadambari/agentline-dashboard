@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Logo } from "@/components/agentline/Logo";
-import { Banner } from "@/components/agentline/Banner";
+import { Logo } from "@/components/vukho/Logo";
+import { Banner } from "@/components/vukho/Banner";
 import { startGoogleLogin } from "@/lib/api/auth";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import { getCurrentWorkspace } from "@/lib/api/workspace";
 import { setStoredApiKey } from "@/lib/auth/session";
 
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const navigate = useNavigate();
-  const [apiKey, setApiKey] = useState("sk_test_agentline_local");
+  const [apiKey, setApiKey] = useState("sk_test_vukho_local");
   const [showApiKeyFallback, setShowApiKeyFallback] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,7 +24,7 @@ function Login() {
     setError(null);
 
     if (!apiKey.trim()) {
-      setError("Enter an Vukho API key.");
+      setError("Enter a Vukho API key.");
       return;
     }
 
@@ -34,7 +34,7 @@ function Login() {
       setStoredApiKey(apiKey.trim());
       await navigate({ to: "/" });
     } catch (caught) {
-      if (caught instanceof AgentLineApiError) {
+      if (caught instanceof VukhoApiError) {
         setError(caught.status === 401 ? "Invalid API key." : formatApiError(caught));
       } else {
         setError("Could not connect to the Vukho backend.");
@@ -77,7 +77,7 @@ function Login() {
                   value={apiKey}
                   onChange={(event) => setApiKey(event.target.value)}
                   className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="sk_test_agentline_local"
+                  placeholder="sk_test_vukho_local"
                   autoComplete="off"
                 />
               </div>

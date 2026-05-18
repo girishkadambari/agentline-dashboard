@@ -1,4 +1,4 @@
-# AgentLine Frontend Next Phase Plan
+# Vukho Frontend Next Phase Plan
 
 ## Phase F1: Backend Auth And API Foundation
 
@@ -20,7 +20,7 @@ Build:
 
 Exit Criteria:
 
-- `/login` can validate `sk_test_agentline_local` against a running backend.
+- `/login` can validate `sk_test_vukho_local` against a running backend.
 - Authenticated users can enter the dashboard.
 - Unauthenticated users are sent to `/login`.
 - Build passes. Completed with `npm run build` on 2026-05-07.
@@ -609,7 +609,7 @@ Implemented:
 
 - API client now sends cookies with backend requests.
 - Session-authenticated write requests automatically include
-  `X-CSRF-Token` from the `agentline_csrf` cookie.
+  `X-CSRF-Token` from the `vukho_csrf` cookie.
 - Added current-user/session workspace API helpers.
 - Login now starts real backend Google OAuth through
   `/v1/auth/google/start`.
@@ -711,7 +711,7 @@ Source of truth:
 
 Goal:
 
-Make AgentLine feel like a premium agent infrastructure console instead of a
+Make Vukho feel like a premium agent infrastructure console instead of a
 generic generated SaaS dashboard.
 
 Priority order:

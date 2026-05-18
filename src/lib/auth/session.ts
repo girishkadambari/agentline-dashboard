@@ -1,5 +1,5 @@
-const API_KEY_STORAGE_KEY = "agentline.apiKey";
-export const CSRF_COOKIE_NAME = "agentline_csrf";
+const API_KEY_STORAGE_KEY = "vukho.apiKey";
+export const CSRF_COOKIE_NAME = "vukho_csrf";
 
 const canUseStorage = () =>
   typeof window !== "undefined" && typeof window.localStorage !== "undefined";

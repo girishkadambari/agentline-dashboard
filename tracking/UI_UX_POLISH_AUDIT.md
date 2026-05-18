@@ -1,16 +1,16 @@
-# AgentLine UI/UX Polish Audit
+# Vukho UI/UX Polish Audit
 
-This document captures the product polish layer AgentLine needs before the
+This document captures the product polish layer Vukho needs before the
 dashboard feels like a premium agent infrastructure platform.
 
-The goal is not to make AgentLine look like a generic AI SaaS. The UI should
+The goal is not to make Vukho look like a generic AI SaaS. The UI should
 feel operational, intelligent, developer-first, and agent-native: calm, fast,
 precise, and built for people who are wiring AI agents into real phone
 workflows.
 
 ## Current UX Diagnosis
 
-AgentLine is now mostly backend-connected, but the interface still feels like a
+Vukho is now mostly backend-connected, but the interface still feels like a
 Lovable-generated dashboard shell in several places.
 
 Main issues:
@@ -558,7 +558,7 @@ States:
 - Test
 - Live
 
-Important because AgentLine touches real phone and billing flows.
+Important because Vukho touches real phone and billing flows.
 
 ### 7. Project Context Layer
 

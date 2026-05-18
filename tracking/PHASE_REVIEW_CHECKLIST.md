@@ -1,4 +1,4 @@
-# AgentLine Frontend Phase Review Checklist
+# Vukho Frontend Phase Review Checklist
 
 Run this after every frontend implementation phase.
 
@@ -19,7 +19,7 @@ Run this after every frontend implementation phase.
 
 ## UX
 
-- Is the UI consistent with the AgentLine dashboard theme?
+- Is the UI consistent with the Vukho dashboard theme?
 - Does the layout work on desktop and mobile widths?
 - Do drawers, dialogs, and menus open and close predictably?
 - Does copy explain what happened without becoming marketing text?

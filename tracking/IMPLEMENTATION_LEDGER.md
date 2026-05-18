@@ -1,4 +1,4 @@
-# AgentLine Frontend Implementation Ledger
+# Vukho Frontend Implementation Ledger
 
 This ledger records frontend work as it is implemented. Update it after each
 meaningful slice so another engineer or AI agent can resume without guessing.
@@ -14,7 +14,7 @@ Implemented:
   labels:
   - user name or email for dashboard actions
   - API key label and prefix for API-key actions
-  - AgentLine system for automated actions
+  - Vukho system for automated actions
 - Added a secondary actor detail line in the audit table and detail panel when
   useful.
 - Preserved existing sanitization so customer-facing audit details do not expose
@@ -71,7 +71,7 @@ Status: implemented
 
 Implemented:
 
-- Reframed Settings around AgentLine customer concepts instead of internal vendors:
+- Reframed Settings around Vukho customer concepts instead of internal vendors:
   - `Auth` is now `Sign-in`
   - `Providers` is now `Channels`
   - provider readiness cards are now capability readiness cards
@@ -185,7 +185,7 @@ Implemented:
 
 - Created frontend tracking structure under `tracking/`.
 - Established the frontend refactor direction: move from Lovable mock UI to real
-  backend-connected AgentLine dashboard.
+  backend-connected Vukho dashboard.
 
 Decisions:
 
@@ -229,7 +229,7 @@ Implemented:
 
 Expected behavior:
 
-- User enters an AgentLine API key on `/login`.
+- User enters a Vukho API key on `/login`.
 - Frontend validates the key with `GET /workspaces/current`.
 - Valid key is stored locally.
 - App shell redirects unauthenticated users to `/login`.
@@ -621,7 +621,7 @@ Implemented:
   - webhook test signature headers
 - Replaced webhook freeform event textarea with a clearer event capability
   picker:
-  - selectable common AgentLine events
+  - selectable common Vukho events
   - selected event chips
   - custom event add flow
   - easy remove behavior
@@ -1075,7 +1075,7 @@ Implemented:
   - session workspace list/create/switch/invite accept helpers
 - Updated the API client to:
   - send cookies with requests
-  - add `X-CSRF-Token` from the `agentline_csrf` cookie for session writes
+  - add `X-CSRF-Token` from the `vukho_csrf` cookie for session writes
   - keep developer API-key fallback support when explicitly stored
 - Updated login:
   - primary action now starts real backend Google OAuth

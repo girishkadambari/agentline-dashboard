@@ -1,10 +1,10 @@
-# AgentLine Frontend Rules
+# Vukho Frontend Rules
 
 These rules apply to all frontend work.
 
 ## Product Rules
 
-- AgentLine is a developer-first AI agent telephony dashboard.
+- Vukho is a developer-first AI agent telephony dashboard.
 - The UI should prioritize setup clarity, operational visibility, and fast agent
   testing over marketing content.
 - Do not build landing pages in this app unless explicitly requested.

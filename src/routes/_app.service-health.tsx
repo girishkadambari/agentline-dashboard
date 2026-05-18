@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { StatusBadge } from "@/components/agentline/StatusBadge";
-import { Banner } from "@/components/agentline/Banner";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { StatusBadge } from "@/components/vukho/StatusBadge";
+import { Banner } from "@/components/vukho/Banner";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import { getBackendHealth, type BackendHealth } from "@/lib/api/health";
 import {
   getCurrentWorkspace,
@@ -57,7 +57,7 @@ function ServiceHealth() {
       );
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError
+        caught instanceof VukhoApiError
           ? formatApiError(caught)
           : "Could not load service health.",
       );

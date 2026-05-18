@@ -1,4 +1,4 @@
-# AgentLine Backend Gap Register
+# Vukho Backend Gap Register
 
 This register keeps frontend-visible gaps explicit so future phases do not ship
 fake UI states or invent unsupported contracts.

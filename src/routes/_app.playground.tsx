@@ -22,12 +22,12 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { Mono } from "@/components/agentline/Mono";
-import { StatusBadge } from "@/components/agentline/StatusBadge";
-import { CopyButton } from "@/components/agentline/CopyButton";
-import { PhoneInput } from "@/components/agentline/PhoneInput";
-import { Banner } from "@/components/agentline/Banner";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { Mono } from "@/components/vukho/Mono";
+import { StatusBadge } from "@/components/vukho/StatusBadge";
+import { CopyButton } from "@/components/vukho/CopyButton";
+import { PhoneInput } from "@/components/vukho/PhoneInput";
+import { Banner } from "@/components/vukho/Banner";
 import {
   Select,
   SelectContent,
@@ -41,7 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { AgentLineApiError, API_BASE_URL, formatApiError } from "@/lib/api/client";
+import { VukhoApiError, API_BASE_URL, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import { createBackendWebCallToken, startOutboundBackendCall } from "@/lib/api/calls";
 import { sendBackendMessage } from "@/lib/api/messages";
@@ -243,7 +243,7 @@ function Playground() {
       setWebhookId((c) => c || w.data[0]?.id || "");
       append("system", "info", "Environment ready", `${a.data.length} agents · ${w.data.length} webhook endpoints`);
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load playground setup.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load playground setup.");
     } finally {
       setIsLoading(false);
     }
@@ -329,7 +329,7 @@ function Playground() {
         }
       }
     } catch (caught) {
-      const msg = caught instanceof AgentLineApiError ? formatApiError(caught) : "Action failed.";
+      const msg = caught instanceof VukhoApiError ? formatApiError(caught) : "Action failed.";
       setError(msg);
       append(scenario.id, "error", "Request failed", msg);
       toast.error(msg);
@@ -828,7 +828,7 @@ function buildCurl(
   ctx: { agentId: string; webhookId: string; destination: string; body: string },
 ): string {
   const base = API_BASE_URL.replace(/\/$/, "");
-  const headers = `  -H "Authorization: Bearer $AGENTLINE_API_KEY" \\\n  -H "Content-Type: application/json"`;
+  const headers = `  -H "Authorization: Bearer $VUKHO_API_KEY" \\\n  -H "Content-Type: application/json"`;
   const a = ctx.agentId || "<agent_id>";
   const to = ctx.destination || "+15551234567";
   switch (scenario.id) {

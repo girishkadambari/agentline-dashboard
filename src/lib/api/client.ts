@@ -1,16 +1,16 @@
 import { getCsrfToken, getStoredApiKey } from "@/lib/auth/session";
 
 export const API_BASE_URL =
-  import.meta.env.VITE_AGENTLINE_API_URL ?? "http://localhost:3000/v1";
+  import.meta.env.VITE_VUKHO_API_URL ?? "http://localhost:3000/v1";
 
-export class AgentLineApiError extends Error {
+export class VukhoApiError extends Error {
   code: string;
   status: number;
   details?: unknown;
 
   constructor(input: { code: string; message: string; status: number; details?: unknown }) {
     super(input.message);
-    this.name = "AgentLineApiError";
+    this.name = "VukhoApiError";
     this.code = input.code;
     this.status = input.status;
     this.details = input.details;
@@ -27,7 +27,7 @@ function isValidationIssue(value: unknown): value is ValidationIssue {
 }
 
 export function formatApiError(caught: unknown, fallback = "Something went wrong.") {
-  if (!(caught instanceof AgentLineApiError)) {
+  if (!(caught instanceof VukhoApiError)) {
     return fallback;
   }
 
@@ -115,7 +115,7 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
         ? (payload as { error?: { code?: string; message?: string; details?: unknown } }).error
         : undefined;
 
-    throw new AgentLineApiError({
+    throw new VukhoApiError({
       code: errorPayload?.code ?? "request_failed",
       message: errorPayload?.message ?? `Request failed with status ${response.status}`,
       status: response.status,

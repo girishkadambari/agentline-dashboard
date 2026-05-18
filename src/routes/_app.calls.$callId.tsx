@@ -13,15 +13,15 @@ import {
   Server,
   User as UserIcon,
 } from "lucide-react";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { StatusBadge } from "@/components/agentline/StatusBadge";
-import { Mono } from "@/components/agentline/Mono";
-import { EmptyState } from "@/components/agentline/EmptyState";
-import { CopyButton } from "@/components/agentline/CopyButton";
-import { Banner } from "@/components/agentline/Banner";
-import { BackLink } from "@/components/agentline/BackLink";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { StatusBadge } from "@/components/vukho/StatusBadge";
+import { Mono } from "@/components/vukho/Mono";
+import { EmptyState } from "@/components/vukho/EmptyState";
+import { CopyButton } from "@/components/vukho/CopyButton";
+import { Banner } from "@/components/vukho/Banner";
+import { BackLink } from "@/components/vukho/BackLink";
 import { cn } from "@/lib/utils";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import { getBackendAgent, type AgentListItem } from "@/lib/api/agents";
 import {
   endBackendCall,
@@ -62,7 +62,7 @@ function CallDetail() {
       setTranscript(transcriptResponse.data);
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load call.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load call.",
       );
     } finally {
       if (!options.quiet) {
@@ -99,7 +99,7 @@ function CallDetail() {
       setCall(response.data);
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not end call.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not end call.",
       );
     } finally {
       setIsActionLoading(false);
@@ -123,7 +123,7 @@ function CallDetail() {
       setCall(response.data);
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not transfer call.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not transfer call.",
       );
     } finally {
       setIsActionLoading(false);

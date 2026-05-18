@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { KeyRound, Pencil, Plus, Save, ShieldAlert, Trash2, X } from "lucide-react";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable } from "@/components/agentline/DataTable";
-import { StatusBadge } from "@/components/agentline/StatusBadge";
-import { Mono } from "@/components/agentline/Mono";
-import { EmptyState } from "@/components/agentline/EmptyState";
-import { CopyButton } from "@/components/agentline/CopyButton";
-import { Banner } from "@/components/agentline/Banner";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { DataTable } from "@/components/vukho/DataTable";
+import { StatusBadge } from "@/components/vukho/StatusBadge";
+import { Mono } from "@/components/vukho/Mono";
+import { EmptyState } from "@/components/vukho/EmptyState";
+import { CopyButton } from "@/components/vukho/CopyButton";
+import { Banner } from "@/components/vukho/Banner";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import {
   createBackendApiKey,
   listBackendApiKeys,
@@ -41,7 +41,7 @@ function ApiKeys() {
       const response = await listBackendApiKeys();
       setApiKeys(response.data);
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load API keys.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load API keys.");
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +68,7 @@ function ApiKeys() {
       setCreateLabel("");
       await loadApiKeys();
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not create API key.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not create API key.");
     } finally {
       setIsCreating(false);
     }
@@ -95,7 +95,7 @@ function ApiKeys() {
       setEditingId(null);
       setLabelDraft("");
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not update API key.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not update API key.");
     } finally {
       setPendingActionId(null);
     }
@@ -113,7 +113,7 @@ function ApiKeys() {
       const response = await revokeBackendApiKey(apiKey.id);
       setApiKeys((current) => current.map((item) => (item.id === apiKey.id ? response.data : item)));
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not revoke API key.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not revoke API key.");
     } finally {
       setPendingActionId(null);
     }

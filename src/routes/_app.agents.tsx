@@ -1,14 +1,14 @@
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable, type Column } from "@/components/agentline/DataTable";
-import { StatusBadge } from "@/components/agentline/StatusBadge";
-import { Mono } from "@/components/agentline/Mono";
-import { EmptyState } from "@/components/agentline/EmptyState";
-import { CopyButton } from "@/components/agentline/CopyButton";
-import { Banner } from "@/components/agentline/Banner";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { DataTable, type Column } from "@/components/vukho/DataTable";
+import { StatusBadge } from "@/components/vukho/StatusBadge";
+import { Mono } from "@/components/vukho/Mono";
+import { EmptyState } from "@/components/vukho/EmptyState";
+import { CopyButton } from "@/components/vukho/CopyButton";
+import { Banner } from "@/components/vukho/Banner";
 import {
-  AgentLineApiError,
+  VukhoApiError,
   formatApiError,
 } from "@/lib/api/client";
 import {
@@ -65,7 +65,7 @@ function Agents() {
       const response = await listBackendAgents();
       setAgents(response.data);
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load agents.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load agents.");
     } finally {
       setIsLoading(false);
     }
@@ -339,7 +339,7 @@ function AgentDrawer({
         onUpdated(response.data);
       }
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not save agent.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not save agent.");
     } finally {
       setIsSaving(false);
     }

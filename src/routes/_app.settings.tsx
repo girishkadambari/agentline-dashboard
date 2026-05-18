@@ -14,16 +14,16 @@ import {
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CopyButton } from "@/components/agentline/CopyButton";
-import { DataTable } from "@/components/agentline/DataTable";
-import { EmptyState } from "@/components/agentline/EmptyState";
-import { Mono } from "@/components/agentline/Mono";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { StatusBadge } from "@/components/agentline/StatusBadge";
-import { Banner } from "@/components/agentline/Banner";
+import { CopyButton } from "@/components/vukho/CopyButton";
+import { DataTable } from "@/components/vukho/DataTable";
+import { EmptyState } from "@/components/vukho/EmptyState";
+import { Mono } from "@/components/vukho/Mono";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { StatusBadge } from "@/components/vukho/StatusBadge";
+import { Banner } from "@/components/vukho/Banner";
 import { listAuditEvents, type AuditEventListItem } from "@/lib/api/audit";
 import { getCurrentUser, type CurrentUser } from "@/lib/api/auth";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import { updateBackendBillingControls } from "@/lib/api/billing";
 import {
   createWorkspaceInvite,
@@ -88,7 +88,7 @@ function Settings() {
       setInvites(inviteResponse.data);
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load settings.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load settings.",
       );
     } finally {
       setLoading(false);
@@ -183,7 +183,7 @@ function WorkspacePanel({
       toast.success("Workspace saved");
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not save workspace.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not save workspace.",
       );
     } finally {
       setSaving(false);
@@ -264,7 +264,7 @@ function MembersPanel({
       await onChanged();
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not update member.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not update member.",
       );
     } finally {
       setBusyId(null);
@@ -284,7 +284,7 @@ function MembersPanel({
       await onChanged();
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not remove member.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not remove member.",
       );
     } finally {
       setBusyId(null);
@@ -388,7 +388,7 @@ function InvitesPanel({
       await onChanged();
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not create invite.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not create invite.",
       );
     } finally {
       setSubmitting(false);
@@ -404,7 +404,7 @@ function InvitesPanel({
       await onChanged();
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not revoke invite.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not revoke invite.",
       );
     } finally {
       setBusyId(null);
@@ -420,7 +420,7 @@ function InvitesPanel({
       await onChanged();
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not resend invite.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not resend invite.",
       );
     } finally {
       setBusyId(null);
@@ -669,7 +669,7 @@ function ControlsPanel({
       await onChanged();
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError
+        caught instanceof VukhoApiError
           ? formatApiError(caught)
           : "Could not save billing controls.",
       );
@@ -927,7 +927,7 @@ function AuditLogPanel() {
       });
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load audit log.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load audit log.",
       );
     } finally {
       setLoading(false);

@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Pencil, Plus, RefreshCcw, Send, Trash2, Webhook as WebhookIcon } from "lucide-react";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable, type Column } from "@/components/agentline/DataTable";
-import { StatusBadge } from "@/components/agentline/StatusBadge";
-import { Mono } from "@/components/agentline/Mono";
-import { EmptyState } from "@/components/agentline/EmptyState";
-import { CopyButton } from "@/components/agentline/CopyButton";
-import { Banner } from "@/components/agentline/Banner";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { DataTable, type Column } from "@/components/vukho/DataTable";
+import { StatusBadge } from "@/components/vukho/StatusBadge";
+import { Mono } from "@/components/vukho/Mono";
+import { EmptyState } from "@/components/vukho/EmptyState";
+import { CopyButton } from "@/components/vukho/CopyButton";
+import { Banner } from "@/components/vukho/Banner";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import {
   createBackendWebhook,
   disableBackendWebhook,
@@ -123,7 +123,7 @@ function Webhooks() {
       setEndpoints(response.data);
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load webhooks.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load webhooks.",
       );
     } finally {
       setIsLoading(false);
@@ -138,7 +138,7 @@ function Webhooks() {
       setDeliveries(response.data);
     } catch (caught) {
       setDeliveryError(
-        caught instanceof AgentLineApiError
+        caught instanceof VukhoApiError
           ? formatApiError(caught)
           : "Could not load webhook deliveries.",
       );
@@ -192,7 +192,7 @@ function Webhooks() {
       );
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not disable webhook.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not disable webhook.",
       );
     }
   }
@@ -205,7 +205,7 @@ function Webhooks() {
       );
     } catch (caught) {
       setDeliveryError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not retry delivery.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not retry delivery.",
       );
     }
   }
@@ -289,7 +289,7 @@ function Webhooks() {
         ) : deliveries.length === 0 ? (
           <EmptyState
             title="No webhook deliveries"
-            description="Test an endpoint or trigger an Vukho event to create delivery records."
+            description="Test an endpoint or trigger a Vukho event to create delivery records."
           />
         ) : (
           <DeliveriesTable deliveries={deliveries} onRetry={retryDelivery} />
@@ -644,7 +644,7 @@ function WebhookDrawer({
     setTestHeaders(null);
     setSimulateFailure(false);
     if (isCreate) {
-      setUrl("https://example.com/agentline/webhook");
+      setUrl("https://example.com/vukho/webhook");
       setSelectedEvents(DEFAULT_SELECTED_EVENTS);
       setCustomEvent("");
       setStatus("active");
@@ -687,7 +687,7 @@ function WebhookDrawer({
         onTested(response.data.delivery);
       } catch (caught) {
         setError(
-          caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not test webhook.",
+          caught instanceof VukhoApiError ? formatApiError(caught) : "Could not test webhook.",
         );
       } finally {
         setIsSaving(false);
@@ -721,7 +721,7 @@ function WebhookDrawer({
       }
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not save webhook.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not save webhook.",
       );
     } finally {
       setIsSaving(false);

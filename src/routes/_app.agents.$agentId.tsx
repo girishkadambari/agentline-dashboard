@@ -2,16 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Power, Save } from "lucide-react";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { StatusBadge } from "@/components/agentline/StatusBadge";
-import { Mono } from "@/components/agentline/Mono";
-import { Stat } from "@/components/agentline/Stat";
-import { InlineTabs } from "@/components/agentline/Tabs";
-import { EmptyState } from "@/components/agentline/EmptyState";
-import { Banner } from "@/components/agentline/Banner";
-import { BackLink } from "@/components/agentline/BackLink";
-import { DataTable as StandardDataTable } from "@/components/agentline/DataTable";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { StatusBadge } from "@/components/vukho/StatusBadge";
+import { Mono } from "@/components/vukho/Mono";
+import { Stat } from "@/components/vukho/Stat";
+import { InlineTabs } from "@/components/vukho/Tabs";
+import { EmptyState } from "@/components/vukho/EmptyState";
+import { Banner } from "@/components/vukho/Banner";
+import { BackLink } from "@/components/vukho/BackLink";
+import { DataTable as StandardDataTable } from "@/components/vukho/DataTable";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import type { CallListItem } from "@/lib/api/calls";
 import type { ConversationListItem } from "@/lib/api/messages";
 import type { NumberListItem } from "@/lib/api/numbers";
@@ -64,7 +64,7 @@ function AgentDetail() {
       .catch((caught) => {
         if (!cancelled) {
           setError(
-            caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load agent.",
+            caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load agent.",
           );
         }
       })
@@ -98,7 +98,7 @@ function AgentDetail() {
       .catch((caught) => {
         if (!cancelled) {
           setRelatedError(
-            caught instanceof AgentLineApiError
+            caught instanceof VukhoApiError
               ? formatApiError(caught)
               : "Could not load agent activity.",
           );
@@ -143,7 +143,7 @@ function AgentDetail() {
       setAgent(response.data);
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not save agent.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not save agent.",
       );
     } finally {
       setIsSaving(false);
@@ -162,7 +162,7 @@ function AgentDetail() {
       setAgent(response.data);
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not disable agent.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not disable agent.",
       );
     } finally {
       setIsDisabling(false);

@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Logo } from "@/components/agentline/Logo";
-import { Banner } from "@/components/agentline/Banner";
+import { Logo } from "@/components/vukho/Logo";
+import { Banner } from "@/components/vukho/Banner";
 import { Check } from "lucide-react";
 import { createBackendAgent } from "@/lib/api/agents";
 import { getCurrentUser } from "@/lib/api/auth";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import { updateCurrentWorkspace } from "@/lib/api/workspace";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +38,7 @@ function Onboarding() {
       })
       .catch((caught) => {
         if (!cancelled) {
-          if (caught instanceof AgentLineApiError && caught.status === 401) {
+          if (caught instanceof VukhoApiError && caught.status === 401) {
             window.location.href = "/login";
             return;
           }
@@ -83,7 +83,7 @@ function Onboarding() {
       setCreatedAgentId(response.data.id);
       setStep(3);
     } catch (caught) {
-      if (caught instanceof AgentLineApiError) {
+      if (caught instanceof VukhoApiError) {
         setError(formatApiError(caught));
       } else {
         setError("Could not complete onboarding. Check the backend and try again.");
@@ -175,7 +175,7 @@ function Onboarding() {
               <input
                 value={webhookUrl}
                 onChange={(event) => setWebhookUrl(event.target.value)}
-                placeholder="https://api.yourapp.com/agentline"
+                placeholder="https://api.yourapp.com/vukho"
                 className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm font-mono"
               />
             </div>

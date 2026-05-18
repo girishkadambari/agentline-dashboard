@@ -14,11 +14,11 @@ import {
   Sparkles,
   Wallet,
 } from "lucide-react";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable, type Column } from "@/components/agentline/DataTable";
-import { EmptyState } from "@/components/agentline/EmptyState";
-import { Mono } from "@/components/agentline/Mono";
-import { Banner } from "@/components/agentline/Banner";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { DataTable, type Column } from "@/components/vukho/DataTable";
+import { EmptyState } from "@/components/vukho/EmptyState";
+import { Mono } from "@/components/vukho/Mono";
+import { Banner } from "@/components/vukho/Banner";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import {
   createBackendCheckoutSession,
@@ -125,7 +125,7 @@ function Billing() {
       setMtdSpend(usageRes.data.reduce((sum, e) => sum + e.totalCost, 0));
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load billing.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load billing.",
       );
     } finally {
       setIsLoading(false);
@@ -165,7 +165,7 @@ function Billing() {
       window.location.href = response.data.url;
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not start checkout.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not start checkout.",
       );
       setIsActionLoading(null);
     }
@@ -184,7 +184,7 @@ function Billing() {
       window.location.href = response.data.url;
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError
+        caught instanceof VukhoApiError
           ? formatApiError(caught)
           : "Could not start subscription checkout.",
       );
@@ -200,7 +200,7 @@ function Billing() {
       window.location.href = response.data.url;
     } catch (caught) {
       setError(
-        caught instanceof AgentLineApiError
+        caught instanceof VukhoApiError
           ? formatApiError(caught)
           : "Could not open billing portal.",
       );

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Logo } from "@/components/agentline/Logo";
+import { Logo } from "@/components/vukho/Logo";
 
 export const Route = createFileRoute("/auth/callback")({
   component: Callback,

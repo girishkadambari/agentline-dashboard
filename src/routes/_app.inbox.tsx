@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Inbox as InboxIcon, MessageSquare, Search, Send, User } from "lucide-react";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { Mono } from "@/components/agentline/Mono";
-import { EmptyState } from "@/components/agentline/EmptyState";
-import { StatusBadge } from "@/components/agentline/StatusBadge";
-import { CopyButton } from "@/components/agentline/CopyButton";
-import { PhoneInput } from "@/components/agentline/PhoneInput";
-import { Banner } from "@/components/agentline/Banner";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { Mono } from "@/components/vukho/Mono";
+import { EmptyState } from "@/components/vukho/EmptyState";
+import { StatusBadge } from "@/components/vukho/StatusBadge";
+import { CopyButton } from "@/components/vukho/CopyButton";
+import { PhoneInput } from "@/components/vukho/PhoneInput";
+import { Banner } from "@/components/vukho/Banner";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import {
   listBackendConversationMessages,
@@ -62,7 +62,7 @@ function Inbox() {
           : conversationResponse.data[0]?.id ?? null;
       setActiveConversationId(nextActive);
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load inbox.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load inbox.");
     } finally {
       setIsLoading(false);
     }
@@ -84,7 +84,7 @@ function Inbox() {
         return;
       }
       setMessages([]);
-      setThreadError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load messages.");
+      setThreadError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load messages.");
     } finally {
       if (threadRequestId.current === requestId) {
         setIsThreadLoading(false);
@@ -514,7 +514,7 @@ function MessageDrawer({
       const response = await sendBackendMessage({ agentId, to: phone.trim(), body: body.trim() });
       onCreated(response.data);
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not create message.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not create message.");
     } finally {
       setIsSaving(false);
     }

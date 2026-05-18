@@ -2,14 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { FlaskConical, Phone, Plus, Webhook } from "lucide-react";
-import { PageHeader } from "@/components/agentline/PageHeader";
-import { DataTable } from "@/components/agentline/DataTable";
-import { Stat } from "@/components/agentline/Stat";
-import { StatusBadge } from "@/components/agentline/StatusBadge";
-import { Mono } from "@/components/agentline/Mono";
-import { EmptyState } from "@/components/agentline/EmptyState";
-import { Banner } from "@/components/agentline/Banner";
-import { AgentLineApiError, formatApiError } from "@/lib/api/client";
+import { PageHeader } from "@/components/vukho/PageHeader";
+import { DataTable } from "@/components/vukho/DataTable";
+import { Stat } from "@/components/vukho/Stat";
+import { StatusBadge } from "@/components/vukho/StatusBadge";
+import { Mono } from "@/components/vukho/Mono";
+import { EmptyState } from "@/components/vukho/EmptyState";
+import { Banner } from "@/components/vukho/Banner";
+import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
 import { getBackendBillingBalance, type BillingBalanceView } from "@/lib/api/billing";
 import { listBackendCalls, type CallListItem } from "@/lib/api/calls";
@@ -59,7 +59,7 @@ function Overview() {
       setBalance(balanceResponse.data);
       setFailedWebhooks(failedWebhookResponse.data.length);
     } catch (caught) {
-      setError(caught instanceof AgentLineApiError ? formatApiError(caught) : "Could not load overview.");
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load overview.");
     } finally {
       setIsLoading(false);
     }

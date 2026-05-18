@@ -1,10 +1,10 @@
-# AgentLine Frontend Tracking
+# Vukho Frontend Tracking
 
 This folder is the frontend implementation source of truth.
 
 Use it to track what has been implemented, what is next, what needs review,
 and which frontend rules must stay true while the Lovable-generated UI is
-converted into a production AgentLine dashboard.
+converted into a production Vukho dashboard.
 
 ## Files
 
