@@ -312,7 +312,6 @@ function SidebarContent({
           </button>
         )}
       </div>
-      <WorkspaceSwitcher user={user} workspaceError={workspaceError} onWorkspaceChanged={onWorkspaceChanged} collapsed={collapsed} />
       <nav className={cn("flex-1 overflow-y-auto pb-4 pt-1", collapsed ? "px-1.5" : "px-2")}>
         {navGroups.map((group) => (
           <div key={group.label} className="mb-4">
@@ -351,6 +350,7 @@ function SidebarContent({
           </div>
         ))}
       </nav>
+      <WorkspaceSwitcher user={user} workspaceError={workspaceError} onWorkspaceChanged={onWorkspaceChanged} collapsed={collapsed} />
       <ProfileSection user={user} workspaceError={workspaceError} onNav={onNav} onSignOut={onSignOut} collapsed={collapsed} />
     </div>
   );
