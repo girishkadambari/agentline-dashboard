@@ -545,7 +545,7 @@ function ChannelsPanel({
 }) {
   if (loading) {
     return (
-      <PanelShell title="AgentLine readiness">
+      <PanelShell title="Vukho readiness">
         <SkeletonRows />
       </PanelShell>
     );
@@ -553,7 +553,7 @@ function ChannelsPanel({
 
   if (!settings) {
     return (
-      <PanelShell title="AgentLine readiness">
+      <PanelShell title="Vukho readiness">
         <EmptyState
           title="Readiness unavailable"
           description="Refresh settings after the backend is reachable."
@@ -580,7 +580,7 @@ function ChannelsPanel({
       icon: ShieldCheck,
       title: "Inbound events",
       description: telecom.callbackUrlsReady
-        ? "Incoming messages, call updates, and speech turns can reach AgentLine."
+        ? "Incoming messages, call updates, and speech turns can reach Vukho."
         : "Finish event routing so live calls and messages update the workspace.",
       status: telecom.callbackUrlsReady ? "active" : "pending",
       meta: ["Inbound SMS", "Call updates", "Speech capture"],
@@ -622,7 +622,7 @@ function ChannelsPanel({
   ];
 
   return (
-    <PanelShell title="AgentLine readiness">
+    <PanelShell title="Vukho readiness">
       <div className="grid gap-3 lg:grid-cols-2">
         {channelItems.map((item) => (
           <CapabilityReadinessCard key={item.title} item={item} />

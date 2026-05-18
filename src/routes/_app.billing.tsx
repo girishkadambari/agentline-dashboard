@@ -76,7 +76,7 @@ const USAGE_RATES = [
     label: "Inbound SMS",
     price: "$0.01",
     unit: "message",
-    note: "Charged when AgentLine receives the inbound webhook.",
+    note: "Charged when Vukho receives the inbound webhook.",
     icon: MessageSquare,
   },
   {

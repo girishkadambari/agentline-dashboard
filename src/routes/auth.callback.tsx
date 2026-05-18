@@ -13,7 +13,7 @@ function Callback() {
         <div className="rounded-lg border bg-surface p-6">
           <h2 className="text-sm font-semibold">Finishing Google sign in</h2>
           <p className="mt-1 max-w-sm text-xs text-muted-foreground">
-            Google OAuth is handled by the AgentLine backend. If you landed here directly, start sign in again.
+            Google OAuth is handled by the Vukho backend. If you landed here directly, start sign in again.
           </p>
           <Link to="/login" className="mt-4 inline-flex rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted">Back to sign in</Link>
         </div>

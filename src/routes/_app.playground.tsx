@@ -142,7 +142,7 @@ const SCENARIOS: Scenario[] = [
     bodyPlaceholder: "Hi! This is a test from the playground.",
     cta: "Send message",
     sampleDestination: "+15551234567",
-    sampleBody: "Hi! This is a test from the AgentLine playground.",
+    sampleBody: "Hi! This is a test from the Vukho playground.",
     successHint: "Replies stream into Inbox under the same conversation ID.",
   },
   {

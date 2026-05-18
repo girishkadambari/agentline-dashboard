@@ -108,7 +108,7 @@ function ServiceHealth() {
         status: phoneReady && eventRoutingReady ? "operational" : "degraded",
         detail:
           phoneReady && eventRoutingReady
-            ? "Inbound and outbound SMS updates can reach AgentLine."
+            ? "Inbound and outbound SMS updates can reach Vukho."
             : "Message delivery or inbound updates need setup.",
       },
       {
@@ -116,7 +116,7 @@ function ServiceHealth() {
         status: phoneReady && eventRoutingReady ? "operational" : "degraded",
         detail:
           phoneReady && eventRoutingReady
-            ? "Call lifecycle and speech capture callbacks can reach AgentLine."
+            ? "Call lifecycle and speech capture callbacks can reach Vukho."
             : "Call routing or status updates need setup.",
       },
       {
@@ -141,7 +141,7 @@ function ServiceHealth() {
     <div>
       <PageHeader
         title="Service Health"
-        description="Operational status for the AgentLine capabilities your agents depend on."
+        description="Operational status for the Vukho capabilities your agents depend on."
         actions={
           <button
             onClick={loadHealth}

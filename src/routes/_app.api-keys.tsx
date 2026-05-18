@@ -123,7 +123,7 @@ function ApiKeys() {
     <div>
       <PageHeader
         title="API Keys"
-        description="Manage credentials for the AgentLine API."
+        description="Manage credentials for the Vukho API."
         actions={
           <div className="inline-flex items-center gap-2 rounded-md border bg-surface px-3 py-1.5 text-xs text-muted-foreground">
             <KeyRound className="h-3.5 w-3.5" />
@@ -187,7 +187,7 @@ function ApiKeys() {
           <div className="space-y-3">{Array.from({ length: 5 }).map((_, index) => <div key={index} className="h-10 animate-pulse rounded-md bg-muted" />)}</div>
         </div>
       ) : apiKeys.length === 0 ? (
-        <EmptyState icon={<KeyRound className="h-5 w-5" />} title="No API keys" description="Create a key to connect agents, scripts, and integrations to AgentLine." />
+        <EmptyState icon={<KeyRound className="h-5 w-5" />} title="No API keys" description="Create a key to connect agents, scripts, and integrations to Vukho." />
       ) : (
         <ApiKeysTable
           apiKeys={apiKeys}
@@ -207,7 +207,7 @@ function ApiKeys() {
 
       <div className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
         <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        <p>Full API keys are shown once at creation. AgentLine stores only a hash and public prefix after that.</p>
+        <p>Full API keys are shown once at creation. Vukho stores only a hash and public prefix after that.</p>
       </div>
     </div>
   );
