@@ -39,11 +39,9 @@ export function LogoMark({
         </>
       )}
 
-      {/* Hollow chevron "V" outline — outer V minus inner V, even-odd fill */}
+      {/* Hollow chevron "V" outline — single winding traces outer then inner */}
       <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M6 8 L18 8 L32 40 L46 8 L58 8 L34.2 58 a2.6 2.6 0 0 1 -4.4 0 Z M21 8 L32 33 L43 8 Z"
+        d="M6 8 L18 8 L32 40 L46 8 L58 8 L34.2 58 a2.6 2.6 0 0 1 -4.4 0 Z"
         fill={ink}
       />
 
