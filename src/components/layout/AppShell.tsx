@@ -213,7 +213,7 @@ function WorkspaceSwitcher({
       </CollapsedTooltip>
       {open && (
         <div className={cn(
-          "absolute top-full z-50 mt-2 overflow-hidden rounded-xl border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7)] ring-1 ring-white/5",
+          "absolute bottom-full z-50 mb-2 overflow-hidden rounded-xl border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7)] ring-1 ring-white/5",
           collapsed ? "left-2 w-64" : "left-3 right-3"
         )}>
           <div className="px-3 pb-1.5 pt-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted">
@@ -312,7 +312,6 @@ function SidebarContent({
           </button>
         )}
       </div>
-      <WorkspaceSwitcher user={user} workspaceError={workspaceError} onWorkspaceChanged={onWorkspaceChanged} collapsed={collapsed} />
       <nav className={cn("flex-1 overflow-y-auto pb-4 pt-1", collapsed ? "px-1.5" : "px-2")}>
         {navGroups.map((group) => (
           <div key={group.label} className="mb-4">
@@ -351,6 +350,7 @@ function SidebarContent({
           </div>
         ))}
       </nav>
+      <WorkspaceSwitcher user={user} workspaceError={workspaceError} onWorkspaceChanged={onWorkspaceChanged} collapsed={collapsed} />
       <ProfileSection user={user} workspaceError={workspaceError} onNav={onNav} onSignOut={onSignOut} collapsed={collapsed} />
     </div>
   );
