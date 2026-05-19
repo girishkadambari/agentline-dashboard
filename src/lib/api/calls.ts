@@ -179,6 +179,3 @@ export const createWebCallToken = createBackendWebCallToken;
 export const endCall = endBackendCall;
 export const transferCall = transferBackendCall;
 export const callTranscript = getBackendCallTranscript;
-export const callTimeline = async (id: string) => ({
-  data: [{ at: "created", event: "call.created", detail: id }],
-});

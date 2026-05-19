@@ -68,7 +68,7 @@ const USAGE_RATES = [
     label: "Outbound SMS",
     price: "$0.01",
     unit: "message",
-    note: "Charged when Twilio accepts the outbound message.",
+    note: "Charged when the message is accepted for delivery.",
     icon: MessageSquare,
   },
   {
@@ -84,7 +84,7 @@ const USAGE_RATES = [
     label: "Voice",
     price: "$0.03",
     unit: "started minute",
-    note: "Final cost settles from provider call duration callbacks.",
+    note: "Final cost settles from carrier call duration updates.",
     icon: Gauge,
   },
 ] as const;
@@ -200,9 +200,7 @@ function Billing() {
       window.location.href = response.data.url;
     } catch (caught) {
       setError(
-        caught instanceof VukhoApiError
-          ? formatApiError(caught)
-          : "Could not open billing portal.",
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not open billing portal.",
       );
       setIsActionLoading(null);
     }
@@ -239,14 +237,9 @@ function Billing() {
         <Banner
           variant="warning"
           className="mb-4"
-          title={<>Stripe needs configuration</>}
+          title={<>Billing needs configuration</>}
           message={
-            <>
-              Mode <strong>{stripeStatus.mode}</strong>. Secret key{" "}
-              {stripeStatus.secretKeyConfigured ? "configured" : "missing"}, mode match{" "}
-              {stripeStatus.secretKeyMatchesMode ? "ok" : "failed"}, webhook secret{" "}
-              {stripeStatus.webhookSecretConfigured ? "configured" : "missing"}.
-            </>
+            <>Payment processing is not fully ready for self-serve billing in this environment.</>
           }
         />
       )}
@@ -289,7 +282,7 @@ function Billing() {
       <div className="mt-8">
         <SectionHeader
           title="Plans"
-          description="Switch plans anytime. Changes prorate automatically through Stripe."
+          description="Switch plans anytime. Changes are prorated automatically."
         />
         <PlanGrid
           plans={billingState?.plans ?? []}
@@ -344,7 +337,7 @@ function Billing() {
           </summary>
           <dl className="mt-4 grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
             <Detail
-              label="Stripe customer"
+              label="Payment account"
               value={billingState?.billingAccount.providerCustomerId ?? "—"}
               mono
             />
@@ -641,7 +634,7 @@ function PlanGrid({
                 </strong>{" "}
                 included usage every month
               </Feature>
-              <Feature>Overages metered through Stripe or balance</Feature>
+              <Feature>Overages are metered automatically from your Vukho usage</Feature>
               <Feature>{plan.trialDays}-day free trial, no card surprises</Feature>
             </ul>
             <button
@@ -659,7 +652,7 @@ function PlanGrid({
               ) : !plan.stripePriceConfigured ? (
                 "Price not configured"
               ) : isLoading ? (
-                "Opening Stripe..."
+                "Opening checkout..."
               ) : hasSubscription ? (
                 <>
                   Switch to {plan.name}
@@ -805,7 +798,7 @@ function TopUpDialog({
               </span>
             </div>
             <div className="mt-1 text-[11px] text-muted-foreground">
-              Securely processed by Stripe. Credits appear instantly after payment.
+              Secure payment. Credits appear instantly after payment.
             </div>
           </div>
         </div>
@@ -835,7 +828,11 @@ function TopUpDialog({
 
 /* ---------- Transactions table ---------- */
 
-function BillingTransactionsTable({ transactions }: { transactions: BillingTransactionListItem[] }) {
+function BillingTransactionsTable({
+  transactions,
+}: {
+  transactions: BillingTransactionListItem[];
+}) {
   const columns: Column<BillingTransactionListItem>[] = [
     {
       key: "createdAt",
@@ -861,7 +858,7 @@ function BillingTransactionsTable({ transactions }: { transactions: BillingTrans
     },
     {
       key: "provider",
-      label: "Provider",
+      label: "Source",
       width: 110,
       sortable: true,
       render: (t) => <span className="capitalize text-muted-foreground">{t.provider}</span>,
@@ -932,7 +929,9 @@ function StatusPill({ status }: { status: string }) {
 /* ---------- helpers ---------- */
 
 function isStripeReady(status: StripeStatusView) {
-  return status.secretKeyConfigured && status.secretKeyMatchesMode && status.webhookSecretConfigured;
+  return (
+    status.secretKeyConfigured && status.secretKeyMatchesMode && status.webhookSecretConfigured
+  );
 }
 
 function isGrantActive(grant: BillingAllowanceGrantView) {
@@ -989,9 +988,9 @@ function customerTransactionLabel(transaction: BillingTransactionListItem) {
 }
 
 function customerTransactionDescription(transaction: BillingTransactionListItem) {
-  if (transaction.type.includes("subscription")) return "Plan lifecycle managed by Stripe";
+  if (transaction.type.includes("subscription")) return "Plan lifecycle event";
   if (transaction.type.includes("invoice")) return "Recurring billing event";
-  if (transaction.type.includes("checkout")) return "Stripe Checkout event";
+  if (transaction.type.includes("checkout")) return "Checkout event";
   return "Billing ledger event";
 }
 

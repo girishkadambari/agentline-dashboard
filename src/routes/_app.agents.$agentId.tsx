@@ -142,9 +142,7 @@ function AgentDetail() {
       });
       setAgent(response.data);
     } catch (caught) {
-      setError(
-        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not save agent.",
-      );
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not save agent.");
     } finally {
       setIsSaving(false);
     }
@@ -315,7 +313,7 @@ function AgentOverview({
           value={isLoading ? "..." : (summary?.counts.failedWebhookDeliveries ?? 0)}
         />
         <Stat
-          label="Provider issues"
+          label="Delivery issues"
           value={isLoading ? "..." : (summary?.counts.providerIssues ?? 0)}
         />
         <Stat label="Usage events" value={isLoading ? "..." : (summary?.usage.eventCount ?? 0)} />
@@ -452,12 +450,12 @@ function AgentDebug({ summary, isLoading }: { summary: AgentSummary | null; isLo
         <Stat label="Usage cost" value={`$${Number(summary.usage.totalCost).toFixed(4)}`} />
         <Stat label="Webhook deliveries" value={summary.recentWebhookDeliveries.length} />
         <Stat label="Webhook failures" value={summary.counts.failedWebhookDeliveries} />
-        <Stat label="Provider issues" value={summary.counts.providerIssues} />
+        <Stat label="Delivery issues" value={summary.counts.providerIssues} />
       </div>
       <div className="grid gap-4 lg:grid-cols-3">
         <RecentPanel
-          title="Provider issues"
-          empty="No provider failures or warning callbacks for this agent."
+          title="Delivery issues"
+          empty="No carrier failures or warning callbacks for this agent."
           hasContent={summary.providerIssues.length > 0}
         >
           {summary.providerIssues.slice(0, 8).map((issue) => (
@@ -467,11 +465,11 @@ function AgentDebug({ summary, isLoading }: { summary: AgentSummary | null; isLo
             >
               <span className="min-w-0">
                 <span className="block truncate font-medium">
-                  {issue.provider} · {issue.resourceType}
+                  Phone network · {issue.resourceType}
                 </span>
                 <span className="block truncate text-xs text-muted-foreground">
                   {issue.code ? `${issue.code} · ` : ""}
-                  {issue.message ?? issue.status ?? "Provider reported an issue"}
+                  {issue.message ?? issue.status ?? "Carrier reported an issue"}
                 </span>
                 <span className="mt-1 block truncate font-mono text-[11px] text-muted-foreground">
                   {issue.resourceId}
@@ -575,14 +573,14 @@ function AgentNumbers({ numbers, isLoading }: { numbers: NumberListItem[]; isLoa
     return (
       <EmptyState
         title="No numbers attached"
-        description="Attach a Twilio-backed number to this agent from the Numbers page."
+        description="Attach a Vukho phone number to this agent from the Numbers page."
       />
     );
   }
 
   return (
     <DataTable
-      headers={["Number", "Capabilities", "Status", "Provider", "Updated"]}
+      headers={["Number", "Capabilities", "Status", "Updated"]}
       rows={numbers.map((number) => ({
         key: number.id,
         cells: [
@@ -596,7 +594,6 @@ function AgentNumbers({ numbers, isLoading }: { numbers: NumberListItem[]; isLoa
           </Link>,
           number.capabilities.join(", ").toUpperCase(),
           <StatusBadge key="status" status={number.status} />,
-          number.provider,
           number.updatedAt,
         ],
       }))}
@@ -694,26 +691,26 @@ function DataTable({
 }) {
   return (
     <StandardDataTable minWidth={760}>
-        <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
-          <tr>
-            {headers.map((header) => (
-              <th key={header} className="px-4 py-3 font-medium">
-                {header}
-              </th>
+      <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+        <tr>
+          {headers.map((header) => (
+            <th key={header} className="px-4 py-3 font-medium">
+              {header}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.key} className="border-t hover:bg-muted/40">
+            {row.cells.map((cell, index) => (
+              <td key={index} className="px-4 py-3 align-middle">
+                {cell}
+              </td>
             ))}
           </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.key} className="border-t hover:bg-muted/40">
-              {row.cells.map((cell, index) => (
-                <td key={index} className="px-4 py-3 align-middle">
-                  {cell}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
+        ))}
+      </tbody>
     </StandardDataTable>
   );
 }

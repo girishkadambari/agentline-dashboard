@@ -1,14 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Activity,
+  Bot,
   CreditCard,
   KeyRound,
   MailCheck,
   MailPlus,
+  Phone,
+  PlayCircle,
   RefreshCw,
   Save,
   ShieldCheck,
   Trash2,
+  Webhook,
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -138,7 +142,12 @@ function Settings() {
 
       <div className="mt-6">
         {tab === "Workspace" && (
-          <WorkspacePanel workspace={workspace} loading={loading} onSaved={setWorkspace} />
+          <WorkspacePanel
+            workspace={workspace}
+            settings={workspaceSettings}
+            loading={loading}
+            onSaved={setWorkspace}
+          />
         )}
         {tab === "Members" && (
           <MembersPanel members={members} loading={loading} onChanged={loadSettings} />
@@ -159,10 +168,12 @@ function Settings() {
 
 function WorkspacePanel({
   workspace,
+  settings,
   loading,
   onSaved,
 }: {
   workspace: Workspace | null;
+  settings: WorkspaceSettings | null;
   loading: boolean;
   onSaved: (workspace: Workspace) => void;
 }) {
@@ -199,43 +210,138 @@ function WorkspacePanel({
   }
 
   return (
-    <PanelShell title="Workspace">
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,520px)_minmax(260px,1fr)]">
-        <div className="space-y-5">
-          {error && <InlineError error={error} />}
-          <label className="block">
-            <span className="text-xs font-medium text-muted-foreground">Workspace name</span>
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm"
-            />
-          </label>
-          <button
-            onClick={saveWorkspace}
-            disabled={saving || name.trim().length === 0}
-            className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background disabled:opacity-60"
-          >
-            <Save className="h-3.5 w-3.5" />
-            {saving ? "Saving..." : "Save workspace"}
-          </button>
-        </div>
+    <div className="space-y-5">
+      <LaunchReadinessPanel settings={settings} />
 
-        <div className="rounded-lg border bg-muted/20 p-4">
-          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Workspace ID
+      <PanelShell title="Workspace">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,520px)_minmax(260px,1fr)]">
+          <div className="space-y-5">
+            {error && <InlineError error={error} />}
+            <label className="block">
+              <span className="text-xs font-medium text-muted-foreground">Workspace name</span>
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm"
+              />
+            </label>
+            <button
+              onClick={saveWorkspace}
+              disabled={saving || name.trim().length === 0}
+              className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background disabled:opacity-60"
+            >
+              <Save className="h-3.5 w-3.5" />
+              {saving ? "Saving..." : "Save workspace"}
+            </button>
           </div>
-          <div className="mt-2 flex items-center gap-2">
-            <Mono>{workspace?.id ?? "Unavailable"}</Mono>
-            {workspace?.id && <CopyButton value={workspace.id} label="Copy workspace ID" />}
-          </div>
-          <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
-            <Meta label="Created" value={formatDate(workspace?.createdAt)} />
-            <Meta label="Updated" value={formatDate(workspace?.updatedAt)} />
+
+          <div className="rounded-lg border bg-muted/20 p-4">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Workspace ID
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <Mono>{workspace?.id ?? "Unavailable"}</Mono>
+              {workspace?.id && <CopyButton value={workspace.id} label="Copy workspace ID" />}
+            </div>
+            <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
+              <Meta label="Created" value={formatDate(workspace?.createdAt)} />
+              <Meta label="Updated" value={formatDate(workspace?.updatedAt)} />
+            </div>
           </div>
         </div>
+      </PanelShell>
+    </div>
+  );
+}
+
+function LaunchReadinessPanel({ settings }: { settings: WorkspaceSettings | null }) {
+  if (!settings) {
+    return null;
+  }
+
+  const steps = [
+    {
+      key: "agent",
+      title: "Create an agent",
+      description: "Define the phone agent that will handle conversations.",
+      complete: settings.onboarding.hasAgent,
+      icon: Bot,
+      to: "/agents",
+      action: "Open agents",
+    },
+    {
+      key: "number",
+      title: "Attach a live number",
+      description: "Connect a phone number so customers can call or text the agent.",
+      complete: settings.onboarding.hasActiveNumber,
+      icon: Phone,
+      to: "/numbers",
+      action: "Open numbers",
+    },
+    {
+      key: "webhook",
+      title: "Send events to your app",
+      description: "Choose the webhook events your backend should receive.",
+      complete: settings.onboarding.hasWebhook,
+      icon: Webhook,
+      to: "/webhooks",
+      action: "Open webhooks",
+    },
+  ] as const;
+
+  const nextStep = steps.find((step) => !step.complete);
+  const liveReady = settings.onboarding.readyForLiveTraffic;
+
+  return (
+    <section className="rounded-lg border bg-surface p-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold">Launch readiness</h2>
+            <StatusBadge status={liveReady ? "ready" : "setup"} />
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {liveReady
+              ? "This workspace has the core pieces needed for live calls, messages, and webhook outcomes."
+              : nextStep
+                ? `Next: ${nextStep.title.toLowerCase()}.`
+                : "Finish setup before sending production traffic."}
+          </p>
+        </div>
+        <Link
+          to={liveReady ? "/playground" : (nextStep?.to ?? "/agents")}
+          className="inline-flex items-center justify-center gap-1.5 rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background hover:opacity-90"
+        >
+          <PlayCircle className="h-4 w-4" />
+          {liveReady ? "Run live test" : (nextStep?.action ?? "Continue setup")}
+        </Link>
       </div>
-    </PanelShell>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        {steps.map((step) => {
+          const Icon = step.icon;
+          return (
+            <Link
+              key={step.key}
+              to={step.to}
+              className={cn(
+                "rounded-lg border p-4 transition-colors hover:bg-muted/30",
+                step.complete ? "border-success/25 bg-success/5" : "bg-muted/15",
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span className="rounded-md border bg-surface p-2 text-muted-foreground">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <StatusBadge status={step.complete ? "complete" : "next"} />
+              </div>
+              <div className="mt-4 text-sm font-semibold">{step.title}</div>
+              <p className="mt-1 text-sm text-muted-foreground">{step.description}</p>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -562,52 +668,58 @@ function ChannelsPanel({
     );
   }
 
-  const telecom = settings.providers.telecom;
-  const stripe = settings.providers.stripe;
-  const brevo = settings.providers.brevo;
+  const phoneReadiness = settings.providers.telecom;
+  const billingReadiness = settings.providers.stripe;
+  const emailReadiness = settings.providers.brevo;
   const auth = settings.providers.auth;
   const channelItems = [
     {
       icon: Activity,
       title: "Phone number operations",
-      description: telecom.credentialsReady
+      description: phoneReadiness.credentialsReady
         ? "Numbers can be assigned to agents for calls and SMS."
         : "Finish phone account setup before assigning live numbers to agents.",
-      status: telecom.credentialsReady ? "active" : "pending",
+      status: phoneReadiness.credentialsReady ? "active" : "pending",
       meta: ["Numbers", "Calls", "SMS"],
     },
     {
       icon: ShieldCheck,
       title: "Inbound events",
-      description: telecom.callbackUrlsReady
+      description: phoneReadiness.callbackUrlsReady
         ? "Incoming messages, call updates, and speech turns can reach Vukho."
         : "Finish event routing so live calls and messages update the workspace.",
-      status: telecom.callbackUrlsReady ? "active" : "pending",
+      status: phoneReadiness.callbackUrlsReady ? "active" : "pending",
       meta: ["Inbound SMS", "Call updates", "Speech capture"],
     },
     {
       icon: CreditCard,
       title: "Billing and payments",
       description:
-        stripe.secretKeyConfigured && stripe.webhookSecretConfigured
+        billingReadiness.secretKeyConfigured && billingReadiness.webhookSecretConfigured
           ? "Plans, credits, invoices, and usage settlement are connected."
           : "Connect billing before paid workspaces can self-serve plans and credits.",
-      status: stripe.secretKeyConfigured && stripe.webhookSecretConfigured ? "active" : "pending",
+      status:
+        billingReadiness.secretKeyConfigured && billingReadiness.webhookSecretConfigured
+          ? "active"
+          : "pending",
       meta: [
         "Credits",
-        "Subscriptions",
+        "Plans",
         "Invoices",
-        stripe.usageMeterEventNameConfigured ? "Metered usage" : "Usage ledger",
+        billingReadiness.usageMeterEventNameConfigured ? "Usage charging" : "Usage ledger",
       ],
     },
     {
       icon: MailCheck,
       title: "Team emails",
       description:
-        brevo.apiKeyConfigured && brevo.fromEmailConfigured
+        emailReadiness.apiKeyConfigured && emailReadiness.fromEmailConfigured
           ? "Workspace invitations and account notices can be delivered."
           : "Finish email setup before relying on invite delivery.",
-      status: brevo.apiKeyConfigured && brevo.fromEmailConfigured ? "active" : "pending",
+      status:
+        emailReadiness.apiKeyConfigured && emailReadiness.fromEmailConfigured
+          ? "active"
+          : "pending",
       meta: ["Invites", "Account notices"],
     },
     {
@@ -617,7 +729,7 @@ function ChannelsPanel({
         ? "Workspace users can sign in with a protected dashboard session."
         : "Finish sign-in setup before inviting production teammates.",
       status: auth.googleConfigured ? "active" : "pending",
-      meta: ["SSO", "Sessions", "CSRF protection"],
+      meta: ["Google sign-in", "Secure sessions", "Protected writes"],
     },
   ];
 
@@ -699,6 +811,15 @@ function ControlsPanel({
 
   const canManageBilling = settings.controls.canManageBilling;
   const balance = settings.billing.balanceCents / 100;
+  const retention = settings.controls.retention;
+  const recording = settings.controls.recording;
+  const recordingDescription =
+    recording?.enabled === true
+      ? "Recording consent policy is configured for call recording."
+      : "Call recording is disabled until a workspace consent policy is configured.";
+  const retentionDescription = retention
+    ? `Transcripts are retained for ${retention.transcriptsDays} days and raw event evidence for ${retention.rawEventsDays} days.`
+    : "Default retention windows apply until custom retention controls are enabled.";
 
   return (
     <PanelShell title="Usage and compliance controls">
@@ -765,13 +886,13 @@ function ControlsPanel({
           />
           <ControlStatus
             title="Recording consent controls"
-            status="pending"
-            description="Choose how call recording consent is handled before recording is enabled."
+            status={recording?.enabled ? "active" : "disabled"}
+            description={recordingDescription}
           />
           <ControlStatus
             title="Data retention settings"
-            status="pending"
-            description="Set how long transcripts, recordings, and raw event evidence are retained."
+            status={retention?.configurable ? "active" : "disabled"}
+            description={retentionDescription}
           />
           <ControlStatus
             title="Team permission controls"

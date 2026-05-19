@@ -57,9 +57,12 @@ function Inbox() {
       setAgents(agentResponse.data);
 
       const nextActive =
-        preferredConversationId && conversationResponse.data.some((conversation) => conversation.id === preferredConversationId)
+        preferredConversationId &&
+        conversationResponse.data.some(
+          (conversation) => conversation.id === preferredConversationId,
+        )
           ? preferredConversationId
-          : conversationResponse.data[0]?.id ?? null;
+          : (conversationResponse.data[0]?.id ?? null);
       setActiveConversationId(nextActive);
     } catch (caught) {
       setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load inbox.");
@@ -84,7 +87,9 @@ function Inbox() {
         return;
       }
       setMessages([]);
-      setThreadError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load messages.");
+      setThreadError(
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load messages.",
+      );
     } finally {
       if (threadRequestId.current === requestId) {
         setIsThreadLoading(false);
@@ -105,7 +110,8 @@ function Inbox() {
   }, [activeConversationId]);
 
   const agentsById = useMemo(() => new Map(agents.map((agent) => [agent.id, agent])), [agents]);
-  const activeConversation = conversations.find((conversation) => conversation.id === activeConversationId) ?? null;
+  const activeConversation =
+    conversations.find((conversation) => conversation.id === activeConversationId) ?? null;
   const latestMessageByConversationId = useMemo(() => {
     const latest = new Map<string, MessageListItem>();
     for (const message of messages) {
@@ -193,7 +199,10 @@ function Inbox() {
             error={threadError}
             onSend={() => setDrawerOpen(true)}
           />
-          <DetailsPanel conversation={activeConversation} agent={activeConversation ? agentsById.get(activeConversation.agentId) : undefined} />
+          <DetailsPanel
+            conversation={activeConversation}
+            agent={activeConversation ? agentsById.get(activeConversation.agentId) : undefined}
+          />
         </div>
       )}
 
@@ -342,9 +351,13 @@ function ThreadPanel({
             {(agent?.name ?? "?").charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <div className="truncate text-[13.5px] font-semibold">{agent?.name ?? "Unknown agent"}</div>
+            <div className="truncate text-[13.5px] font-semibold">
+              {agent?.name ?? "Unknown agent"}
+            </div>
             <div className="flex items-center gap-1.5">
-              <Mono className="truncate text-[11px] text-muted-foreground">{conversation.contactId}</Mono>
+              <Mono className="truncate text-[11px] text-muted-foreground">
+                {conversation.contactId}
+              </Mono>
               <CopyButton value={conversation.contactId} label="Copy contact ID" />
             </div>
           </div>
@@ -452,14 +465,20 @@ function DetailsPanel({
             <div className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
               Status
             </div>
-            <div className="mt-2"><StatusBadge status={conversation.status} /></div>
+            <div className="mt-2">
+              <StatusBadge status={conversation.status} />
+            </div>
           </div>
           <div className="mb-5 space-y-3">
             <DetailRow label="Conversation ID" value={conversation.id} mono copyable />
             <DetailRow label="Contact ID" value={conversation.contactId} mono copyable />
           </div>
           <div className="mb-5 space-y-3 border-t border-border/60 pt-5">
-            <DetailRow label="Agent" value={agent?.name ?? conversation.agentId} icon={<User className="h-3 w-3" />} />
+            <DetailRow
+              label="Agent"
+              value={agent?.name ?? conversation.agentId}
+              icon={<User className="h-3 w-3" />}
+            />
             <DetailRow label="Channel" value={conversation.channel.toUpperCase()} />
             <DetailRow label="Last activity" value={conversation.lastActivity} />
           </div>
@@ -489,7 +508,8 @@ function MessageDrawer({
   const [isSaving, setIsSaving] = useState(false);
   const [touched, setTouched] = useState(false);
 
-  const phoneError = touched && !/^\+?[0-9\s\-()]{6,}$/.test(phone.trim()) ? "Enter a valid phone number." : null;
+  const phoneError =
+    touched && !/^\+?[0-9\s\-()]{6,}$/.test(phone.trim()) ? "Enter a valid phone number." : null;
   const agentError = touched && !agentId ? "Choose an agent." : null;
   const bodyError = touched && !body.trim() ? "Message body is required." : null;
 
@@ -514,7 +534,9 @@ function MessageDrawer({
       const response = await sendBackendMessage({ agentId, to: phone.trim(), body: body.trim() });
       onCreated(response.data);
     } catch (caught) {
-      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not create message.");
+      setError(
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not create message.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -525,33 +547,82 @@ function MessageDrawer({
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
         <SheetHeader>
           <SheetTitle>Send outbound SMS</SheetTitle>
-          <SheetDescription>Send a real provider-backed SMS through an agent with an active SMS-capable number.</SheetDescription>
+          <SheetDescription>
+            Send a live SMS through an agent with an active SMS-capable number.
+          </SheetDescription>
         </SheetHeader>
         <form className="mt-6 space-y-4" onSubmit={submit}>
           {error && <Banner variant="error" message={error} onDismiss={() => setError(null)} />}
           <label htmlFor="sms-agent" className="block text-sm font-medium">
-            Agent <span aria-hidden="true" className="text-destructive">*</span>
-            <select id="sms-agent" aria-required="true" aria-invalid={!!agentError} value={agentId} onChange={(event) => setAgentId(event.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm">
+            Agent{" "}
+            <span aria-hidden="true" className="text-destructive">
+              *
+            </span>
+            <select
+              id="sms-agent"
+              aria-required="true"
+              aria-invalid={!!agentError}
+              value={agentId}
+              onChange={(event) => setAgentId(event.target.value)}
+              className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm"
+            >
               <option value="">Choose agent</option>
-              {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
+              {agents.map((agent) => (
+                <option key={agent.id} value={agent.id}>
+                  {agent.name}
+                </option>
+              ))}
             </select>
-            {agentError && <p className="type-caption-12-400 mt-1 text-destructive">{agentError}</p>}
+            {agentError && (
+              <p className="type-caption-12-400 mt-1 text-destructive">{agentError}</p>
+            )}
           </label>
           <label htmlFor="sms-to" className="block text-sm font-medium">
-            Recipient number <span aria-hidden="true" className="text-destructive">*</span>
+            Recipient number{" "}
+            <span aria-hidden="true" className="text-destructive">
+              *
+            </span>
             <div className="mt-1.5">
-              <PhoneInput id="sms-to" value={phone} onChange={setPhone} placeholder="+19015550123" />
+              <PhoneInput
+                id="sms-to"
+                value={phone}
+                onChange={setPhone}
+                placeholder="+19015550123"
+              />
             </div>
-            {phoneError && <p className="type-caption-12-400 mt-1 text-destructive">{phoneError}</p>}
+            {phoneError && (
+              <p className="type-caption-12-400 mt-1 text-destructive">{phoneError}</p>
+            )}
           </label>
           <label htmlFor="sms-body" className="block text-sm font-medium">
-            Message <span aria-hidden="true" className="text-destructive">*</span>
-            <textarea id="sms-body" aria-required="true" aria-invalid={!!bodyError} value={body} onChange={(event) => setBody(event.target.value)} rows={5} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm" />
+            Message{" "}
+            <span aria-hidden="true" className="text-destructive">
+              *
+            </span>
+            <textarea
+              id="sms-body"
+              aria-required="true"
+              aria-invalid={!!bodyError}
+              value={body}
+              onChange={(event) => setBody(event.target.value)}
+              rows={5}
+              className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm"
+            />
             {bodyError && <p className="type-caption-12-400 mt-1 text-destructive">{bodyError}</p>}
           </label>
           <SheetFooter>
-            <button type="button" onClick={() => onOpenChange(false)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">Cancel</button>
-            <button type="submit" disabled={isSaving} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
               {isSaving ? "Sending..." : "Send SMS"}
             </button>
           </SheetFooter>

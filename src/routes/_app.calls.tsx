@@ -11,11 +11,7 @@ import { PhoneInput } from "@/components/vukho/PhoneInput";
 import { Banner } from "@/components/vukho/Banner";
 import { VukhoApiError, formatApiError } from "@/lib/api/client";
 import { listBackendAgents, type AgentListItem } from "@/lib/api/agents";
-import {
-  listBackendCalls,
-  startOutboundBackendCall,
-  type CallListItem,
-} from "@/lib/api/calls";
+import { listBackendCalls, startOutboundBackendCall, type CallListItem } from "@/lib/api/calls";
 import {
   Sheet,
   SheetContent,
@@ -75,7 +71,8 @@ function Calls() {
             onClick={() => setStartOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90"
           >
-            <PhoneOutgoing className="h-3.5 w-3.5" />Start outbound
+            <PhoneOutgoing className="h-3.5 w-3.5" />
+            Start outbound
           </button>
         }
       />
@@ -84,14 +81,25 @@ function Calls() {
 
       {isLoading ? (
         <div className="rounded-lg border bg-surface p-4">
-          <div className="space-y-3">{Array.from({ length: 5 }).map((_, index) => <div key={index} className="h-9 animate-pulse rounded-md bg-muted" />)}</div>
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="h-9 animate-pulse rounded-md bg-muted" />
+            ))}
+          </div>
         </div>
       ) : calls.length === 0 ? (
         <EmptyState
           icon={<PhoneOutgoing className="h-5 w-5" />}
           title="No calls yet"
-          description="Start a live provider-backed call from an agent with an attached voice-capable number."
-          action={<button onClick={() => setStartOpen(true)} className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background">Start outbound</button>}
+          description="Start a live call from an agent with an attached voice-capable number."
+          action={
+            <button
+              onClick={() => setStartOpen(true)}
+              className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background"
+            >
+              Start outbound
+            </button>
+          }
         />
       ) : (
         <CallsTable calls={calls} agentsById={agentsById} />
@@ -161,13 +169,54 @@ function CallsTable({
       width: 160,
       sortable: true,
       sortAccessor: (c) => agentsById.get(c.agentId)?.name ?? c.agentId,
-      render: (call) => <span className="block truncate">{agentsById.get(call.agentId)?.name ?? call.agentId}</span>,
+      render: (call) => (
+        <span className="block truncate">{agentsById.get(call.agentId)?.name ?? call.agentId}</span>
+      ),
     },
-    { key: "status", label: "Status", width: 120, sortable: true, sortAccessor: (c) => c.status, render: (c) => <StatusBadge status={c.status} /> },
-    { key: "outcome", label: "Outcome", width: 140, sortable: true, sortAccessor: (c) => c.outcome ?? "", render: (c) => <span className="text-muted-foreground">{formatOutcome(c.outcome)}</span> },
-    { key: "duration", label: "Duration", width: 90, align: "right", sortable: true, sortAccessor: (c) => c.duration, cellClassName: "tabular-nums", render: (c) => formatDuration(c.duration) },
-    { key: "cost", label: "Cost", width: 90, align: "right", sortable: true, sortAccessor: (c) => c.cost, cellClassName: "tabular-nums", render: (c) => `$${c.cost.toFixed(2)}` },
-    { key: "startedAt", label: "Started", width: 140, sortable: true, sortAccessor: (c) => c.startedAt, render: (c) => <span className="whitespace-nowrap text-muted-foreground">{c.startedAt}</span> },
+    {
+      key: "status",
+      label: "Status",
+      width: 120,
+      sortable: true,
+      sortAccessor: (c) => c.status,
+      render: (c) => <StatusBadge status={c.status} />,
+    },
+    {
+      key: "outcome",
+      label: "Outcome",
+      width: 140,
+      sortable: true,
+      sortAccessor: (c) => c.outcome ?? "",
+      render: (c) => <span className="text-muted-foreground">{formatOutcome(c.outcome)}</span>,
+    },
+    {
+      key: "duration",
+      label: "Duration",
+      width: 90,
+      align: "right",
+      sortable: true,
+      sortAccessor: (c) => c.duration,
+      cellClassName: "tabular-nums",
+      render: (c) => formatDuration(c.duration),
+    },
+    {
+      key: "cost",
+      label: "Cost",
+      width: 90,
+      align: "right",
+      sortable: true,
+      sortAccessor: (c) => c.cost,
+      cellClassName: "tabular-nums",
+      render: (c) => `$${c.cost.toFixed(2)}`,
+    },
+    {
+      key: "startedAt",
+      label: "Started",
+      width: 140,
+      sortable: true,
+      sortAccessor: (c) => c.startedAt,
+      render: (c) => <span className="whitespace-nowrap text-muted-foreground">{c.startedAt}</span>,
+    },
     {
       key: "actions",
       label: "",
@@ -231,9 +280,7 @@ function formatOutcome(outcome: string | null | undefined): string {
   if (!outcome) return "—";
   return (
     OUTCOME_LABELS[outcome] ??
-    outcome
-      .replace(/[_-]+/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase())
+    outcome.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
   );
 }
 
@@ -254,7 +301,10 @@ function StartCallDrawer({
   const [isSaving, setIsSaving] = useState(false);
   const [touched, setTouched] = useState(false);
 
-  const phoneError = touched && !/^\+?[0-9\s\-()]{6,}$/.test(to.trim()) ? "Enter a valid phone number (E.164, e.g. +15551234567)." : null;
+  const phoneError =
+    touched && !/^\+?[0-9\s\-()]{6,}$/.test(to.trim())
+      ? "Enter a valid phone number (E.164, e.g. +15551234567)."
+      : null;
   const agentError = touched && !agentId ? "Choose an agent." : null;
 
   useEffect(() => {
@@ -292,27 +342,56 @@ function StartCallDrawer({
           </SheetDescription>
         </SheetHeader>
         <form className="mt-6 space-y-4" onSubmit={submit}>
-          {error && (
-            <Banner variant="error" message={error} onDismiss={() => setError(null)} />
-          )}
+          {error && <Banner variant="error" message={error} onDismiss={() => setError(null)} />}
           <label htmlFor="call-agent" className="block text-sm font-medium">
-            Agent <span aria-hidden="true" className="text-destructive">*</span>
-            <select id="call-agent" aria-required="true" aria-invalid={!!agentError} value={agentId} onChange={(event) => setAgentId(event.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm">
+            Agent{" "}
+            <span aria-hidden="true" className="text-destructive">
+              *
+            </span>
+            <select
+              id="call-agent"
+              aria-required="true"
+              aria-invalid={!!agentError}
+              value={agentId}
+              onChange={(event) => setAgentId(event.target.value)}
+              className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm"
+            >
               <option value="">Choose agent</option>
-              {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
+              {agents.map((agent) => (
+                <option key={agent.id} value={agent.id}>
+                  {agent.name}
+                </option>
+              ))}
             </select>
-            {agentError && <p className="type-caption-12-400 mt-1 text-destructive">{agentError}</p>}
+            {agentError && (
+              <p className="type-caption-12-400 mt-1 text-destructive">{agentError}</p>
+            )}
           </label>
           <label htmlFor="call-to" className="block text-sm font-medium">
-            Destination number <span aria-hidden="true" className="text-destructive">*</span>
+            Destination number{" "}
+            <span aria-hidden="true" className="text-destructive">
+              *
+            </span>
             <div className="mt-1.5">
               <PhoneInput id="call-to" value={to} onChange={setTo} placeholder="+19015550123" />
             </div>
-            {phoneError && <p className="type-caption-12-400 mt-1 text-destructive">{phoneError}</p>}
+            {phoneError && (
+              <p className="type-caption-12-400 mt-1 text-destructive">{phoneError}</p>
+            )}
           </label>
           <SheetFooter>
-            <button type="button" onClick={() => onOpenChange(false)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">Cancel</button>
-            <button type="submit" disabled={isSaving} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
               {isSaving ? "Starting..." : "Start call"}
             </button>
           </SheetFooter>

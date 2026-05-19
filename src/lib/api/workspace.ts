@@ -32,6 +32,13 @@ export interface WorkspaceSettings {
     activeNumbers: number;
     activeWebhooks: number;
   };
+  onboarding: {
+    hasAgent: boolean;
+    hasActiveNumber: boolean;
+    hasWebhook: boolean;
+    readyForLiveTraffic: boolean;
+    nextAction: "create_agent" | "attach_number" | "configure_webhook" | "run_live_smoke";
+  };
   billing: {
     currency: string;
     balanceCents: number;
@@ -67,6 +74,17 @@ export interface WorkspaceSettings {
     canManageBilling: boolean;
     canInviteMembers: boolean;
     canManageApiKeys: boolean;
+    recording?: {
+      enabled: boolean;
+      consentRequired: boolean;
+      status: string;
+    };
+    retention?: {
+      transcriptsDays: number;
+      recordingsDays: number | null;
+      rawEventsDays: number;
+      configurable: boolean;
+    };
   };
 }
 

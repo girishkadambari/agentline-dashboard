@@ -559,9 +559,7 @@ function DeliveriesTable({
       width: 150,
       sortable: true,
       sortAccessor: (d) => new Date(d.createdAt).getTime(),
-      render: (delivery) => (
-        <span className="text-muted-foreground">{delivery.createdLabel}</span>
-      ),
+      render: (delivery) => <span className="text-muted-foreground">{delivery.createdLabel}</span>,
     },
     {
       key: "actions",
@@ -644,7 +642,7 @@ function WebhookDrawer({
     setTestHeaders(null);
     setSimulateFailure(false);
     if (isCreate) {
-      setUrl("https://example.com/vukho/webhook");
+      setUrl("");
       setSelectedEvents(DEFAULT_SELECTED_EVENTS);
       setCustomEvent("");
       setStatus("active");

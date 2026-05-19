@@ -61,9 +61,7 @@ function CallDetail() {
       setAgent(agentResponse?.data ?? null);
       setTranscript(transcriptResponse.data);
     } catch (caught) {
-      setError(
-        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load call.",
-      );
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load call.");
     } finally {
       if (!options.quiet) {
         setIsLoading(false);
@@ -97,10 +95,9 @@ function CallDetail() {
     try {
       const response = await endBackendCall(call.id);
       setCall(response.data);
+      await loadCall({ quiet: true });
     } catch (caught) {
-      setError(
-        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not end call.",
-      );
+      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not end call.");
     } finally {
       setIsActionLoading(false);
     }
@@ -121,6 +118,7 @@ function CallDetail() {
     try {
       const response = await transferBackendCall(call.id, to);
       setCall(response.data);
+      await loadCall({ quiet: true });
     } catch (caught) {
       setError(
         caught instanceof VukhoApiError ? formatApiError(caught) : "Could not transfer call.",
@@ -299,7 +297,7 @@ function CallDetail() {
 
           <Card title="Structured outcome">
             <pre className="overflow-x-auto bg-[oklch(0.18_0.012_260)] p-4 font-mono text-[12px] leading-relaxed text-[oklch(0.92_0.01_260)]">
-{JSON.stringify({ outcome: call.outcome, status: call.status }, null, 2)}
+              {JSON.stringify({ outcome: call.outcome, status: call.status }, null, 2)}
             </pre>
           </Card>
         </div>
@@ -309,19 +307,19 @@ function CallDetail() {
             <Timeline events={lifecycle} live={isLive} />
           </Card>
 
-          <Card title="Provider diagnostics" icon={<Server className="h-3.5 w-3.5" />}>
+          <Card title="Delivery diagnostics" icon={<Server className="h-3.5 w-3.5" />}>
             {call.providerDiagnostics.issues.length > 0 && (
               <div className="flex items-start gap-2 border-b border-destructive/20 bg-destructive/5 px-4 py-2.5 text-[12px] text-destructive">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
-                  {call.providerDiagnostics.issues.length} provider issue
+                  {call.providerDiagnostics.issues.length} delivery issue
                   {call.providerDiagnostics.issues.length === 1 ? "" : "s"} detected.
                 </span>
               </div>
             )}
             {call.providerDiagnostics.events.length === 0 ? (
               <div className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">
-                No provider callbacks recorded yet.
+                No carrier updates recorded yet.
               </div>
             ) : (
               <ul className="divide-y divide-border/60">
@@ -347,7 +345,7 @@ function CallDetail() {
                         <Mono className="truncate text-[11px] text-muted-foreground">
                           {event.providerEventId}
                         </Mono>
-                        <CopyButton value={event.providerEventId} label="Copy provider event ID" />
+                        <CopyButton value={event.providerEventId} label="Copy delivery event ID" />
                       </div>
                     )}
                   </li>
@@ -405,7 +403,12 @@ function SummaryFact({
       <dt className="text-[10.5px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
         {label}
       </dt>
-      <dd className={cn("mt-1 text-[15px] font-semibold tracking-tight text-foreground", capitalize && "capitalize")}>
+      <dd
+        className={cn(
+          "mt-1 text-[15px] font-semibold tracking-tight text-foreground",
+          capitalize && "capitalize",
+        )}
+      >
         {value}
       </dd>
     </div>
@@ -430,7 +433,7 @@ function buildLifecycleEvents(call: CallListItem): LifecycleEvent[] {
   if (call.provider) {
     events.push({
       id: "provider",
-      label: `Routed via ${call.provider}`,
+      label: "Routed through phone network",
       detail: call.providerCallId ?? undefined,
       state: "done",
     });
@@ -489,7 +492,7 @@ function buildLifecycleEvents(call: CallListItem): LifecycleEvent[] {
   }
 
   if (!terminal && status !== "ringing" && status !== "in_progress") {
-    events.push({ id: "waiting", label: "Waiting for provider", state: "pending" });
+    events.push({ id: "waiting", label: "Waiting for phone network", state: "pending" });
   }
 
   return events;
@@ -533,9 +536,7 @@ function Timeline({ events, live }: { events: LifecycleEvent[]; live: boolean })
                 </div>
               )}
             </div>
-            {event.state === "active" && (
-              <Clock className="mt-0.5 h-3 w-3 shrink-0 text-info" />
-            )}
+            {event.state === "active" && <Clock className="mt-0.5 h-3 w-3 shrink-0 text-info" />}
           </li>
         );
       })}

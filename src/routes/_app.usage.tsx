@@ -83,7 +83,9 @@ function Usage() {
   const agentsById = useMemo(() => new Map(agents.map((agent) => [agent.id, agent])), [agents]);
   const totalCost = events.reduce((sum, event) => sum + event.totalCost, 0);
   const totalQuantity = events.reduce((sum, event) => sum + event.quantity, 0);
-  const voiceCost = events.filter((event) => event.channel === "voice").reduce((sum, event) => sum + event.totalCost, 0);
+  const voiceCost = events
+    .filter((event) => event.channel === "voice")
+    .reduce((sum, event) => sum + event.totalCost, 0);
   const smsCost = events
     .filter((event) => event.channel.startsWith("sms."))
     .reduce((sum, event) => sum + event.totalCost, 0);
@@ -112,7 +114,11 @@ function Usage() {
           className="rounded-md border border-border/80 bg-surface px-2.5 py-1.5 text-xs outline-none ring-ring focus:ring-2"
         >
           <option value="">All agents</option>
-          {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
+          {agents.map((agent) => (
+            <option key={agent.id} value={agent.id}>
+              {agent.name}
+            </option>
+          ))}
         </select>
         <select
           value={channel}
@@ -311,7 +317,11 @@ function CostChart({
                     <stop offset="100%" stopColor={tone.fill} stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
+                <CartesianGrid
+                  vertical={false}
+                  stroke="var(--color-border)"
+                  strokeDasharray="3 3"
+                />
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
@@ -338,14 +348,22 @@ function CostChart({
                 />
               </AreaChart>
             ) : (
-              <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barCategoryGap="30%">
+              <BarChart
+                data={data}
+                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                barCategoryGap="30%"
+              >
                 <defs>
                   <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={tone.fill} stopOpacity={1} />
                     <stop offset="100%" stopColor={tone.fill} stopOpacity={0.7} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
+                <CartesianGrid
+                  vertical={false}
+                  stroke="var(--color-border)"
+                  strokeDasharray="3 3"
+                />
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
@@ -363,7 +381,12 @@ function CostChart({
                   cursor={{ fill: "var(--color-muted)", opacity: 0.4 }}
                   content={<MoneyTooltip />}
                 />
-                <Bar dataKey="totalCost" fill={`url(#${gradientId})`} radius={[6, 6, 0, 0]} maxBarSize={48} />
+                <Bar
+                  dataKey="totalCost"
+                  fill={`url(#${gradientId})`}
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={48}
+                />
               </BarChart>
             )}
           </ResponsiveContainer>
@@ -418,18 +441,100 @@ function UsageEventsTable({
         maxBodyHeight={560}
         pageSize={25}
         defaultSort={{ key: "time", dir: "desc" }}
-        columns={[
-          { key: "time", label: "Time", width: 160, sortable: true, sortAccessor: (e) => e.occurredLabel, render: (e) => <span className="text-muted-foreground">{e.occurredLabel}</span> },
-          { key: "agent", label: "Agent", width: 180, sortable: true, sortAccessor: (e) => agentsById.get(e.agentId)?.name ?? e.agentId, render: (e) => <span className="block truncate font-medium">{agentsById.get(e.agentId)?.name ?? e.agentId}</span> },
-          { key: "resource", label: "Resource", render: (e) => (<><span className="capitalize">{e.resourceType}</span><span className="text-muted-foreground"> · </span><Mono className="text-muted-foreground">{e.resourceId}</Mono></>) },
-          { key: "channel", label: "Channel", width: 130, sortable: true, sortAccessor: (e) => e.channel, cellClassName: "text-muted-foreground", render: (e) => formatChannel(e.channel) },
-          { key: "qty", label: "Qty", width: 80, align: "right", sortable: true, sortAccessor: (e) => e.quantity, cellClassName: "tabular-nums", render: (e) => e.quantity },
-          { key: "unit", label: "Unit", width: 100, render: (e) => <span className="text-muted-foreground">{e.unit}</span> },
-          { key: "unitCost", label: "Unit $", width: 110, align: "right", sortable: true, sortAccessor: (e) => e.unitCost, cellClassName: "tabular-nums", render: (e) => formatUsd(e.unitCost, 4) },
-          { key: "totalCost", label: "Total $", width: 110, align: "right", sortable: true, sortAccessor: (e) => e.totalCost, cellClassName: "tabular-nums font-semibold text-foreground", render: (e) => formatUsd(e.totalCost, 4) },
-          { key: "settlement", label: "Settlement", width: 150, sortable: true, sortAccessor: (e) => e.settlementStatus, render: (e) => <span className="text-muted-foreground">{formatSettlement(e)}</span> },
-          { key: "evidence", label: "Evidence", width: 190, render: (e) => <UsageEvidence event={e} /> },
-        ] satisfies Column<UsageEventListItem>[]}
+        columns={
+          [
+            {
+              key: "time",
+              label: "Time",
+              width: 160,
+              sortable: true,
+              sortAccessor: (e) => e.occurredLabel,
+              render: (e) => <span className="text-muted-foreground">{e.occurredLabel}</span>,
+            },
+            {
+              key: "agent",
+              label: "Agent",
+              width: 180,
+              sortable: true,
+              sortAccessor: (e) => agentsById.get(e.agentId)?.name ?? e.agentId,
+              render: (e) => (
+                <span className="block truncate font-medium">
+                  {agentsById.get(e.agentId)?.name ?? e.agentId}
+                </span>
+              ),
+            },
+            {
+              key: "resource",
+              label: "Resource",
+              render: (e) => (
+                <>
+                  <span className="capitalize">{e.resourceType}</span>
+                  <span className="text-muted-foreground"> · </span>
+                  <Mono className="text-muted-foreground">{e.resourceId}</Mono>
+                </>
+              ),
+            },
+            {
+              key: "channel",
+              label: "Channel",
+              width: 130,
+              sortable: true,
+              sortAccessor: (e) => e.channel,
+              cellClassName: "text-muted-foreground",
+              render: (e) => formatChannel(e.channel),
+            },
+            {
+              key: "qty",
+              label: "Qty",
+              width: 80,
+              align: "right",
+              sortable: true,
+              sortAccessor: (e) => e.quantity,
+              cellClassName: "tabular-nums",
+              render: (e) => e.quantity,
+            },
+            {
+              key: "unit",
+              label: "Unit",
+              width: 100,
+              render: (e) => <span className="text-muted-foreground">{e.unit}</span>,
+            },
+            {
+              key: "unitCost",
+              label: "Unit $",
+              width: 110,
+              align: "right",
+              sortable: true,
+              sortAccessor: (e) => e.unitCost,
+              cellClassName: "tabular-nums",
+              render: (e) => formatUsd(e.unitCost, 4),
+            },
+            {
+              key: "totalCost",
+              label: "Total $",
+              width: 110,
+              align: "right",
+              sortable: true,
+              sortAccessor: (e) => e.totalCost,
+              cellClassName: "tabular-nums font-semibold text-foreground",
+              render: (e) => formatUsd(e.totalCost, 4),
+            },
+            {
+              key: "settlement",
+              label: "Settlement",
+              width: 150,
+              sortable: true,
+              sortAccessor: (e) => e.settlementStatus,
+              render: (e) => <span className="text-muted-foreground">{formatSettlement(e)}</span>,
+            },
+            {
+              key: "evidence",
+              label: "Evidence",
+              width: 190,
+              render: (e) => <UsageEvidence event={e} />,
+            },
+          ] satisfies Column<UsageEventListItem>[]
+        }
       />
     </div>
   );
@@ -460,10 +565,7 @@ function getDateRange(range: RangeValue) {
     from.setDate(now.getDate() - Number(range));
   }
 
-  const label =
-    range === "month"
-      ? "This month"
-      : `Last ${range} days`;
+  const label = range === "month" ? "This month" : `Last ${range} days`;
 
   return {
     from: from.toISOString(),
@@ -497,7 +599,7 @@ function formatSettlement(event: UsageEventListItem) {
   const labels: Record<string, string> = {
     allowance: "Allowance",
     prepaid_balance: "Prepaid",
-    stripe_metered: "Stripe metered",
+    stripe_metered: "Metered billing",
     internal_debited: "Debited",
     internal_adjusted: "Adjusted",
     pending: "Pending",

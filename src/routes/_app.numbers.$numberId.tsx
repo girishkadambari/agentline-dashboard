@@ -46,7 +46,9 @@ function NumberDetail() {
       })
       .catch((caught) => {
         if (!cancelled) {
-          setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load number.");
+          setError(
+            caught instanceof VukhoApiError ? formatApiError(caught) : "Could not load number.",
+          );
         }
       })
       .finally(() => {
@@ -74,7 +76,9 @@ function NumberDetail() {
       const response = await updateBackendNumber(number.id, { agentId: agentId || null });
       setNumber(response.data);
     } catch (caught) {
-      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not update number.");
+      setError(
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not update number.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -91,14 +95,20 @@ function NumberDetail() {
       const response = await releaseBackendNumber(number.id);
       setNumber(response.data);
     } catch (caught) {
-      setError(caught instanceof VukhoApiError ? formatApiError(caught) : "Could not release number.");
+      setError(
+        caught instanceof VukhoApiError ? formatApiError(caught) : "Could not release number.",
+      );
     } finally {
       setIsSaving(false);
     }
   }
 
   if (isLoading) {
-    return <div className="rounded-lg border bg-surface p-6 text-sm text-muted-foreground">Loading number...</div>;
+    return (
+      <div className="rounded-lg border bg-surface p-6 text-sm text-muted-foreground">
+        Loading number...
+      </div>
+    );
   }
 
   if (!number) {
@@ -113,20 +123,44 @@ function NumberDetail() {
         description={`${number.country}${number.areaCode ? ` · ${number.areaCode}` : ""}`}
         actions={
           <>
-            <button onClick={saveAssignment} disabled={isSaving} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60"><Pencil className="h-3.5 w-3.5" />Save assignment</button>
-            <button onClick={releaseNumber} disabled={isSaving || number.status === "released"} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-60"><Trash2 className="h-3.5 w-3.5" />Release number</button>
+            <button
+              onClick={saveAssignment}
+              disabled={isSaving}
+              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Save assignment
+            </button>
+            <button
+              onClick={releaseNumber}
+              disabled={isSaving || number.status === "released"}
+              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-60"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Release number
+            </button>
           </>
         }
       />
       {error && <Banner variant="error" message={error} className="mb-4" />}
       <div className="mb-6 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-        <Mono>{number.id}</Mono><span>·</span>
-        <span className="capitalize">Provider: {number.provider}</span><span>·</span>
+        <Mono>{number.id}</Mono>
+        <span>·</span>
         <StatusBadge status={number.status} />
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="Capabilities" value={<span className="text-base font-medium uppercase">{number.capabilities.join(", ")}</span>} />
-        <Stat label="Attached agent" value={<span className="text-base font-medium">{agent?.name ?? "Unassigned"}</span>} />
+        <Stat
+          label="Capabilities"
+          value={
+            <span className="text-base font-medium uppercase">
+              {number.capabilities.join(", ")}
+            </span>
+          }
+        />
+        <Stat
+          label="Attached agent"
+          value={<span className="text-base font-medium">{agent?.name ?? "Unassigned"}</span>}
+        />
         <Stat label="Monthly cost" value={`$${number.monthlyCost.toFixed(2)}`} />
         <Stat label="Status" value={<StatusBadge status={number.status} />} />
       </div>
@@ -135,9 +169,17 @@ function NumberDetail() {
         <h3 className="text-sm font-semibold">Assignment</h3>
         <label className="mt-4 block text-sm font-medium">
           Agent
-          <select value={agentId} onChange={(event) => setAgentId(event.target.value)} className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm">
+          <select
+            value={agentId}
+            onChange={(event) => setAgentId(event.target.value)}
+            className="mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-sm"
+          >
             <option value="">Unassigned</option>
-            {agents.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            {agents.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
           </select>
         </label>
       </div>
@@ -150,7 +192,14 @@ function Empty({ id, error }: { id: string; error: string | null }) {
     <EmptyState
       title="Number not found"
       description={error ?? `No number with id ${id}.`}
-      action={<Link to="/numbers" className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted">Back to numbers</Link>}
+      action={
+        <Link
+          to="/numbers"
+          className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+        >
+          Back to numbers
+        </Link>
+      }
     />
   );
 }
