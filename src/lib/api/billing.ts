@@ -60,6 +60,26 @@ export interface BackendBillingPlan {
   stripePriceConfigured: boolean;
 }
 
+export interface BackendBillingRate {
+  key: string;
+  resourceType: string;
+  channel: string;
+  unit: string;
+  unitCostCents: number;
+  formula: string;
+  pricingVersion: string;
+  source: "database" | "default" | string;
+}
+
+export interface BackendBillingPricing {
+  currency: string;
+  pricingVersion: string;
+  source: "database" | "default" | string;
+  plans: BackendBillingPlan[];
+  rates: BackendBillingRate[];
+  billingRules: Record<string, string>;
+}
+
 export interface BillingPlanView extends BackendBillingPlan {
   monthlyPrice: number;
   includedUsage: number;
@@ -293,6 +313,10 @@ export async function getBackendBillingPlans() {
   const response = await apiRequest<{ data: BackendBillingPlan[] }>("/billing/plans");
 
   return { data: response.data.map(mapBackendBillingPlan) };
+}
+
+export async function getBackendBillingPricing() {
+  return apiRequest<{ data: BackendBillingPricing }>("/billing/pricing");
 }
 
 export async function getBackendBillingSubscription() {

@@ -34,9 +34,11 @@ import {
   createBackendPortalSession,
   createBackendSubscriptionCheckoutSession,
   getBackendBillingBalance,
+  getBackendBillingPricing,
   getBackendBillingSubscription,
   getBackendStripeStatus,
   listBackendBillingTransactions,
+  type BackendBillingRate,
   type BillingAllowanceGrantView,
   type BillingBalanceView,
   type BillingPlanKey,
@@ -54,45 +56,12 @@ export const Route = createFileRoute("/_app/billing")({
 
 type BillingAction = "checkout" | "portal" | `plan:${string}`;
 const PRESET_AMOUNTS = [10, 25, 50, 100, 250] as const;
-const USAGE_RATES = [
-  {
-    key: "number",
-    label: "Phone number",
-    price: "$1.00",
-    unit: "provision/import event",
-    note: "Current setup charge. Monthly rental controls come next.",
-    icon: Phone,
-  },
-  {
-    key: "sms-out",
-    label: "Outbound SMS",
-    price: "$0.01",
-    unit: "message",
-    note: "Charged when the message is accepted for delivery.",
-    icon: MessageSquare,
-  },
-  {
-    key: "sms-in",
-    label: "Inbound SMS",
-    price: "$0.01",
-    unit: "message",
-    note: "Charged when Vukho receives the inbound webhook.",
-    icon: MessageSquare,
-  },
-  {
-    key: "voice",
-    label: "Voice",
-    price: "$0.03",
-    unit: "started minute",
-    note: "Final cost settles from carrier call duration updates.",
-    icon: Gauge,
-  },
-] as const;
 
 function Billing() {
   const [balance, setBalance] = useState<BillingBalanceView | null>(null);
   const [billingState, setBillingState] = useState<BillingSubscriptionStateView | null>(null);
   const [transactions, setTransactions] = useState<BillingTransactionListItem[]>([]);
+  const [rates, setRates] = useState<BackendBillingRate[]>([]);
   const [stripeStatus, setStripeStatus] = useState<StripeStatusView | null>(null);
   const [mtdSpend, setMtdSpend] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -107,7 +76,7 @@ function Billing() {
       const monthStart = new Date();
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
-      const [balanceRes, subRes, txRes, usageRes, stripeRes] = await Promise.all([
+      const [balanceRes, subRes, txRes, usageRes, pricingRes, stripeRes] = await Promise.all([
         getBackendBillingBalance(),
         getBackendBillingSubscription(),
         listBackendBillingTransactions(),
@@ -116,11 +85,13 @@ function Billing() {
           to: new Date().toISOString(),
           limit: 200,
         }),
+        getBackendBillingPricing(),
         getBackendStripeStatus(),
       ]);
       setBalance(balanceRes.data);
       setBillingState(subRes.data);
       setTransactions(txRes.data);
+      setRates(pricingRes.data.rates);
       setStripeStatus(stripeRes.data);
       setMtdSpend(usageRes.data.reduce((sum, e) => sum + e.totalCost, 0));
     } catch (caught) {
@@ -151,6 +122,7 @@ function Billing() {
   );
 
   const totalAvailable = (balance?.balance ?? 0) + (activeAllowance?.remaining ?? 0);
+  const stripeReady = stripeStatus ? isStripeReady(stripeStatus) : false;
 
   async function openCheckout(amountUsd: number) {
     setIsActionLoading("checkout");
@@ -215,7 +187,7 @@ function Billing() {
           <div className="flex items-center gap-2">
             <button
               onClick={openPortal}
-              disabled={isActionLoading !== null}
+              disabled={isActionLoading !== null || !stripeReady}
               className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ExternalLink className="h-3.5 w-3.5" />
@@ -223,7 +195,7 @@ function Billing() {
             </button>
             <button
               onClick={() => setTopUpOpen(true)}
-              disabled={isActionLoading !== null}
+              disabled={isActionLoading !== null || !stripeReady}
               className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -239,7 +211,10 @@ function Billing() {
           className="mb-4"
           title={<>Billing needs configuration</>}
           message={
-            <>Payment processing is not fully ready for self-serve billing in this environment.</>
+            <>
+              Payment processing is not fully ready for self-serve billing in this environment.
+              Checkout and billing portal actions are paused until Stripe is configured.
+            </>
           }
         />
       )}
@@ -266,6 +241,7 @@ function Billing() {
           subscription={billingState?.subscription ?? null}
           activeAllowance={activeAllowance}
           onTopUp={() => setTopUpOpen(true)}
+          canTopUp={stripeReady}
         />
       )}
 
@@ -275,7 +251,7 @@ function Billing() {
           title="Usage pricing"
           description="Current rates used to calculate phone, SMS, and voice usage."
         />
-        <RateGrid />
+        <RateGrid rates={rates} />
       </div>
 
       {/* PLANS */}
@@ -289,6 +265,7 @@ function Billing() {
           currentPlanKey={billingState?.subscription?.planKey ?? "free"}
           hasSubscription={Boolean(billingState?.subscription)}
           isActionLoading={isActionLoading}
+          canStartCheckout={stripeReady}
           onChoosePlan={startPlanCheckout}
         />
       </div>
@@ -314,7 +291,8 @@ function Billing() {
                 action={
                   <button
                     onClick={() => setTopUpOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90"
+                    disabled={!stripeReady}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Add your first credits
@@ -356,6 +334,7 @@ function Billing() {
           void openCheckout(amount);
         }}
         isLoading={isActionLoading === "checkout"}
+        canCheckout={stripeReady}
       />
     </div>
   );
@@ -385,22 +364,28 @@ function SectionHeader({
 
 /* ---------- Rates ---------- */
 
-function RateGrid() {
+function RateGrid({ rates }: { rates: BackendBillingRate[] }) {
+  const visibleRates = rates.length > 0 ? rates : fallbackUsageRates();
+
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-      {USAGE_RATES.map((rate) => {
-        const Icon = rate.icon;
+      {visibleRates.map((rate) => {
+        const Icon = rateIcon(rate);
         return (
           <div key={rate.key} className="rounded-xl border bg-surface p-4 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Icon className="h-4 w-4 text-muted-foreground" />
-              {rate.label}
+              {rateLabel(rate)}
             </div>
             <div className="mt-3">
-              <span className="text-2xl font-semibold tabular-nums">{rate.price}</span>
-              <span className="ml-1 text-xs text-muted-foreground">/ {rate.unit}</span>
+              <span className="text-2xl font-semibold tabular-nums">
+                {formatUsd(rate.unitCostCents / 100)}
+              </span>
+              <span className="ml-1 text-xs text-muted-foreground">/ {rateUnit(rate)}</span>
             </div>
-            <p className="mt-2 text-[11.5px] leading-5 text-muted-foreground">{rate.note}</p>
+            <p className="mt-2 text-[11.5px] leading-5 text-muted-foreground">
+              {rateDescription(rate)}
+            </p>
           </div>
         );
       })}
@@ -419,6 +404,7 @@ function SummaryHero({
   subscription,
   activeAllowance,
   onTopUp,
+  canTopUp,
 }: {
   totalAvailable: number;
   balance: number;
@@ -428,6 +414,7 @@ function SummaryHero({
   subscription: BillingSubscriptionStateView["subscription"];
   activeAllowance: BillingAllowanceGrantView | null;
   onTopUp: () => void;
+  canTopUp: boolean;
 }) {
   const status = subscription?.status ?? "trial";
   const statusTone =
@@ -463,7 +450,8 @@ function SummaryHero({
 
             <button
               onClick={onTopUp}
-              className="mt-5 inline-flex items-center gap-1.5 rounded-md bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-background/90"
+              disabled={!canTopUp}
+              className="mt-5 inline-flex items-center gap-1.5 rounded-md bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-background/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Plus className="h-3.5 w-3.5" />
               Add credits
@@ -580,12 +568,14 @@ function PlanGrid({
   currentPlanKey,
   hasSubscription,
   isActionLoading,
+  canStartCheckout,
   onChoosePlan,
 }: {
   plans: BillingPlanView[];
   currentPlanKey: string;
   hasSubscription: boolean;
   isActionLoading: BillingAction | null;
+  canStartCheckout: boolean;
   onChoosePlan: (planKey: Exclude<BillingPlanKey, "free">) => void;
 }) {
   const paidPlans = plans.filter((p) => p.key !== "free");
@@ -639,7 +629,12 @@ function PlanGrid({
             </ul>
             <button
               onClick={() => onChoosePlan(plan.key as Exclude<BillingPlanKey, "free">)}
-              disabled={isCurrent || !plan.stripePriceConfigured || isActionLoading !== null}
+              disabled={
+                isCurrent ||
+                !plan.stripePriceConfigured ||
+                isActionLoading !== null ||
+                !canStartCheckout
+              }
               className={cn(
                 "mt-5 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
                 isCurrent
@@ -649,6 +644,8 @@ function PlanGrid({
             >
               {isCurrent ? (
                 "Current plan"
+              ) : !canStartCheckout ? (
+                "Checkout unavailable"
               ) : !plan.stripePriceConfigured ? (
                 "Price not configured"
               ) : isLoading ? (
@@ -707,11 +704,13 @@ function TopUpDialog({
   onOpenChange,
   onConfirm,
   isLoading,
+  canCheckout,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (amount: number) => void;
   isLoading: boolean;
+  canCheckout: boolean;
 }) {
   const [selected, setSelected] = useState<number>(25);
   const [customValue, setCustomValue] = useState<string>("");
@@ -798,7 +797,7 @@ function TopUpDialog({
               </span>
             </div>
             <div className="mt-1 text-[11px] text-muted-foreground">
-              Secure payment. Credits appear instantly after payment.
+              Secure payment. Credits are applied after Stripe confirms payment.
             </div>
           </div>
         </div>
@@ -814,11 +813,15 @@ function TopUpDialog({
           <button
             type="button"
             onClick={() => finalAmount && onConfirm(finalAmount)}
-            disabled={!finalAmount || isLoading}
+            disabled={!finalAmount || isLoading || !canCheckout}
             className="inline-flex items-center justify-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CreditCard className="h-3.5 w-3.5" />
-            {isLoading ? "Starting…" : `Continue to checkout`}
+            {!canCheckout
+              ? "Checkout unavailable"
+              : isLoading
+                ? "Starting…"
+                : `Continue to checkout`}
           </button>
         </DialogFooter>
       </DialogContent>
@@ -927,6 +930,93 @@ function StatusPill({ status }: { status: string }) {
 }
 
 /* ---------- helpers ---------- */
+
+function fallbackUsageRates(): BackendBillingRate[] {
+  return [
+    {
+      key: "number.provision",
+      resourceType: "phone_number",
+      channel: "number",
+      unit: "provision/import event",
+      unitCostCents: 100,
+      formula: "flat",
+      pricingVersion: "fallback",
+      source: "default",
+    },
+    {
+      key: "sms.outbound",
+      resourceType: "message",
+      channel: "sms",
+      unit: "outbound message",
+      unitCostCents: 1,
+      formula: "flat",
+      pricingVersion: "fallback",
+      source: "default",
+    },
+    {
+      key: "sms.inbound",
+      resourceType: "message",
+      channel: "sms",
+      unit: "inbound message",
+      unitCostCents: 1,
+      formula: "flat",
+      pricingVersion: "fallback",
+      source: "default",
+    },
+    {
+      key: "voice.minute",
+      resourceType: "call",
+      channel: "voice",
+      unit: "started minute",
+      unitCostCents: 3,
+      formula: "ceil_minutes",
+      pricingVersion: "fallback",
+      source: "default",
+    },
+  ];
+}
+
+function rateIcon(rate: BackendBillingRate) {
+  if (rate.channel === "voice" || rate.resourceType === "call") return Gauge;
+  if (rate.channel === "sms" || rate.resourceType === "message") return MessageSquare;
+  return Phone;
+}
+
+function rateLabel(rate: BackendBillingRate) {
+  if (rate.resourceType === "phone_number") return "Phone number";
+  if (rate.channel === "voice") return "Voice";
+  if (rate.key.includes("inbound")) return "Inbound SMS";
+  if (rate.key.includes("outbound")) return "Outbound SMS";
+  return rate.key
+    .split(/[._-]/g)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function rateUnit(rate: BackendBillingRate) {
+  if (rate.unit === "message") {
+    return rate.key.includes("inbound") ? "inbound message" : "outbound message";
+  }
+  if (rate.unit === "minute") return "started minute";
+  return rate.unit.replace(/_/g, " ");
+}
+
+function rateDescription(rate: BackendBillingRate) {
+  if (rate.resourceType === "phone_number") {
+    return "Charged when Vukho takes ownership of a provisioned or imported number.";
+  }
+  if (rate.channel === "voice") {
+    return "Final cost settles from carrier call duration updates with a one minute minimum.";
+  }
+  if (rate.key.includes("inbound")) {
+    return "Charged when Vukho receives the inbound message webhook.";
+  }
+  if (rate.key.includes("outbound")) {
+    return "Charged when the outbound message is accepted for delivery.";
+  }
+  return rate.formula.replace(/_/g, " ");
+}
 
 function isStripeReady(status: StripeStatusView) {
   return (
